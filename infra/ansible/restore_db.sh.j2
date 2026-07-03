@@ -6,6 +6,7 @@
 set -euo pipefail
 
 BUCKET_NAME="{{ backup_bucket_name }}"
+{% raw %}
 if [ -z "$BUCKET_NAME" ]; then
     echo "[ERROR] S3 Backup Bucket name is empty or not configured via Ansible."
     exit 1
@@ -104,3 +105,4 @@ echo "[INFO] Cleaning up local temporary backup file..."
 rm -f "$LOCAL_PATH"
 
 echo "[SUCCESS] Disaster Recovery Database Restoration Completed."
+{% endraw %}
