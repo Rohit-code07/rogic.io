@@ -515,96 +515,106 @@
         </template>
 
         <template v-else-if="currentTab === 'mypage'">
-          <div class="mypage-dashboard" style="display: flex; flex-direction: column; width: 100%; max-width: 500px; margin: 0 auto; gap: 1.5rem;">
-            <!-- Non-login Guest Welcome Section -->
-            <div v-if="!currentUser" class="mypage-guest-view" style="display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 2.5rem 1.5rem; background: rgba(30, 41, 59, 0.3); border: 1px solid rgba(255,255,255,0.05); border-radius: 16px; backdrop-filter: blur(12px);">
-              <div class="guest-icon" style="font-size: 3rem; margin-bottom: 1rem;">🎮</div>
-              <h2 style="font-weight: 700; color: #f8fafc; margin-bottom: 0.5rem; font-size: 1.45rem;">Guest Mode Active</h2>
-              <p style="color: #94a3b8; max-width: 320px; font-size: 0.85rem; line-height: 1.5; margin-bottom: 1.5rem;">
-                You are playing as a guest. Clear records, XP, and history won't be saved on the server. Sign in to capture your achievements permanently!
-              </p>
+          <!-- Mypage Popup Overlay (Clicking outside the modal card closes it and returns to 'play') -->
+          <div class="mypage-popup-overlay" @click.self="onTabChange('play')" style="position: fixed; top: 0; left: 0; right: 0; bottom: 0; display: flex; justify-content: center; align-items: center; background: rgba(15, 23, 42, 0.75); backdrop-filter: blur(8px); z-index: 9999;">
+            <div class="mypage-popup-content" style="position: relative; width: 100%; max-width: 480px; background: #1e293b; border: 1px solid rgba(255,255,255,0.08); border-radius: 20px; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5), 0 10px 10px -5px rgba(0, 0, 0, 0.4); padding: 2rem; display: flex; flex-direction: column; gap: 1.5rem; animation: modalFadeIn 0.25s cubic-bezier(0.16, 1, 0.3, 1);">
+              
+              <!-- Close Button (X) at Top Right -->
               <button 
-                @click="handleGoogleLogin" 
-                class="google-login-btn"
-                style="display: flex; align-items: center; justify-content: center; gap: 0.75rem; padding: 0.75rem 1.5rem; background: #ffffff; color: #0f172a; font-weight: 600; border: none; border-radius: 10px; cursor: pointer; transition: all 0.2s; box-shadow: 0 4px 12px rgba(0,0,0,0.15);"
+                @click="onTabChange('play')" 
+                class="mypage-popup-close-btn"
+                style="position: absolute; top: 1.25rem; right: 1.25rem; width: 32px; height: 32px; border-radius: 50%; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); color: #94a3b8; font-size: 1.25rem; line-height: 1; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.2s;"
+                onmouseover="this.style.background='rgba(255,255,255,0.08)'; this.style.color='#f8fafc';"
+                onmouseout="this.style.background='rgba(255,255,255,0.03)'; this.style.color='#94a3b8';"
               >
-                <svg width="18" height="18" viewBox="0 0 18 18">
-                  <path fill="#4285F4" d="M17.64 9.2c0-.63-.06-1.25-.16-1.84H9v3.47h4.84c-.21 1.12-.84 2.07-1.79 2.7v2.24h2.9c1.7-1.57 2.69-3.88 2.69-6.57z"/>
-                  <path fill="#34A853" d="M9 18c2.43 0 4.47-.8 5.96-2.23l-2.9-2.24c-.8.54-1.84.87-3.06.87-2.35 0-4.34-1.59-5.05-3.73H.95v2.3C2.43 15.89 5.5 18 9 18z"/>
-                  <path fill="#FBBC05" d="M3.95 10.66A5.4 5.4 0 0 1 3.6 9c0-.58.1-1.15.27-1.66V5.04H.95A9.02 9.02 0 0 0 0 9c0 1.45.35 2.82.95 4.04l3-2.38z"/>
-                  <path fill="#EA4335" d="M9 3.58c1.32 0 2.5.45 3.44 1.35L15 2.4C13.46.96 11.43 0 9 0 5.5 0 2.43 2.11.95 5.04l3 2.38C4.66 5.17 6.65 3.58 9 3.58z"/>
-                </svg>
-                Sign in with Google
+                &times;
               </button>
-            </div>
 
-            <!-- Logged-in User Dashboard -->
-            <div v-else class="mypage-dashboard-content" style="display: flex; flex-direction: column; gap: 1.5rem; width: 100%;">
-              <!-- Profile Info Card -->
-              <div class="mypage-user-profile" style="display: flex; align-items: center; gap: 1.25rem; padding: 1.5rem; background: rgba(30, 41, 59, 0.25); border: 1px solid rgba(255,255,255,0.05); border-radius: 16px;">
-                <img 
-                  v-if="currentUser.profileImageUrl" 
-                  :src="currentUser.profileImageUrl" 
-                  alt="Profile" 
-                  style="width: 54px; height: 54px; border-radius: 50%; border: 2px solid #38bdf8; object-fit: cover;" 
-                />
-                <div v-else class="profile-avatar" style="width: 54px; height: 54px; border-radius: 50%; background: #38bdf8; display: flex; align-items: center; justify-content: center; font-size: 1.35rem; color: #ffffff;">👤</div>
-                <div class="profile-details" style="flex-grow: 1; text-align: left;">
-                  <h2 class="profile-username" style="margin: 0; font-size: 1.25rem; font-weight: 700; color: #f8fafc;">{{ currentUser.username }}</h2>
-                  <p v-if="currentUser.email" class="profile-email" style="margin: 0.15rem 0 0.4rem; font-size: 0.8rem; color: #64748b;">{{ currentUser.email }}</p>
-                  <div class="profile-stats" style="display: flex; gap: 1rem; font-size: 0.85rem; font-weight: 600;">
-                    <span class="profile-lv" style="color: #38bdf8;">Level {{ currentUser.level }}</span>
-                    <span class="profile-xp" style="color: #818cf8;">{{ currentUser.xp }} XP</span>
+              <!-- Mypage Title -->
+              <h2 style="margin: 0 0 0.25rem 0; font-size: 1.35rem; font-weight: 700; color: #f8fafc; text-align: left;">👤 User Profile</h2>
+
+              <!-- Non-login Guest Welcome Section -->
+              <div v-if="!currentUser" class="mypage-guest-view" style="display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 1.5rem 1rem; background: rgba(30, 41, 59, 0.3); border: 1px solid rgba(255,255,255,0.05); border-radius: 12px;">
+                <div class="guest-icon" style="font-size: 2.5rem; margin-bottom: 0.75rem;">🎮</div>
+                <h3 style="font-weight: 700; color: #f8fafc; margin-bottom: 0.5rem; font-size: 1.25rem; margin-top: 0;">Guest Mode Active</h3>
+                <p style="color: #94a3b8; max-width: 320px; font-size: 0.85rem; line-height: 1.5; margin-bottom: 1.25rem; margin-top: 0;">
+                  You are playing as a guest. Clear records, XP, and history won't be saved on the server. Sign in to capture your achievements permanently!
+                </p>
+                <button 
+                  @click="handleGoogleLogin" 
+                  class="google-login-btn"
+                  style="display: flex; align-items: center; justify-content: center; gap: 0.75rem; padding: 0.75rem 1.5rem; background: #ffffff; color: #0f172a; font-weight: 600; border: none; border-radius: 10px; cursor: pointer; transition: all 0.2s; box-shadow: 0 4px 12px rgba(0,0,0,0.15);"
+                >
+                  <svg width="18" height="18" viewBox="0 0 18 18">
+                    <path fill="#4285F4" d="M17.64 9.2c0-.63-.06-1.25-.16-1.84H9v3.47h4.84c-.21 1.12-.84 2.07-1.79 2.7v2.24h2.9c1.7-1.57 2.69-3.88 2.69-6.57z"/>
+                    <path fill="#34A853" d="M9 18c2.43 0 4.47-.8 5.96-2.23l-2.9-2.24c-.8.54-1.84.87-3.06.87-2.35 0-4.34-1.59-5.05-3.73H.95v2.3C2.43 15.89 5.5 18 9 18z"/>
+                    <path fill="#FBBC05" d="M3.95 10.66A5.4 5.4 0 0 1 3.6 9c0-.58.1-1.15.27-1.66V5.04H.95A9.02 9.02 0 0 0 0 9c0 1.45.35 2.82.95 4.04l3-2.38z"/>
+                    <path fill="#EA4335" d="M9 3.58c1.32 0 2.5.45 3.44 1.35L15 2.4C13.46.96 11.43 0 9 0 5.5 0 2.43 2.11.95 5.04l3 2.38C4.66 5.17 6.65 3.58 9 3.58z"/>
+                  </svg>
+                  Sign in with Google
+                </button>
+              </div>
+
+              <!-- Logged-in User Dashboard -->
+              <div v-else class="mypage-dashboard-content" style="display: flex; flex-direction: column; gap: 1.25rem; width: 100%;">
+                <!-- Profile Info Card -->
+                <div class="mypage-user-profile" style="display: flex; align-items: center; gap: 1.25rem; padding: 1.25rem; background: rgba(30, 41, 59, 0.25); border: 1px solid rgba(255,255,255,0.05); border-radius: 14px;">
+                  <img 
+                    v-if="currentUser.profileImageUrl" 
+                    :src="currentUser.profileImageUrl" 
+                    alt="Profile" 
+                    style="width: 54px; height: 54px; border-radius: 50%; border: 2px solid #38bdf8; object-fit: cover;" 
+                  />
+                  <div v-else class="profile-avatar" style="width: 54px; height: 54px; border-radius: 50%; background: #38bdf8; display: flex; align-items: center; justify-content: center; font-size: 1.35rem; color: #ffffff;">👤</div>
+                  <div class="profile-details" style="flex-grow: 1; text-align: left;">
+                    <h2 class="profile-username" style="margin: 0; font-size: 1.2rem; font-weight: 700; color: #f8fafc;">{{ currentUser.username }}</h2>
+                    <p v-if="currentUser.email" class="profile-email" style="margin: 0.15rem 0 0.4rem; font-size: 0.8rem; color: #64748b;">{{ currentUser.email }}</p>
+                    <div class="profile-stats" style="display: flex; gap: 1rem; font-size: 0.85rem; font-weight: 600;">
+                      <span class="profile-lv" style="color: #38bdf8;">Level {{ currentUser.level }}</span>
+                      <span class="profile-xp" style="color: #818cf8;">{{ currentUser.xp }} XP</span>
+                    </div>
                   </div>
-                </div>
-                <div style="display: flex; flex-direction: column; gap: 0.5rem;">
-                  <button 
-                    @click="onTabChange('play')" 
-                    class="back-to-game-btn"
-                    style="padding: 0.4rem 0.85rem; background: rgba(56, 189, 248, 0.1); border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 8px; color: #38bdf8; font-size: 0.8rem; font-weight: 600; cursor: pointer; transition: all 0.2s;"
-                    onmouseover="this.style.background='rgba(56, 189, 248, 0.2)'"
-                    onmouseout="this.style.background='rgba(56, 189, 248, 0.1)'"
-                  >
-                    🎮 Play
-                  </button>
                   <button 
                     @click="handleGoogleLogout" 
                     class="logout-outline-btn"
-                    style="padding: 0.4rem 0.85rem; background: transparent; border: 1px solid rgba(239, 68, 68, 0.4); border-radius: 8px; color: #ef4444; font-size: 0.8rem; font-weight: 600; cursor: pointer; transition: all 0.2s;"
+                    style="padding: 0.45rem 1rem; background: rgba(239, 68, 68, 0.08); border: 1px solid rgba(239, 68, 68, 0.3); border-radius: 8px; color: #ef4444; font-size: 0.8rem; font-weight: 600; cursor: pointer; transition: all 0.2s;"
+                    onmouseover="this.style.background='rgba(239, 68, 68, 0.18)'"
+                    onmouseout="this.style.background='rgba(239, 68, 68, 0.08)'"
                   >
                     🚪 Logout
                   </button>
                 </div>
-              </div>
 
-              <!-- History List Section -->
-              <div class="mypage-history-section" style="text-align: left;">
-                <h3 style="font-size: 1.05rem; font-weight: 600; color: #94a3b8; margin: 0 0 0.75rem 0.25rem; display: flex; justify-content: space-between;">
-                  <span>🏆 Clear History</span>
-                  <span style="font-size: 0.85rem; color: #64748b;">{{ histories.length }} puzzles</span>
-                </h3>
-                <div class="stage-card-list" style="display: flex; flex-direction: column; gap: 0.75rem; max-height: 280px; overflow-y: auto; padding-right: 0.25rem;">
-                  <div 
-                    v-for="item in histories" 
-                    :key="item.id" 
-                    class="history-item" 
-                    @click="openHistoryModal(item)"
-                    style="cursor: pointer;"
-                  >
-                    <div class="history-card-header" style="display: flex; justify-content: space-between; align-items: center;">
-                      <span class="stage-name" style="font-weight: 600;">{{ item.stageName }}</span>
-                      <span class="xp-earned" style="color: #10b981; font-weight: 600;">+{{ item.xpEarned }} XP</span>
+                <!-- History List Section -->
+                <div class="mypage-history-section" style="text-align: left;">
+                  <h3 style="font-size: 1rem; font-weight: 600; color: #94a3b8; margin: 0 0 0.75rem 0.25rem; display: flex; justify-content: space-between;">
+                    <span>🏆 Clear History</span>
+                    <span style="font-size: 0.85rem; color: #64748b;">{{ histories.length }} puzzles</span>
+                  </h3>
+                  <div class="stage-card-list" style="display: flex; flex-direction: column; gap: 0.65rem; max-height: 240px; overflow-y: auto; padding-right: 0.25rem;">
+                    <div 
+                      v-for="item in histories" 
+                      :key="item.id" 
+                      class="history-item" 
+                      @click="openHistoryModal(item)"
+                      style="cursor: pointer;"
+                    >
+                      <div class="history-card-header" style="display: flex; justify-content: space-between; align-items: center;">
+                        <span class="stage-name" style="font-weight: 600;">{{ item.stageName }}</span>
+                        <span class="xp-earned" style="color: #10b981; font-weight: 600;">+{{ item.xpEarned }} XP</span>
+                      </div>
+                      <div class="history-card-body" style="display: flex; justify-content: space-between; margin-top: 0.25rem; font-size: 0.85rem; color: #64748b;">
+                        <span class="elapsed-time">⏱️ {{ item.elapsedTime }}s</span>
+                        <span class="cleared-at">{{ item.clearedAt.split('T')[0] }}</span>
+                      </div>
                     </div>
-                    <div class="history-card-body" style="display: flex; justify-content: space-between; margin-top: 0.25rem; font-size: 0.85rem; color: #64748b;">
-                      <span class="elapsed-time">⏱️ {{ item.elapsedTime }}s</span>
-                      <span class="cleared-at">{{ item.clearedAt.split('T')[0] }}</span>
+                    <div v-if="histories.length === 0" class="empty-history" style="text-align: center; padding: 2rem; color: #64748b; font-size: 0.85rem;">
+                      No history found. Complete puzzles to populate!
                     </div>
-                  </div>
-                  <div v-if="histories.length === 0" class="empty-history" style="text-align: center; padding: 2rem; color: #64748b;">
-                    No history found. Complete puzzles to populate!
                   </div>
                 </div>
               </div>
+
             </div>
           </div>
         </template>
@@ -3683,6 +3693,17 @@ body {
   }
   .landing-nav-links {
     gap: 1rem;
+  }
+}
+
+@keyframes modalFadeIn {
+  from {
+    opacity: 0;
+    transform: scale(0.95) translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
   }
 }
 </style>
