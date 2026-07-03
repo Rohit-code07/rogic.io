@@ -531,7 +531,7 @@
               </button>
 
               <!-- VIEW 1: Review Mode (Displaying the selected completed puzzle board) -->
-              <div v-if="isReviewMode && modalBoard" class="mypage-review-view" style="display: flex; flex-direction: column; gap: 0.5rem; width: 100%; text-align: left; height: 100%; justify-content: space-between; box-sizing: border-box; animation: modalFadeIn 0.2s ease-out;">
+              <div v-if="isReviewMode && modalBoard" class="mypage-review-view" style="display: flex; flex-direction: column; justify-content: center; align-items: center; gap: 1.5rem; width: 100%; height: 100%; box-sizing: border-box; padding-top: 1.5rem; animation: modalFadeIn 0.2s ease-out;">
                 <!-- Absolute Position Back Button (Perfect symmetry with X button at top 1.25rem) -->
                 <button 
                   @click="isReviewMode = false" 
@@ -546,13 +546,13 @@
                   </svg>
                 </button>
                 
-                <!-- 2. Middle Row: Completed Puzzle Canvas -->
-                <div class="modal-canvas-wrapper" style="width: 250px; height: 250px; margin: 0 auto; background-color: #0f172a; border-radius: 12px; overflow: hidden; border: 1px solid rgba(255, 255, 255, 0.08); display: flex; justify-content: center; align-items: center; position: relative;">
+                <!-- 2. Middle Row: Completed Puzzle Canvas (Naturally centered) -->
+                <div class="modal-canvas-wrapper" style="width: 250px; height: 250px; background-color: #0f172a; border-radius: 12px; overflow: hidden; border: 1px solid rgba(255, 255, 255, 0.08); display: flex; justify-content: center; align-items: center; position: relative; box-shadow: 0 4px 12px rgba(0,0,0,0.25);">
                   <NonogramCanvas :board="modalBoard" :readOnly="true" :initialAngle="0" />
                 </div>
 
-                <!-- 3. Bottom Row: Date, Stage name, Time badge (Clean layout) -->
-                <div style="display: flex; align-items: center; justify-content: space-between; width: 100%; border-top: 1px solid rgba(255, 255, 255, 0.05); padding-top: 0.75rem; margin-top: 0.25rem;">
+                <!-- 3. Bottom Row: Date, Stage name, Time badge (Perfect width mapping) -->
+                <div style="display: flex; align-items: center; justify-content: space-between; width: 100%; border-top: 1px solid rgba(255, 255, 255, 0.05); padding-top: 0.85rem; margin-top: 0.25rem; text-align: left;">
                   <div style="display: flex; align-items: center; gap: 0.5rem;">
                     <span style="font-size: 0.75rem; font-weight: 500; color: #64748b;">{{ selectedHistory?.clearedAt.split('T')[0] }}</span>
                     <span style="font-weight: 700; color: #f8fafc; font-size: 1.05rem;">{{ selectedHistory?.stageName }}</span>
