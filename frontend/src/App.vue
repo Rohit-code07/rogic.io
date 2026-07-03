@@ -618,7 +618,7 @@
 
                   <!-- History List Section -->
                   <div class="mypage-history-section" style="text-align: left; margin-top: 0.25rem;">
-                    <div class="stage-card-list" style="display: flex; flex-direction: column; gap: 0.65rem; max-height: 210px; overflow-y: auto; padding-right: 0.25rem;">
+                    <div class="stage-card-list" style="display: flex; flex-direction: column; gap: 0.65rem; max-height: 210px; overflow-y: auto; padding: 4px 0.25rem 4px 4px;">
                       <div 
                         v-for="item in histories" 
                         :key="item.id" 
