@@ -596,9 +596,9 @@
                       style="width: 54px; height: 54px; border-radius: 50%; border: 2px solid #38bdf8; object-fit: cover;" 
                   />
                     <div v-else class="profile-avatar" style="width: 54px; height: 54px; border-radius: 50%; background: #38bdf8; display: flex; align-items: center; justify-content: center; font-size: 1.35rem; color: #ffffff;">👤</div>
-                    <div class="profile-details" style="flex-grow: 1; text-align: left;">
-                      <h2 class="profile-username" style="margin: 0; font-size: 1.2rem; font-weight: 700; color: #f8fafc;">{{ currentUser.username }}</h2>
-                      <p v-if="currentUser.email" class="profile-email" style="margin: 0.15rem 0 0.4rem; font-size: 0.8rem; color: #64748b;">{{ currentUser.email }}</p>
+                    <div class="profile-details" style="flex-grow: 1; text-align: left; display: flex; flex-direction: column; justify-content: center;">
+                      <h2 class="profile-username" style="margin: 0; font-size: 1.2rem; font-weight: 700; color: #f8fafc; line-height: 1.25;">{{ currentUser.username }}</h2>
+                      <p v-if="currentUser.email" class="profile-email" style="margin: 0.25rem 0 0; font-size: 0.8rem; color: #64748b; line-height: 1.2;">{{ currentUser.email }}</p>
                     </div>
                     <button 
                       @click="handleGoogleLogout" 
