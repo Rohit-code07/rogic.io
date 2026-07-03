@@ -567,14 +567,9 @@ LLM이 창조한 무작위 패턴 중 논리적 무결성이 결여된 불량 �
   - 초경량 LLM 모델이 30x30 대형 그리드 생성 시 응답 지연을 아끼기 위해 JSON 포맷 대신 `Array(30).fill(0)` 같은 JS 문법을 변형 반환하여 백엔드 Jackson 역직렬화 오류(`JsonParseException`) 및 배치 스케줄러 중단 장애 발생 ([Daily Puzzle Failure Report](./docs/incidents/20260701_daily_puzzle_generation_failure.md)).
 * **해결 방안**<br>
   - AI 프롬프트에 `MUST be a literal 2D JSON array` 제약 가드레일을 주입하고, 대형 퍼즐 생성 시 출력 토큰 안전성 확보를 위해 후보군(Candidate) 개수를 5개에서 2개로 축소 조절하여 파싱 신뢰성을 100%로 확보함.
-
-### 3.4.2. Production Database Storage Mount Permission Incident
-* **배경**<br>
-  - 신규 EBS gp3 독립 볼륨 마운트 작업 후, Ansible 플레이북이 마운트 경로 소유권(owner)을 일반 PostgreSQL 기본값인 `999`로 하드코딩하여 갱신함으로써 `postgres:16-alpine` 이미지 실행 계정인 `postgres`(UID `70`)가 시스템 파일에 접근할 수 없어 40분간 Production API 서버가 다운되는 장애가 발생함 ([Database Permission Outage Report](./docs/incidents/20260703_production_db_permission_denied_outage.md)).
-* **해결 방안**<br>
-  - 플레이북 내 마운트 권한의 UID/GID를 Alpine 이미지 규격인 `70:70`으로 정정하고, 라이브 서버 데이터베이스 파일 경로 권한을 즉시 수정하여 백엔드 DB 커넥션 및 서비스 Uptime을 정상 수렴 상태로 복구 완료함.
-
 ---
+
+
 
 
 ---
