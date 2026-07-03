@@ -1647,6 +1647,8 @@ async function initializeUserSession() {
         await cognitoHandleCallback(code);
         // Clean parameters from browser URL
         window.history.replaceState({}, document.title, window.location.pathname);
+        // Automatically redirect to play tab
+        await onTabChange('play');
       } catch (err) {
         console.error('Failed to exchange authorization code:', err);
       } finally {
