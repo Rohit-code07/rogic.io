@@ -287,7 +287,6 @@
         </div>
         <div class="logo-title-wrapper">
           <h1 class="app-title">rogic.io</h1>
-          <p class="app-subtitle">Rotate Logic Puzzle</p>
         </div>
       </div>
       
