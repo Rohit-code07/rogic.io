@@ -8,7 +8,7 @@ This guide details the procedures for database migration (to isolated EBS volume
 
 Our DR architecture utilizes a hybrid approach:
 * **1st Defense (Infrastructure Level - RTO ≈ 1~2 min)**: EBS volume is isolated from the EC2 lifecycle (`delete_on_termination = false` & independent resource definition). If the instance crashes, is rebooted, or terminated, the storage persists and can be re-attached instantly.
-* **2nd Defense (Data Level - RTO ≈ 10~20 min)**: Regular 6-hour interval backups (`pg_dump` compressed as `.sql.gz`) are pushed to S3. Restorations can be triggered via GitHub Actions (`db-restore.yml`) without ssh/login, measuring actual realized RTO.
+* **2nd Defense (Data Level - RTO ≈ 10~20 min)**: Regular 3-hour interval backups (`pg_dump` compressed as `.sql.gz`) are pushed to S3. Restorations can be triggered via GitHub Actions (`db-restore.yml`) without ssh/login, measuring actual realized RTO.
 
 ---
 
