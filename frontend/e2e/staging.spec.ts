@@ -29,20 +29,14 @@ test.describe('Staging Environment E2E Smoke Integration Test', () => {
     console.log(`Active Stage Name: ${stageName}`);
     expect(stageName?.length).toBeGreaterThan(0);
 
-    // 3. Navigate to My Page tab
-    console.log('Navigating to My Page tab...');
-    await page.click('.tab-btn-mypage');
+    // 3. Verify My Page access is blocked and Login button is visible instead (Guest Policy Validation)
+    console.log('Verifying My Page tab button is hidden for guests...');
+    await expect(page.locator('.tab-btn-mypage')).not.toBeVisible();
 
-    // Verify user profile details (Guest Mode validation)
-    console.log('Verifying Guest Mode profile details...');
-    const guestTitle = page.locator('h2', { hasText: 'Guest Mode Active' });
-    await expect(guestTitle).toBeVisible({ timeout: 5000 });
-    
-    const guestDescription = page.locator('text=You are playing as a guest.');
-    await expect(guestDescription).toBeVisible();
-
-    const googleSignInBtn = page.locator('text=Sign in with Google');
-    await expect(googleSignInBtn).toBeVisible();
+    console.log('Verifying Login button is visible in the header for guest...');
+    const miniLoginBtn = page.locator('.mini-login-btn');
+    await expect(miniLoginBtn).toBeVisible();
+    await expect(miniLoginBtn).toContainText('Login');
 
     console.log('Staging E2E Smoke Integration Test completed successfully!');
   });
