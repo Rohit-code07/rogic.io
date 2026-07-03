@@ -199,6 +199,8 @@
           - "--exclude=backend/build/tmp"
           - "--exclude=backend/build/reports"
           - "--exclude=backend/build/test-results"
+          - "--exclude=db_data"
+          - "--exclude=backups"
 
     - name: Ensure environment configurations are set
       copy:
