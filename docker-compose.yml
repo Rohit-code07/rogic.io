@@ -33,6 +33,7 @@ services:
       SPRING_DATASOURCE_USERNAME: postgres
       SPRING_DATASOURCE_PASSWORD: password
       AI_API_KEY: ${AI_API_KEY}
+      COGNITO_JWK_SET_URI: https://cognito-idp.ap-northeast-2.amazonaws.com/ap-northeast-2_0an1GkWFm/.well-known/jwks.json
     depends_on:
       db:
         condition: service_healthy
