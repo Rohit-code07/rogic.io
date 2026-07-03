@@ -62,10 +62,12 @@ variable "grafana_cloudwatch_datasource_name" {
 variable "google_oauth_client_id" {
   description = "Google OAuth Client ID for Cognito integration"
   type        = string
+  default     = ""
 }
 
 variable "google_oauth_client_secret" {
   description = "Google OAuth Client Secret for Cognito integration"
   type        = string
   sensitive   = true
+  default     = ""
 }
