@@ -406,3 +406,12 @@
   - **로그인 redirect_mismatch 장애 조치**: 클라이언트 앱의 `APP_URL` 디폴트 해석 로직이 `stage.rogic.io` 로 하드코딩되어 실환경 로그인 시 Cognito Hosted UI 인증 도메인과 불일치(400)를 일으키던 문제를 해결하기 위해, 브라우저의 `window.location.origin` 을 런타임에 동적 파싱하여 자동으로 리디렉션 주소 규격을 맞추도록 `cognito.ts` 소스코드를 리팩토링함.
   - **백엔드 토큰 검증 401 Unauthorized 장애 해결**: 백엔드 컨테이너 실행 환경인 `docker-compose.prod.yml` 에서 `COGNITO_JWK_SET_URI` 환경변수 주입 매핑이 유실되어 Spring Security 자원 서버가 JWT 공개키 서명을 대조할 수 없던 문제를 환경변수 목록(`SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWK_SET_URI`)을 바인딩하여 완전 해소함.
   - **구글 OAuth 검수 자원 추가 및 README.md 갱신**: 구글 클라우드 콘솔 OAuth 동의 화면 심사 통과를 위해, 빌드 시 그대로 호스팅되는 개인정보처리방침(`privacy.html`), 서비스이용약관(`terms.html`) 및 120x120 크기로 정밀 래스터화된 앱 로고(`logo.png`)를 `frontend/public` 하위에 구현함. 또한, 새로 개편된 Cognito 연동 인증 아키텍처 다이어그램을 Mermaid C4Context로 업데이트하고 로컬/배포용 환경변수 셋업 가이드라인을 README.md 프로젝트 명세서에 동기화함.
+
+### 데이터베이스 재해복구(DR) 파이프라인 및 EBS 볼륨 격리 고도화 (Step 92) - 진행 중
+- **해결 내역**:
+  - **EBS 볼륨 격리 및 영속화 인프라 정의**: Staging/Production 환경 테라폼 설정(`main.tf`)에 독립형 10GB EBS 볼륨 리소스(`aws_ebs_volume`, `prevent_destroy` 적용) 및 인스턴스 볼륨 재부착(`aws_volume_attachment`)을 바인딩하고 가상머신 삭제 시 영구 보존(`delete_on_termination = false`) 정책 수립 완료.
+  - **Docker Compose 바인드 마운트 전환**: 컨테이너 유실 시 데이터 영속성 강화를 위해 `docker-compose.stage.yml` 및 `docker-compose.prod.yml` 파일에서 기존 명명 볼륨 구조를 버리고 호스트 절대 경로 마운트(`/opt/nemologic/db_data:/var/lib/postgresql/data`) 구조로 전면 리팩토링.
+  - **Ansible 자동화 마운트 및 복구 템플릿 배포**: `playbook.yml` 내에 10GB 타깃 EBS 볼륨을 동적으로 스캔 및 ext4 포맷 생성 후 `/opt/nemologic/db_data`에 mounted하는 태스크를 배치 서비스 기동 이전에 주입 완료. 또한, 비대화형(`FORCE_RESTORE=true`) 및 백엔드 일시 중지를 결합하여 OOM과 데드락을 방어하는 `restore_db.sh` 템플릿 배포 완료.
+  - **GitHub Actions 복구 워크플로우 설계**: `workflow_dispatch` 수동 트리거 및 환경변수 지정을 지원하며, OIDC 기반 AWS STS 자격 획득 후 SSM SendCommand를 통해 타깃 서버에서 직접 복구 스크립트를 기동하고 소요 시간(RTO)을 실측 폴링하는 `db-restore.yml` 파이프라인 완성.
+  - **DR Drill 가이드 배포**: 기존 로컬 볼륨 데이터 이관 매뉴얼, 인스턴스 전소 시 3단계 복구 경로, 훈련 시나리오를 망라한 [dr_drill_guide.md](./dr_drill_guide.md) 문서 편찬.
+

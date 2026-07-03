@@ -313,6 +313,41 @@
       failed_when: false
       become: true
 
+    - name: Detect EBS Database Volume device name (10GB)
+      shell: |
+        lsblk -dpno NAME,SIZE | grep -E '10G|10.0G' | head -n 1 | awk '{print $1}'
+      register: ebs_device_name
+      changed_when: false
+      failed_when: false
+      become: true
+
+    - name: Fail deployment if 10GB EBS Database Volume is missing
+      fail:
+        msg: "Could not detect a 10GB EBS Database Volume. Please check AWS console or Terraform configuration."
+      when: ebs_device_name.stdout | trim == ""
+
+    - name: Create ext4 filesystem on EBS volume
+      filesystem:
+        fstype: ext4
+        dev: "{{ ebs_device_name.stdout | trim }}"
+      become: true
+
+    - name: Create mount directory for Database Storage
+      file:
+        path: /opt/nemologic/db_data
+        state: directory
+        owner: ubuntu
+        group: ubuntu
+        mode: "0755"
+
+    - name: Mount EBS Database Volume to mount directory
+      mount:
+        path: /opt/nemologic/db_data
+        src: "{{ ebs_device_name.stdout | trim }}"
+        fstype: ext4
+        state: mounted
+      become: true
+
     - name: Start Database service
       shell:
         cmd: docker compose -f docker-compose.prod.yml up -d db
@@ -453,6 +488,14 @@
           # Remove local temp backup file
           rm /tmp/$BACKUP_NAME
         dest: /opt/nemologic/backups/backup_db.sh
+        owner: ubuntu
+        group: ubuntu
+        mode: "0755"
+
+    - name: Deploy DB restore script
+      template:
+        src: "{{ playbook_dir }}/restore_db.sh.j2"
+        dest: /opt/nemologic/backups/restore_db.sh
         owner: ubuntu
         group: ubuntu
         mode: "0755"

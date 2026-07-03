@@ -1,0 +1,106 @@
+#!/bin/bash
+# ==============================================================================
+# Database Disaster Recovery (Restore) Script
+# Managed via Ansible Template
+# ==============================================================================
+set -euo pipefail
+
+BUCKET_NAME="{{ backup_bucket_name }}"
+if [ -z "$BUCKET_NAME" ]; then
+    echo "[ERROR] S3 Backup Bucket name is empty or not configured via Ansible."
+    exit 1
+fi
+
+BACKUP_FILE="${1:-}"
+
+# 1. Resolve Target Backup File
+if [ -z "$BACKUP_FILE" ]; then
+    echo "[INFO] No specific backup file provided. Fetching the latest backup from S3..."
+    # Fetch latest sql.gz file inside bucket prefix
+    LATEST_BACKUP=$(aws s3 ls "s3://$BUCKET_NAME/postgres/" | grep "sql.gz" | sort | tail -n 1 | awk '{print $4}')
+    if [ -z "$LATEST_BACKUP" ]; then
+        echo "[ERROR] No database database backup files (.sql.gz) found in s3://$BUCKET_NAME/postgres/"
+        exit 1
+    fi
+    BACKUP_FILE="$LATEST_BACKUP"
+    echo "[INFO] Selected latest backup file: $BACKUP_FILE"
+else
+    echo "[INFO] Using specified backup file: $BACKUP_FILE"
+fi
+
+# 2. Interactive Safety Guard
+FORCE_RESTORE="${FORCE_RESTORE:-false}"
+if [ "$FORCE_RESTORE" != "true" ]; then
+    echo "[WARNING] You are about to DESTROY and RESTORE the database 'nemologic' on this host."
+    echo "[WARNING] Active backend connections will be terminated and services briefly stopped."
+    read -p "Are you absolutely sure you want to proceed? (y/N): " -r confirm
+    if [[ ! "$confirm" =~ ^[yY]([eE][sS])?$ ]]; then
+        echo "[INFO] Database restore cancelled by operator."
+        exit 0
+    fi
+fi
+
+# 3. Detect and Stop Currently Running Backend Slots
+# We store the names of active backend containers so we only wake those up after restore
+echo "[INFO] Detecting running backend services..."
+RUNNING_BACKENDS=()
+for container in nemologic-backend-blue nemologic-backend-green nemologic-backend-stage; do
+    if docker ps --filter "name=$container" --filter "status=running" -q | grep -q .; then
+        echo "[INFO] Running backend detected: $container"
+        RUNNING_BACKENDS+=("$container")
+    fi
+done
+
+if [ ${#RUNNING_BACKENDS[@]} -gt 0 ]; then
+    # Map container name to compose service name
+    COMPOSE_SERVICES=()
+    for container in "${RUNNING_BACKENDS[@]}"; do
+        if [ "$container" == "nemologic-backend-blue" ]; then
+            COMPOSE_SERVICES+=("backend-blue")
+        elif [ "$container" == "nemologic-backend-green" ]; then
+            COMPOSE_SERVICES+=("backend-green")
+        elif [ "$container" == "nemologic-backend-stage" ]; then
+            COMPOSE_SERVICES+=("backend-stage")
+        fi
+    done
+    
+    echo "[INFO] Stopping backend services to release connection locks: ${COMPOSE_SERVICES[*]}"
+    docker compose -f /opt/nemologic/docker-compose.prod.yml stop "${COMPOSE_SERVICES[@]}"
+else
+    echo "[INFO] No active backend services detected."
+fi
+
+# 4. Download Backup File from S3 to Local /tmp
+LOCAL_PATH="/tmp/$BACKUP_FILE"
+echo "[INFO] Downloading backup from S3: s3://$BUCKET_NAME/postgres/$BACKUP_FILE -> $LOCAL_PATH"
+aws s3 cp "s3://$BUCKET_NAME/postgres/$BACKUP_FILE" "$LOCAL_PATH"
+
+if [ ! -f "$LOCAL_PATH" ]; then
+    echo "[ERROR] Failed to download backup file from S3."
+    exit 1
+fi
+
+# 5. Drop and Recreate Database
+echo "[INFO] Re-creating empty database 'nemologic'..."
+# Terminate existing connections and drop DB
+docker exec -i nemologic-db psql -U postgres -d postgres -c "DROP DATABASE IF EXISTS nemologic WITH (FORCE);"
+docker exec -i nemologic-db psql -U postgres -d postgres -c "CREATE DATABASE nemologic;"
+
+# 6. Stream Restore Database
+echo "[INFO] Restoring database from dump..."
+# We stream raw sql dump via gunzip to prevent memory overhead on container host
+gunzip -c "$LOCAL_PATH" | docker exec -i nemologic-db psql -U postgres -d nemologic
+
+echo "[INFO] Database dump successfully applied."
+
+# 7. Start Previously Stopped Backend Containers
+if [ ${#RUNNING_BACKENDS[@]} -gt 0 ]; then
+    echo "[INFO] Resuming backend services: ${COMPOSE_SERVICES[*]}"
+    docker compose -f /opt/nemologic/docker-compose.prod.yml start "${COMPOSE_SERVICES[@]}"
+fi
+
+# 8. Housekeeping
+echo "[INFO] Cleaning up local temporary backup file..."
+rm -f "$LOCAL_PATH"
+
+echo "[SUCCESS] Disaster Recovery Database Restoration Completed."

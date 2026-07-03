@@ -241,6 +241,30 @@ resource "aws_instance" "nemologic_server" {
   }
 }
 
+# EBS Volume for Database Storage
+resource "aws_ebs_volume" "nemologic_db_volume" {
+  availability_zone = "${var.aws_region}a"
+  size              = 10
+  type              = "gp3"
+
+  lifecycle {
+    prevent_destroy = true
+  }
+
+  tags = {
+    Name = "nemologic-db-volume"
+  }
+}
+
+# Attach EBS Volume to Production EC2
+resource "aws_volume_attachment" "nemologic_db_volume_attachment" {
+  device_name = "/dev/sdf"
+  volume_id   = aws_ebs_volume.nemologic_db_volume.id
+  instance_id = aws_instance.nemologic_server.id
+
+  stop_instance_before_detaching = true
+}
+
 # Elastic IP (EIP) Allocation & Association
 resource "aws_eip" "nemologic_eip" {
   instance = aws_instance.nemologic_server.id
