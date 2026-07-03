@@ -441,6 +441,15 @@
 
 ---
 
+### Cognito 토큰 보안 강화: 만료 시간 단축 및 Refresh Token Rotation 도입 (Step 95) - 완료
+- **해결 내역**:
+  - **토큰 유효 기간 최소화**: 세션 탈취 리스크 억제를 위해 Access Token 및 ID Token 유효 기간을 각각 최소 임계치인 **5분**으로 단축하고, Refresh Token은 30일로 설정 완료.
+  - **리프레시 토큰 로테이션 및 무효화 활성화**: `enable_token_revocation = true` 및 `refresh_token_rotation` (feature = "ENABLED") 설정을 바인딩하여 갱신 요청 시마다 토큰을 로테이션 교체하고 로그아웃 시 즉시 만료시키는 보안 레이어 확립.
+  - **AWS 테라폼 프로바이더 버그 우회**: Cognito User Pool Client 갱신 시 `retry_grace_period_seconds` 필드 불일치(inconsistent result)로 발생하는 테라폼 빌드 에러를 해결하기 위해 해당 값을 코드 상에 `0`으로 명시하여 안정화 완료.
+  - **인프라 롤아웃 및 실측 검증**: Staging 및 Production 환경에 각각 테라폼 변경 사항을 반영 완료하고, AWS CLI (`describe-user-pool-client`) 질의 분석을 거쳐 만료 단위 시간 설정과 토큰 해제 기능이 운영계에 정상 안착했음을 교차 실증 완료.
+
+---
+
 ## 2. 다음 목표 (Next Goals)
 - **Cognito 소셜 로그인 프로덕션 실환경 운영 관찰**: Cognito User Pool과 Google OAuth IdP 간의 프로덕션 유저 인입 흐름 및 세션 모니터링 수행.
 - **Nginx 웹 방화벽(WAF) 도입 검토**: 리소스 제약을 극복하고 Nginx 레벨의 보안 강화를 위한 방화벽 구성안 비교 및 적용 설계 수립.
