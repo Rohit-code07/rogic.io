@@ -366,8 +366,41 @@ C4Container
 ---
 
 ## 1.5. Disaster Recovery
-본 프로젝트는 저사양 단일 EC2 아키텍처 하에서의 재해 복구(DR) 신뢰성을 극대화하기 위해, 영속적 EBS 볼륨 격리 및 S3 데이터 백업 소산 메커니즘을 구축했습니다.
+본 프로젝트는 저사양 단일 EC2 아키텍처 하에서의 재해 복구(DR) 신뢰성을 극대화하기 위해, 인프라 자동 복원 메커니즘과 원격 백업 소산 복구 파이프라인을 구축했습니다.
 
+### 1.5.1. DR Recovery Flow
+장애 발생 유형(하드웨어 크래시 vs 데이터베이스 손상)에 따른 대응 프로세스 및 예상 복구 시간(RTO) 흐름도입니다.
+
+```mermaid
+stateDiagram-v2
+    state "Normal Operation (정상 운영)" as Normal
+    state "Hardware / Instance Failure (인스턴스 물리 장애)" as HardFail
+    state "Data / Volume Corruption (데이터/스토리지 손상)" as DataFail
+
+    state "AWS Auto Recovery (자동 인스턴스 복원)" as AutoRec {
+        [*] --> Detect : Status Check Failed (1 min)
+        Detect --> TerminateAndStart : Trigger CloudWatch Alarm
+        TerminateAndStart --> CompleteAutoRec : Re-attach EBS & Re-bind EIP
+    }
+
+    state "GitHub Actions DR Restore (수동 원클릭 복구)" as ManualRec {
+        [*] --> TriggerWorkflow : Dispatch db-restore.yml
+        TriggerWorkflow --> FetchS3 : Pull latest pg_dump from S3
+        FetchS3 --> DockerRestore : Exec pg_restore & Restart Stack
+    }
+
+    [*] --> Normal
+    Normal --> HardFail : Host Hardware Crash
+    Normal --> DataFail : DB dropped / Volume Corrupted
+
+    HardFail --> AutoRec : Trigger Alarm
+    AutoRec --> Normal : Complete Auto Recovery (RTO: 1~2 min)
+
+    DataFail --> ManualRec : Run Restore Pipeline
+    ManualRec --> Normal : Complete DB Restoration (RTO: 37~360 sec)
+```
+
+### 1.5.2. Storage & Backup Design
 * **독립형 EBS 볼륨 영속성 분리**<br>
   - EC2 가상머신 삭제 및 재기동 장애 시에도 데이터가 보존되도록 OS 영역과 별개인 독립형 10GB gp3 EBS 볼륨을 분리하여 설계
   - 테라폼 리소스 수명주기 보호 규칙(`prevent_destroy = true`) 및 EC2 해제 시 볼륨 영구 보존 규칙(`delete_on_termination = false`) 바인딩 완료
