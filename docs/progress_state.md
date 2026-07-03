@@ -450,7 +450,17 @@
 
 ---
 
+### 대시보드 지표 복구, SLA 관제 Production 일원화 및 인프라 사양 리팩토링 (Step 96) - 완료
+- **해결 내역**:
+  - **애플리케이션 지표 수집 장애(No Data) 복구**: Grafana Mimir가 Nginx 프록시를 통해 `/actuator/prometheus` 를 Scrape할 때 요청에 동봉된 Bearer 토큰 헤더가 백엔드 Spring Boot로 그대로 프록시되면서, 백엔드 JWT 리소스 서버 필터 오동작(Invalid JWT로 인한 401 Unauthorized 반환)을 야기하던 문제를 식별함. Nginx 구성 파일(`nginx.prod.conf`, `nginx.stage.conf`) 내 해당 프록시 블록에 `proxy_set_header Authorization ""` 지시어를 주입하여 인증 헤더 전송을 원천 배제함으로써 메트릭 수집을 정상 복구함.
+  - **SLA 관제 Production 단독 고정 및 쿼리 최적화**: 대시보드 변수 체이닝으로 인한 PromQL 쿼리 컴파일 부하 및 범위 벡터 파싱 오류(`Ranges only allowed for vector selectors`) 리스크를 해소하기 위해, 5대 SLA 지표(API Health, Availability, Incident Count, MTTR, MTBF)의 관제 대상을 **운영계 도메인(`https://rogic.io`)으로 단독 고정**하여 복잡한 조건부 조인 연산 없이 무결하게 동작하도록 쿼리를 최적화함.
+  - **대시보드 레이아웃 격상 및 하단 재배치**: 실시간 감시가 필요한 트래픽 메트릭(HTTP Codes, RPS, Latency)을 최상단 신설 행인 **`Nemologic Realtime Traffic Metrics`** 로 이동시키고, 실시간 확인이 불필요한 5대 SLA 메트릭은 대시보드 하단인 **`OS Resource Metrics` 아래, `Logs & Error Statistics` 바로 위**로 하강 이동시켜 3분할 그리드 레이아웃(API Health 12, Availability 12, Incident 8, MTTR 8, MTBF 8)으로 완벽하게 격리 재구성함.
+  - **README.md 인프라 사양 및 트레이드오프 전면 리팩토링**: 기존 비용 관점에 과도하게 초점이 맞춰져 서술되어 있던 `1.2. Cost Optimization` 단원을 **`1.2. Infrastructure Specifications & Trade-offs`** 로 전면 리네이밍 및 리팩토링하여, 초경량 리소스로 인한 아키텍처적 타협점(SPOF 노출, PITR 미지원 등)과 이를 보완하는 자동 복구(Auto Recovery)/RTO 38초 복원 파이프라인 등의 완화 정책을 팩트와 기술 구조 위주로 전문성 있게 표현하도록 문맥을 대폭 보완함.
+
+---
+
 ## 2. 다음 목표 (Next Goals)
 - **Cognito 소셜 로그인 프로덕션 실환경 운영 관찰**: Cognito User Pool과 Google OAuth IdP 간의 프로덕션 유저 인입 흐름 및 세션 모니터링 수행.
 - **Nginx 웹 방화벽(WAF) 도입 검토**: 리소스 제약을 극복하고 Nginx 레벨의 보안 강화를 위한 방화벽 구성안 비교 및 적용 설계 수립.
+
 

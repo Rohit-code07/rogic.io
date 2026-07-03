@@ -76,45 +76,45 @@ C4Context
   Vite 컴파일 결과물을 `Amazon S3` 버킷(OAC 설정을 통한 전면 차단)에 배포하고, `Amazon CloudFront` CDN을 통해 글로벌 엣지에 캐싱 배포하여 지연 시간을 최소화하고 S3 직접 요청 요금을 차단했습니다.
 * **Core API Server & Database (EC2 / PostgreSQL)**<br>
   단일 EC2 인스턴스 내에서 SSL/TLS 종단 및 포트 포워딩을 수행하는 Nginx 프록시, REST API를 처리하는 Spring Boot 컨테이너, 게임 데이터를 영속화하는 PostgreSQL DB 컨테이너를 가상 Docker 브릿지 네트워크로 분리 가동합니다.
-## 1.2. Cost Optimization
-### 1.2.1. Compute
-* **최적화 조치 (Optimization)**<br>
-  - 월 $3.5 대의 초경량 t3a.nano 인스턴스(512MB RAM) 환경 도입
-  - Spring Boot 런타임 메모리 풋프린트를 30MB 이하로 낮추기 위해 GraalVM Native Image 빌드 도입
-  - Jackson 역직렬화 오류 예방을 위해 [NemologicRuntimeHints.java](backend/src/main/java/com/devdoyen/nemologic/config/NemologicRuntimeHints.java)에 리플렉션 힌트 명시
-  - 호스트 디스크 용량 관리를 위해 매일 새벽 3시마다 Docker GC prune 스케줄 크론탭 구동
+## 1.2. Infrastructure Specifications & Trade-offs
+### 1.2.1. Compute Infrastructure Profile
+* **구현 사양 (Specification)**<br>
+  - 초경량 t3a.nano 인스턴스(512MB RAM)의 단일 자원 프로파일 도입
+  - Spring Boot 런타임 메모리 풋프린트를 30MB 이하로 제어하기 위한 GraalVM Native Image 컴파일 도입
+  - Jackson 역직렬화 메타데이터 힌트를 보완하는 [NemologicRuntimeHints.java](backend/src/main/java/com/devdoyen/nemologic/config/NemologicRuntimeHints.java) 리플렉션 힌트 설계
+  - 호스트 스토리지 여유 공간 관리를 위한 매일 새벽 3시 Docker Garbage Collector(GC) 자동 소거 크론탭 운용
 * **기술적 제약 (Trade-off)**<br>
-  - 512MB 메모리 제약으로 인해 서버 내에서 직접 GraalVM 컴파일 빌드가 불가능하며, 빌드 연산 시 JVM 컴파일 대비 10배 이상의 시간 소요
+  - 512MB 메모리 제약으로 인해 대상 운영 서버 단독에서는 GraalVM 컴파일 빌드 연산 수행 불가 (빌드 리소스 고갈 유발)
 * **완화 대책 (Mitigation)**<br>
-  - CI/CD 파이프라인 상에서 GitHub Actions가 제공하는 외부 빌드 인프라(2 Core, 7GB RAM)에 컴파일 연산 부하를 오프로딩하고, 호스트 서버는 30MB 수준의 무부하 바이너리 실행만 전담하도록 분리
+  - CI/CD 파이프라인에서 GitHub Actions가 제공하는 외부 빌드 러너(2 vCPU, 7GB RAM) 환경에 빌드 연산 부하를 오프로딩하고, 운영 서버 호스트는 무부하 네이티브 바이너리 실행만 전담하도록 컴파일 단계를 물리적 분리
 
-### 1.2.2. Network & Delivery
-* **최적화 조치 (Optimization)**<br>
-  - 월 $20 상당의 AWS ALB(Application Load Balancer)를 배제하고 Route 53 도메인과 고정 Elastic IP 다이렉트 매핑
-  - Docker Nginx 컨테이너 단일 프록시 가동을 통한 SSL/TLS 종단 및 백엔드 API 포트(8080) 포워딩 처리 전담
-  - Vite 빌드 정적 컴파일 자산을 S3 버킷에 OAC(Origin Access Control) 보안 설정으로 배포하고 CloudFront CDN을 연동해 글로벌 에지 캐싱 전송을 구현하여 지연 시간 단축 및 S3 직접 요청 요금 차단
+### 1.2.2. Network & Edge Delivery Profile
+* **구현 사양 (Specification)**<br>
+  - AWS ALB(Application Load Balancer)를 배제하고 Route 53 도메인과 고정 Elastic IP 다이렉트 매핑을 수행하는 단일 경로 수립
+  - Docker Nginx 컨테이너 프록시 가동을 통한 SSL/TLS 종단 및 백엔드 API 포트(8080) 내부 포워딩 처리 전담
+  - Vite 빌드 정적 컴파일 자산을 S3 버킷에 OAC(Origin Access Control) 보안 설정으로 배포하고 CloudFront CDN을 연동해 글로벌 에지 캐싱 전송을 구현하여 지연 시간 단축 및 S3 직접 요청 차단
 * **기술적 제약 (Trade-off)**<br>
-  - 다중 가용구역(Multi-AZ) 무중단 이중화 및 롤링 배포를 달성할 수 없어, 호스트 물리 장애 시 서비스 전체 정전(SPOF) 리스크에 노출됨
+  - 다중 가용구역(Multi-AZ) 무중단 이중화 및 롤링 배포를 배제함으로써 호스트 물리 장애 시 일시적 단일 장애점(SPOF) 리스크 노출
 * **완화 대책 (Mitigation)**<br>
   - AWS CloudWatch Status Check Metric Alarms를 결합해 물리 하드웨어 결함 발생 시 1분 이내에 인스턴스를 정상 물리 호스트로 자동 복원(Auto Recovery) 및 EIP 재바인딩 처리
 
-### 1.2.3. Database & Storage
-* **최적화 조치 (Optimization)**<br>
-  - 월 $15~20 이상의 RDS 서비스 비용 절감을 위해 EC2 내부 Docker Compose 환경에서 PostgreSQL 컨테이너를 직접 가동
+### 1.2.3. Data Tier & Resilience Profile
+* **구현 사양 (Specification)**<br>
+  - AWS RDS 서비스를 배제하고 EC2 내부 Docker Compose 환경에서 PostgreSQL 컨테이너 직접 가동
 * **기술적 제약 (Trade-off)**<br>
-  - 초경량 인프라(t3a.nano 512MB RAM)의 물리적 자원 임계 한계 극복 및 비용 절감을 위해, 데이터베이스 계층의 다중화/이중화 및 블루-그린 분산 클러스터링 구조를 배제하고 단일 데이터베이스 컨테이너로 운용
-  - 이에 따라 데이터베이스 형상 갱신 및 재기동 시 커넥션 풀 차단으로 인한 일시적인 서비스 순단(Downtime) 발생 불가피
+  - 초경량 인프라(t3a.nano 512MB RAM)의 물리적 자원 임계 한계 극복을 위해 데이터베이스 계층의 다중화 및 분산 클러스터링 구조 배제
+  - 데이터베이스 형상 갱신 및 재기동 시 커넥션 풀 차단으로 인한 일시적인 서비스 순단(Downtime) 발생 불가피
   - AWS RDS 완전관리형 시점 복구(PITR) 미지원에 따른 최대 데이터 유실 한계 목표(RPO) 3시간 설정
 * **완화 대책 (Mitigation)**<br>
   - 3시간 주기 DB dump 데이터를 S3 독립 백업 버킷으로 전송하는 쉘 스크립트와 Cron 배포 및 30일 경과 백업 자동 파기 정책 연동
   - 깃허브 Actions 원클릭 복원 워크플로우([db-restore.yml](./.github/workflows/db-restore.yml)) 및 SSM SendCommand 기반 자동 복원 스크립트를 구축하여, 실측 복구 시간(RTO)을 초기 목표(20분) 대비 **37~38초** 수준으로 극대화 단축하여 회복력 보완
 
-### 1.2.4. Staging Environment
-* **최적화 조치 (Optimization)**<br>
-  - 개발/검증용 Staging EC2 인스턴스는 불필요한 컴퓨팅 자원 요금 낭비를 막기 위해 평시에 중지(Stopped) 상태 유지
-* **워크플로우 연동 (Workflow / Mitigation)**<br>
-  - GitHub Actions `deploy-staging` 실행 시 AWS CLI로 인스턴스를 자동으로 기동(Start)하여 배포 및 Playwright 브라우저 E2E 테스트 검증 진행
-  - 검증 완료 후 야간(매일 새벽 2시 KST)에 정지 자동화 스케줄([staging-cleanup.yml](.github/workflows/staging-cleanup.yml))을 구동하여 비용 효율성 확보
+### 1.2.4. Lifecycle of Staging Environment
+* **구현 사양 (Specification)**<br>
+  - 개발/검증용 Staging EC2 인스턴스는 불필요한 상시 가동 비용을 방지하기 위해 평시에 중지(Stopped) 상태 유지
+* **제어 사양 (Specification)**<br>
+  - GitHub Actions `deploy-staging` 실행 시 AWS CLI로 인스턴스를 자동 기동(Start)하여 배포 및 Playwright 브라우저 E2E 테스트 검증 진행
+  - 검증 완료 후 야간(매일 새벽 2시 KST)에 정지 자동화 스케줄([staging-cleanup.yml](.github/workflows/staging-cleanup.yml))을 구동하여 자원 회수 자동화 구현
 
 ---
 

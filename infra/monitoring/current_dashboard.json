@@ -142,7 +142,7 @@
                         "uid": "${DS_PROMETHEUS}"
                       },
                       "spec": {
-                        "expr": "sum(probe_success{job=\"nemologic-api-health\", instance=\"https://$target_domain/actuator/health\"})",
+                        "expr": "sum(probe_success{job=\"nemologic-api-health\", instance=\"https://rogic.io/actuator/health\"})",
                         "format": "time_series",
                         "legendFormat": "__auto",
                         "instant": true,
@@ -1397,7 +1397,7 @@
                         "uid": "${DS_PROMETHEUS}"
                       },
                       "spec": {
-                        "expr": "changes(probe_success{job=\"nemologic-api-health\", instance=\"https://$target_domain/actuator/health\"}[$__range]) / 2",
+                        "expr": "changes(probe_success{job=\"nemologic-api-health\", instance=\"https://rogic.io/actuator/health\"}[$__range]) / 2",
                         "format": "time_series",
                         "legendFormat": "__auto",
                         "instant": true,
@@ -1485,7 +1485,7 @@
                         "uid": "${DS_PROMETHEUS}"
                       },
                       "spec": {
-                        "expr": "avg_over_time(probe_success{job=\"nemologic-api-health\", instance=\"https://$target_domain/actuator/health\"}[$__range]) * 100",
+                        "expr": "avg_over_time(probe_success{job=\"nemologic-api-health\", instance=\"https://rogic.io/actuator/health\"}[$__range]) * 100",
                         "format": "time_series",
                         "legendFormat": "__auto",
                         "instant": true,
@@ -1575,7 +1575,7 @@
                         "uid": "${DS_PROMETHEUS}"
                       },
                       "spec": {
-                        "expr": "((count_over_time(probe_success{job=\"nemologic-api-health\", instance=\"https://$target_domain/actuator/health\"}[$__range]) - sum_over_time(probe_success{job=\"nemologic-api-health\", instance=\"https://$target_domain/actuator/health\"}[$__range])) * 60) / clamp_min(changes(probe_success{job=\"nemologic-api-health\", instance=\"https://$target_domain/actuator/health\"}[$__range]) / 2, 1)",
+                        "expr": "((count_over_time(probe_success{job=\"nemologic-api-health\", instance=\"https://rogic.io/actuator/health\"}[$__range]) - sum_over_time(probe_success{job=\"nemologic-api-health\", instance=\"https://rogic.io/actuator/health\"}[$__range])) * 60) / clamp_min(changes(probe_success{job=\"nemologic-api-health\", instance=\"https://rogic.io/actuator/health\"}[$__range]) / 2, 1)",
                         "format": "time_series",
                         "legendFormat": "{{probe}}",
                         "instant": true,
@@ -1656,7 +1656,7 @@
                         "uid": "${DS_PROMETHEUS}"
                       },
                       "spec": {
-                        "expr": "(sum_over_time(probe_success{job=\"nemologic-api-health\", instance=\"https://$target_domain/actuator/health\"}[$__range]) * 60) / clamp_min(changes(probe_success{job=\"nemologic-api-health\", instance=\"https://$target_domain/actuator/health\"}[$__range]) / 2, 1)",
+                        "expr": "(sum_over_time(probe_success{job=\"nemologic-api-health\", instance=\"https://rogic.io/actuator/health\"}[$__range]) * 60) / clamp_min(changes(probe_success{job=\"nemologic-api-health\", instance=\"https://rogic.io/actuator/health\"}[$__range]) / 2, 1)",
                         "format": "time_series",
                         "legendFormat": "{{probe}}",
                         "instant": true,
@@ -1723,7 +1723,7 @@
           {
             "kind": "RowsLayoutRow",
             "spec": {
-              "title": "Nemologic Service SLA Metrics",
+              "title": "Nemologic Realtime Traffic Metrics",
               "collapse": false,
               "layout": {
                 "kind": "GridLayout",
@@ -1734,20 +1734,7 @@
                       "spec": {
                         "x": 0,
                         "y": 0,
-                        "width": 12,
-                        "height": 4,
-                        "element": {
-                          "kind": "ElementReference",
-                          "name": "panel-1002"
-                        }
-                      }
-                    },
-                    {
-                      "kind": "GridLayoutItem",
-                      "spec": {
-                        "x": 12,
-                        "y": 0,
-                        "width": 12,
+                        "width": 24,
                         "height": 4,
                         "element": {
                           "kind": "ElementReference",
@@ -1760,60 +1747,8 @@
                       "spec": {
                         "x": 0,
                         "y": 4,
-                        "width": 6,
-                        "height": 4,
-                        "element": {
-                          "kind": "ElementReference",
-                          "name": "panel-1007"
-                        }
-                      }
-                    },
-                    {
-                      "kind": "GridLayoutItem",
-                      "spec": {
-                        "x": 6,
-                        "y": 4,
-                        "width": 6,
-                        "height": 4,
-                        "element": {
-                          "kind": "ElementReference",
-                          "name": "panel-2005"
-                        }
-                      }
-                    },
-                    {
-                      "kind": "GridLayoutItem",
-                      "spec": {
-                        "x": 12,
-                        "y": 4,
-                        "width": 6,
-                        "height": 4,
-                        "element": {
-                          "kind": "ElementReference",
-                          "name": "panel-1005"
-                        }
-                      }
-                    },
-                    {
-                      "kind": "GridLayoutItem",
-                      "spec": {
-                        "x": 18,
-                        "y": 4,
-                        "width": 6,
-                        "height": 4,
-                        "element": {
-                          "kind": "ElementReference",
-                          "name": "panel-1006"
-                        }
-                      }
-                    },
-                    {
-                      "kind": "GridLayoutItem",
-                      "spec": {
-                        "x": 0,
-                        "y": 20,
                         "width": 12,
-                        "height": 6,
+                        "height": 5,
                         "element": {
                           "kind": "ElementReference",
                           "name": "panel-107"
@@ -1824,9 +1759,9 @@
                       "kind": "GridLayoutItem",
                       "spec": {
                         "x": 12,
-                        "y": 20,
+                        "y": 4,
                         "width": 12,
-                        "height": 6,
+                        "height": 5,
                         "element": {
                           "kind": "ElementReference",
                           "name": "panel-108"
@@ -1923,6 +1858,85 @@
                         "element": {
                           "kind": "ElementReference",
                           "name": "panel-1010"
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          {
+            "kind": "RowsLayoutRow",
+            "spec": {
+              "title": "Nemologic Service SLA Metrics",
+              "collapse": false,
+              "layout": {
+                "kind": "GridLayout",
+                "spec": {
+                  "items": [
+                    {
+                      "kind": "GridLayoutItem",
+                      "spec": {
+                        "x": 0,
+                        "y": 0,
+                        "width": 12,
+                        "height": 4,
+                        "element": {
+                          "kind": "ElementReference",
+                          "name": "panel-1002"
+                        }
+                      }
+                    },
+                    {
+                      "kind": "GridLayoutItem",
+                      "spec": {
+                        "x": 12,
+                        "y": 0,
+                        "width": 12,
+                        "height": 4,
+                        "element": {
+                          "kind": "ElementReference",
+                          "name": "panel-1007"
+                        }
+                      }
+                    },
+                    {
+                      "kind": "GridLayoutItem",
+                      "spec": {
+                        "x": 0,
+                        "y": 4,
+                        "width": 8,
+                        "height": 4,
+                        "element": {
+                          "kind": "ElementReference",
+                          "name": "panel-2005"
+                        }
+                      }
+                    },
+                    {
+                      "kind": "GridLayoutItem",
+                      "spec": {
+                        "x": 8,
+                        "y": 4,
+                        "width": 8,
+                        "height": 4,
+                        "element": {
+                          "kind": "ElementReference",
+                          "name": "panel-1005"
+                        }
+                      }
+                    },
+                    {
+                      "kind": "GridLayoutItem",
+                      "spec": {
+                        "x": 16,
+                        "y": 4,
+                        "width": 8,
+                        "height": 4,
+                        "element": {
+                          "kind": "ElementReference",
+                          "name": "panel-1006"
                         }
                       }
                     }
