@@ -418,9 +418,15 @@
   - **Staging 모의 복구 훈련(DR Drill) 실증**: Staging 환경에서 stages 테이블을 강제 TRUNCATE하여 데이터 유실을 유발한 뒤, 수동 복원 파이프라인을 기동하여 S3 최신 스냅샷으로부터 **단 38초 만에 서비스가 완벽하게 복구(totalAttempts 복원 완수)**됨을 검증 완료.
   - **DR Drill 가이드 배포**: 기존 로컬 볼륨 데이터 이관 매뉴얼, 인스턴스 전소 시 3단계 복구 경로, 훈련 시나리오를 망라한 [dr_drill_guide.md](./dr_drill_guide.md) 문서 편찬.
 
+### Production 환경 EBS 볼륨 격리, 데이터 마이그레이션 및 DR Drill 모의 훈련 실증 (Step 93) - 완료
+- **해결 내역**:
+  - **볼륨 권한 alpine postgres 호환성 패치**: PostgreSQL alpine 이미지(UID 70)가 새로 부착된 EBS 볼륨(/opt/nemologic/db_data) 내부의 pg_filenode.map 파일을 읽지 못해 `Permission denied (FATAL)` 상태로 무한 재부팅되는 오류를 식별하여, 앤시블 `playbook.yml` 내 DB 스토리지 chown 설정 대상 UID/GID를 기존 999에서 **`70`**으로 전면 교정하여 반영 완료.
+  - **Production 실데이터 마이그레이션**: Production EC2 인스턴스(`i-0dad73fde464e9b97`)에 SSM SendCommand 접속을 통해 기존 Docker PostgreSQL Volume의 실데이터(Diamond Emblem, Hourglass 등의 플레이어 전적/통계)를 새로 마운트된 EBS 볼륨(/opt/nemologic/db_data) 하위로 1바이트 유실 없이 안전하게 `rsync` 복사 완료 및 소유권 동기화.
+  - **Production DR Drill 실증 및 200 OK 복구 완수**: Production 환경에 대해 S3 백업 스냅샷 기반의 롤백 파이프라인(`db-restore.yml`)을 workflow_dispatch로 수동 기동하여, 단 **37초 만에 RTO**를 달성하며 프로덕션 API `/api/stages` 호출이 100% 정상화(정합성 복구 200 OK)됨을 실증 검증 완료.
+
 ---
 
 ## 2. 다음 목표 (Next Goals)
-- **Production 환경 EBS 볼륨 격리 및 데이터 마이그레이션 적용**: Staging에서 입증된 절차에 맞춰 Production 인프라 테라폼 반영(EBS 볼륨 생성) 및 로컬 DB rsync 데이터 이관 작업 완수.
-- **Production 환경 DR Drill 실증 검증**: Production 환경에서 데이터베이스 롤백 훈련(GitHub Actions)을 수행하여 정상 서비스 복구 확인 및 RTO 실측 모니터링 완료.
+- **Cognito 소셜 로그인 프로덕션 실환경 운영 관찰**: Cognito User Pool과 Google OAuth IdP 간의 프로덕션 유저 인입 흐름 및 세션 모니터링 수행.
+- **Nginx 웹 방화벽(WAF) 도입 검토**: 리소스 제약을 극복하고 Nginx 레벨의 보안 강화를 위한 방화벽 구성안 비교 및 적용 설계 수립.
 
