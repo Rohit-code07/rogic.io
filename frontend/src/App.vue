@@ -547,7 +547,7 @@
                 </button>
                 
                 <!-- 2. Middle Row: Completed Puzzle Canvas (Naturally centered) -->
-                <div class="modal-canvas-wrapper" style="width: 250px; height: 250px; margin-top: auto; margin-bottom: auto; background-color: #0f172a; border-radius: 12px; overflow: hidden; border: 1px solid rgba(255, 255, 255, 0.08); display: flex; justify-content: center; align-items: center; position: relative; box-shadow: 0 4px 12px rgba(0,0,0,0.25);">
+                <div class="modal-canvas-wrapper" style="width: 300px; height: 300px; margin-top: auto; margin-bottom: auto; background-color: #0f172a; border-radius: 12px; overflow: hidden; border: 1px solid rgba(255, 255, 255, 0.08); display: flex; justify-content: center; align-items: center; position: relative; box-shadow: 0 4px 12px rgba(0,0,0,0.25);">
                   <NonogramCanvas :board="modalBoard" :readOnly="true" :initialAngle="0" />
                 </div>
 
