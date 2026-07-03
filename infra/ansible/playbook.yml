@@ -353,8 +353,8 @@
     - name: Set permissions on Database Storage directory
       file:
         path: /opt/nemologic/db_data
-        owner: "999"
-        group: "999"
+        owner: "70"
+        group: "70"
         mode: "0700"
         recurse: yes
       become: true
