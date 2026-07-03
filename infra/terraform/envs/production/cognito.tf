@@ -77,6 +77,23 @@ resource "aws_cognito_user_pool_client" "client" {
     "https://rogic.io/"
   ]
 
+  access_token_validity  = 5
+  id_token_validity      = 5
+  refresh_token_validity = 30
+
+  token_validity_units {
+    access_token  = "minutes"
+    id_token      = "minutes"
+    refresh_token = "days"
+  }
+
+  enable_token_revocation = true
+
+  refresh_token_rotation {
+    feature                    = "ENABLED"
+    retry_grace_period_seconds = 0
+  }
+
   depends_on = [
     aws_cognito_identity_provider.google_provider
   ]
