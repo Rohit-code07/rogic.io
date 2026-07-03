@@ -546,8 +546,8 @@
                 
                 <h2 style="margin: 0; font-size: 1.25rem; font-weight: 700; color: #f8fafc;">{{ selectedHistory?.stageName }}</h2>
                 <div style="font-size: 0.75rem; font-weight: 600; margin-top: -0.5rem; display: flex; gap: 0.5rem;">
-                  <span style="padding: 0.2rem 0.5rem; background: rgba(56, 189, 248, 0.1); border: 1px solid rgba(56, 189, 248, 0.15); border-radius: 6px; color: #38bdf8;">{{ selectedHistory?.elapsedTime }}s</span>
                   <span style="padding: 0.2rem 0.5rem; background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 6px; color: #94a3b8;">{{ selectedHistory?.clearedAt.split('T')[0] }}</span>
+                  <span style="padding: 0.2rem 0.5rem; background: rgba(56, 189, 248, 0.1); border: 1px solid rgba(56, 189, 248, 0.15); border-radius: 6px; color: #38bdf8;">{{ selectedHistory?.elapsedTime }}s</span>
                 </div>
 
                 <div class="modal-canvas-wrapper" style="width: 250px; height: 250px; margin: 0.75rem auto 0; background-color: #0f172a; border-radius: 12px; overflow: hidden; border: 1px solid rgba(255, 255, 255, 0.08); display: flex; justify-content: center; align-items: center; position: relative;">
@@ -617,11 +617,11 @@
                         onmouseover="this.style.background='rgba(255, 255, 255, 0.04)'; this.style.borderColor='rgba(56, 189, 248, 0.2)';"
                         onmouseout="this.style.background='rgba(255, 255, 255, 0.02)'; this.style.borderColor='rgba(255, 255, 255, 0.05)';"
                       >
-                        <span class="stage-name" style="font-weight: 600; color: #f8fafc; font-size: 0.9rem;">{{ item.stageName }}</span>
-                        <div class="history-badges" style="display: flex; gap: 0.4rem; font-size: 0.7rem; font-weight: 600;">
-                          <span class="elapsed-time-badge" style="padding: 0.18rem 0.45rem; background: rgba(56, 189, 248, 0.1); border: 1px solid rgba(56, 189, 248, 0.15); border-radius: 5px; color: #38bdf8;">{{ item.elapsedTime }}s</span>
-                          <span class="cleared-at-badge" style="padding: 0.18rem 0.45rem; background: rgba(255, 255, 255, 0.04); border: 1px solid rgba(255, 255, 255, 0.06); border-radius: 5px; color: #64748b;">{{ item.clearedAt.split('T')[0] }}</span>
+                        <div style="display: flex; align-items: center; gap: 0.85rem;">
+                          <span class="cleared-at-badge" style="font-size: 0.7rem; font-weight: 600; padding: 0.18rem 0.45rem; background: rgba(255, 255, 255, 0.04); border: 1px solid rgba(255, 255, 255, 0.06); border-radius: 5px; color: #64748b;">{{ item.clearedAt.split('T')[0] }}</span>
+                          <span class="stage-name" style="font-weight: 600; color: #f8fafc; font-size: 0.9rem;">{{ item.stageName }}</span>
                         </div>
+                        <span class="elapsed-time-badge" style="font-size: 0.7rem; font-weight: 600; padding: 0.18rem 0.45rem; background: rgba(56, 189, 248, 0.1); border: 1px solid rgba(56, 189, 248, 0.15); border-radius: 5px; color: #38bdf8;">{{ item.elapsedTime }}s</span>
                       </div>
                       <div v-if="histories.length === 0" class="empty-history" style="text-align: center; padding: 2rem; color: #64748b; font-size: 0.85rem;">
                         No history found. Complete puzzles to populate!
