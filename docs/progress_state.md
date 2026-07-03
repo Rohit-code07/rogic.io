@@ -153,6 +153,14 @@
   - **구조 및 가독성 개선**: 5단계 깊이의 복잡한 헤더 체계를 제거하고 H1/H2/H3/H4 영어 헤딩 통일 및 볼드 리스트로 평탄화함. 또한 동일한 인프라 설명(Agentless Pull, GraalVM 풋프린트, ALB 제거, 컴파일 오프로딩)이 중복 배치된 곳을 삭제하고 상호 앵커 링크로 대체함. 더불어 본 프로젝트의 핵심 운영 타겟이자 주안점인 '제약 조건 및 엔지니어링 원칙(0.1)' 섹션을 README 최상단(0.1)으로 배치하여 포트폴리오의 전체 아키텍처 설계를 읽기 전에 최우선 인지되도록 구조를 개편했으며, 지루한 기술 스택 표를 2열 배지 테이블로 전환하여 가로 정렬 선을 완벽하게 맞추고 압축함. 또한 본문 시각적 일관성을 확보하기 위해 게임 데모 시연 이미지의 너비(width)를 100%로 상향 조정함.
   - **문맥 정제 및 오타 교정**: 개발자 회고 문장을 1인칭 어조에서 전문적인 포트폴리오 결과 중심 어조로 압축하고, "수입되는" -> "유입되는" 오타를 수정함. 또한 대제목 하단의 지루하고 뻔한 인프라 개요 설명 문장을 삭제하여 가독성을 제고함.
 
+### AWS Cognito & Google OAuth 단일 소셜 로그인 도입 및 빌드 최적화 (Step 46) - 완료
+- **해결 내역**:
+  - **AWS Cognito 인프라 구축**: Staging 및 Production 환경 테라폼에 Cognito User Pool, User Pool Client, Google Identity Provider, User Pool Domain 리소스를 코드로 선언하여 프로비저닝 완료함.
+  - **백엔드 OAuth Resource Server 보안 아키텍처 개편**: `spring-boot-starter-oauth2-resource-server` 의존성을 탑재하고 JWT 기반의 무상태(Stateless) API 인증 필터 체인을 구축함. 사용자 정보를 DB에 영속화할 때 비밀번호 없이 이메일과 소셜 고유 식별자(`oauth_id`) 기반으로 자동 매칭 및 회원가입 처리를 수행하는 API 핸들러(`AuthController.java`, `UserService.java`)를 개발함.
+  - **GraalVM AOT 런타임 빈 기동 에러 핫픽스**: AOT(Spring Native) 컴파일 환경에서 `NimbusJwtDecoder` 가 구동될 때, 동적으로 JWT 디코더 빈을 인스턴스화하려다 리플렉션 및 메타데이터 누락으로 터지는 `UnsatisfiedDependencyException (Instantiation of supplied bean failed)` 문제를 해결하기 위해 `SecurityConfig.java`에 명시적인 `JwtDecoder` 빈을 수동 선언하여 AOT 추적이 가능하도록 조치함.
+  - **테스트 환경 지연 및 원격 Connection Timeout 극복**: Spring Boot 통합 테스트 실행 시, 가짜 Cognito JWK URI 주소로 원격 커넥션을 시도하며 행(Hang)이 걸리는 타임아웃 지연 현상을 해결하기 위해 `@Profile` 기법을 적용함. 프로덕션/스테이징 환경(`!test`)에서는 실 주소를 바라보는 `NimbusJwtDecoder`를 띄우고, 테스트 환경(`test`)에서는 원격 호출이 완전히 바이패스되는 로컬 모의(Mock) `JwtDecoder` 빈이 주입되도록 아키텍처를 분리 설계함.
+  - **프론트엔드 Google 로그인 플로우 및 비로그인(Guest) 모드 호환**: 로그인 성공 시 발급받은 ID Token을 로컬스토리지에 저장하고 만료 여부를 검증하는 로직을 구비함. 또한, 비로그인 상태일 때는 기존의 익명 사용자 임시 프로필 생성 및 전용 전적 초기화 등을 완벽하게 제공하는 Guest Mode 플레이 경험을 잔존시켜 허용 범위를 극대화함.
+  - **CI/CD 환경 변수 매핑 보강**: GitHub Actions 워크플로우의 Staging 및 Production 환경 `Terraform Plan` / `Apply` 잡에 Google OAuth Secrets 변수값들을 주입하여 필수 Cognito IdP 파라미터가 누락되지 않도록 CI/CD 환경을 정상화 완료함.
 ### Staging EC2 야간 자동 중지 스케줄 복구 (Step 46) - 완료
 - **해결 내역**:
   - **현상**: 활성 테스트 진행 지원을 위해 일시적으로 비활성화해둔 Staging 인프라 비용 절감용 야간 자동 중지 스케줄링이 꺼져 있었음.

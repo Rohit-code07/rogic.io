@@ -322,6 +322,12 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      - name: Configure AWS Credentials (OIDC)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::811162362403:role/nemologic-staging-github-role
+          aws-region: ap-northeast-2
+
       - name: Set up GraalVM JDK 17
         if: needs.changes.outputs.backend == 'true' || github.event_name == 'workflow_dispatch'
         uses: graalvm/setup-graalvm@v1
@@ -348,9 +354,19 @@ jobs:
       - name: Build Frontend Assets
         if: needs.changes.outputs.frontend == 'true' || github.event_name == 'workflow_dispatch'
         run: |
+          # Query Cognito Staging configuration dynamically
+          STAGING_POOL_ID=$(aws cognito-idp list-user-pools --max-results 60 --query "UserPools[?starts_with(Name, 'nemologic-staging')].Id" --output text)
+          STAGING_CLIENT_ID=$(aws cognito-idp list-user-pool-clients --user-pool-id $STAGING_POOL_ID --max-results 20 --query "UserPoolClients[?starts_with(ClientName, 'nemologic-staging-client')].ClientId" --output text)
+          STAGING_DOMAIN_PREFIX=$(aws cognito-idp describe-user-pool --user-pool-id $STAGING_POOL_ID --query "UserPool.Domain" --output text)
+          STAGING_COGNITO_DOMAIN="https://${STAGING_DOMAIN_PREFIX}.auth.ap-northeast-2.amazoncognito.com"
+          
+          echo "Compiling frontend with:"
+          echo "VITE_COGNITO_DOMAIN=$STAGING_COGNITO_DOMAIN"
+          echo "VITE_COGNITO_CLIENT_ID=$STAGING_CLIENT_ID"
+          
           cd frontend
           npm ci
-          npm run build
+          VITE_COGNITO_DOMAIN=$STAGING_COGNITO_DOMAIN VITE_COGNITO_CLIENT_ID=$STAGING_CLIENT_ID npm run build
 
       - name: Upload Frontend Build Artifact
         if: needs.changes.outputs.frontend == 'true' || github.event_name == 'workflow_dispatch'
@@ -392,6 +408,36 @@ jobs:
           exit-code: '0'
           vuln-type: 'os,library'
           severity: 'CRITICAL,HIGH'
+
+      - name: Verify Native Image Startup (Smoke Test)
+        if: needs.changes.outputs.backend == 'true' || github.event_name == 'workflow_dispatch'
+        run: |
+          echo "Starting backend container for smoke test..."
+          docker run -d --name smoke-test-backend -p 8080:8080 \
+            -e SPRING_PROFILES_ACTIVE=test \
+            -e SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWK_SET_URI=https://dummy-uri.amazoncognito.com/.well-known/jwks.json \
+            ghcr.io/devdoyen/nemologic-backend:latest
+          
+          echo "Waiting for backend health endpoint..."
+          SUCCESS=0
+          for i in {1..30}; do
+            if curl -s http://localhost:8080/actuator/health | grep -q "UP"; then
+              echo "Smoke test passed successfully: Application booted up."
+              SUCCESS=1
+              break
+            fi
+            sleep 1
+          done
+          
+          if [ $SUCCESS -ne 1 ]; then
+            echo "Error: Smoke test failed. Application did not boot up or health check timed out."
+            echo "=== Container Logs ==="
+            docker logs smoke-test-backend
+            docker kill smoke-test-backend && docker rm smoke-test-backend
+            exit 1
+          fi
+          
+          docker kill smoke-test-backend && docker rm smoke-test-backend
 
       - name: Push Docker Images
         if: needs.changes.outputs.backend == 'true' || github.event_name == 'workflow_dispatch'
@@ -491,6 +537,11 @@ jobs:
           GHCR_PAT: ${{ secrets.GHCR_PAT }}
           IMAGE_TAG: ${{ env.IMAGE_TAG }}
         run: |
+          # Dynamically resolve Staging Cognito JWK Set URI from AWS CLI
+          STAGING_POOL_ID=$(aws cognito-idp list-user-pools --max-results 60 --query "UserPools[?starts_with(Name, 'nemologic-staging')].Id" --output text)
+          export COGNITO_JWK_SET_URI="https://cognito-idp.ap-northeast-2.amazonaws.com/${STAGING_POOL_ID}/.well-known/jwks.json"
+          echo "Resolved Staging COGNITO_JWK_SET_URI: $COGNITO_JWK_SET_URI"
+
           cd infra/ansible
           STAGING_IP="${{ secrets.EC2_STAGING_IP }}"
           if [ -z "$STAGING_IP" ]; then
@@ -624,6 +675,11 @@ jobs:
           GHCR_PAT: ${{ secrets.GHCR_PAT }}
           IMAGE_TAG: ${{ env.IMAGE_TAG }}
         run: |
+          # Dynamically resolve Production Cognito JWK Set URI from AWS CLI
+          PROD_POOL_ID=$(aws cognito-idp list-user-pools --max-results 60 --query "UserPools[?starts_with(Name, 'nemologic-production')].Id" --output text)
+          export COGNITO_JWK_SET_URI="https://cognito-idp.ap-northeast-2.amazonaws.com/${PROD_POOL_ID}/.well-known/jwks.json"
+          echo "Resolved Production COGNITO_JWK_SET_URI: $COGNITO_JWK_SET_URI"
+
           cd infra/ansible
           if [ -n "${{ secrets.EC2_IP }}" ]; then
             # Query EC2 Instance ID for SSM Tunneling

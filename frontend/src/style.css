@@ -294,3 +294,30 @@ code {
     border-right-color: var(--border);
   }
 }
+
+/* Custom SLEEK Header Style Overrides */
+.mini-profile-card {
+  transition: all 0.25s ease-in-out;
+}
+
+.mini-profile-card:hover {
+  background: rgba(255, 255, 255, 0.07) !important;
+  border-color: rgba(56, 189, 248, 0.3) !important;
+}
+
+.mini-profile-card.active {
+  background: rgba(56, 189, 248, 0.1) !important;
+  border-color: #38bdf8 !important;
+  box-shadow: 0 0 12px rgba(56, 189, 248, 0.25);
+}
+
+.mini-login-btn {
+  transition: all 0.25s ease-in-out;
+}
+
+.mini-login-btn:hover {
+  background: rgba(56, 189, 248, 0.08) !important;
+  border-color: #38bdf8 !important;
+  color: #38bdf8 !important;
+  box-shadow: 0 0 10px rgba(56, 189, 248, 0.15);
+}

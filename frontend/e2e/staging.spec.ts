@@ -33,28 +33,16 @@ test.describe('Staging Environment E2E Smoke Integration Test', () => {
     console.log('Navigating to My Page tab...');
     await page.click('.tab-btn-mypage');
 
-    // Verify user profile details (Anonymous registration validation)
-    console.log('Verifying user profile and registration details...');
-    const profileUsername = page.locator('.profile-username');
-    await expect(profileUsername).toBeVisible({ timeout: 5000 });
+    // Verify user profile details (Guest Mode validation)
+    console.log('Verifying Guest Mode profile details...');
+    const guestTitle = page.locator('h2', { hasText: 'Guest Mode Active' });
+    await expect(guestTitle).toBeVisible({ timeout: 5000 });
     
-    const usernameText = await profileUsername.textContent();
-    console.log(`Registered Username: ${usernameText}`);
-    expect(usernameText).not.toBeNull();
-    expect(usernameText).not.toBe('Anonymous User');
-    
-    // Level and XP validation
-    const profileLv = page.locator('.profile-lv');
-    const profileXp = page.locator('.profile-xp');
-    await expect(profileLv).toBeVisible();
-    await expect(profileXp).toBeVisible();
-    
-    const levelText = await profileLv.textContent();
-    const xpText = await profileXp.textContent();
-    console.log(`Profile Info - Level: ${levelText}, XP: ${xpText}`);
-    
-    expect(levelText).toContain('Level');
-    expect(xpText).toContain('XP');
+    const guestDescription = page.locator('text=You are playing as a guest.');
+    await expect(guestDescription).toBeVisible();
+
+    const googleSignInBtn = page.locator('text=Sign in with Google');
+    await expect(googleSignInBtn).toBeVisible();
 
     console.log('Staging E2E Smoke Integration Test completed successfully!');
   });

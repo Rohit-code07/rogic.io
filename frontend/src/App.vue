@@ -305,6 +305,7 @@
             <span class="btn-text">Game Play</span>
           </button>
           <button 
+            v-if="!currentUser"
             class="tab-btn-mypage" 
             :class="{ active: currentTab === 'mypage' }" 
             @click="onTabChange('mypage')"
@@ -319,26 +320,22 @@
         
         <!-- Mini Profile / Login Widget -->
         <div class="mini-profile-widget" style="display: flex; align-items: center; margin-left: 0.25rem;">
-          <div v-if="currentUser" @click="onTabChange('mypage')" style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer; padding: 0.25rem 0.5rem; border-radius: 20px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.05); transition: background 0.2s;" onmouseover="this.style.background='rgba(255,255,255,0.06)'" onmouseout="this.style.background='rgba(255,255,255,0.03)'">
+          <div 
+            v-if="currentUser" 
+            @click="onTabChange('mypage')" 
+            class="mini-profile-card"
+            :class="{ active: currentTab === 'mypage' }"
+            style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer; padding: 0.35rem 0.75rem; border-radius: 9999px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); transition: all 0.25s ease;"
+          >
             <img 
               v-if="currentUser.profileImageUrl" 
               :src="currentUser.profileImageUrl" 
               alt="Profile" 
-              style="width: 24px; height: 24px; border-radius: 50%; object-fit: cover; border: 1px solid #38bdf8;" 
+              style="width: 22px; height: 22px; border-radius: 50%; object-fit: cover; border: 1px solid #38bdf8;" 
             />
-            <div v-else style="width: 24px; height: 24px; border-radius: 50%; background: #38bdf8; display: flex; align-items: center; justify-content: center; font-size: 0.75rem; color: white;">👤</div>
-            <span class="mini-username" style="font-size: 0.8rem; font-weight: 600; color: #f8fafc; max-width: 80px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">{{ currentUser.username }}</span>
+            <div v-else style="width: 22px; height: 22px; border-radius: 50%; background: #38bdf8; display: flex; align-items: center; justify-content: center; font-size: 0.7rem; color: white; font-weight: 700;">👤</div>
+            <span class="mini-username" style="font-size: 0.8rem; font-weight: 600; color: #f8fafc; max-width: 90px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">{{ currentUser.username }}</span>
           </div>
-          <button 
-            v-else 
-            @click="handleGoogleLogin" 
-            class="mini-login-btn"
-            style="padding: 0.35rem 0.75rem; font-size: 0.8rem; font-weight: 600; background: #ffffff; color: #0f172a; border: none; border-radius: 6px; cursor: pointer; transition: opacity 0.2s;"
-            onmouseover="this.style.opacity='0.9'"
-            onmouseout="this.style.opacity='1'"
-          >
-            Login
-          </button>
         </div>
 
         <button 

@@ -214,6 +214,7 @@
           DB_USER=postgres
           DB_PASSWORD={{ lookup('env', 'DB_PASSWORD') }}
           IMAGE_TAG={{ image_tag }}
+          COGNITO_JWK_SET_URI={{ lookup('env', 'COGNITO_JWK_SET_URI') }}
         dest: /opt/nemologic/.env
         owner: ubuntu
         group: ubuntu
