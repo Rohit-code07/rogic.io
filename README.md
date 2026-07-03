@@ -361,9 +361,28 @@ C4Container
   - 레이아웃 구성용 예시 링크: [Grafana Live Public Dashboard](https://grandwalrus3189.grafana.net/public-dashboards/ec9e06b0d1ea4540b97af6b56abb1380) (민감 메트릭 배제 데모용 구성)
   - 상세 관제 PromQL 수식 및 쿼리 구현은 부록 [5.2. PromQL Query Formulations (SLO Metrics)](#52-promql-query-formulations-slo-metrics) 참고
 
-## 1.5. Troubleshooting
+---
 
-### 1.5.1. Host Memory Exhaustion Incident
+## 1.5. Disaster Recovery
+본 프로젝트는 저사양 단일 EC2 아키텍처 하에서의 재해 복구(DR) 신뢰성을 극대화하기 위해, 영속적 EBS 볼륨 격리 및 S3 데이터 백업 소산 메커니즘을 구축했습니다.
+
+* **독립형 EBS 볼륨 영속성 분리**<br>
+  - EC2 가상머신 삭제 및 재기동 장애 시에도 데이터가 보존되도록 OS 영역과 별개인 독립형 10GB gp3 EBS 볼륨을 분리하여 설계
+  - 테라폼 리소스 수명주기 보호 규칙(`prevent_destroy = true`) 및 EC2 해제 시 볼륨 영구 보존 규칙(`delete_on_termination = false`) 바인딩 완료
+  - 도커 볼륨을 호스트 절대 경로 바인드 마운트(`/opt/nemologic/db_data`)로 일원화하여 볼륨 유실 리스크 사전 차단
+* **데이터 백업 및 S3 격리 소산**<br>
+  - 매 6시간 간격으로 EC2 호스트 내부의 PostgreSQL 데이터베이스 덤프(`pg_dump`)를 가동하는 자동 백업 스크립트 운용
+  - 백업 결과물은 즉각 Amazon S3 격리 백업 버킷(`nemologic-backup-bucket`)으로 원격 이관 및 소산 저장
+  - 스토리지 비용 조율을 위해 30일이 경과한 노후 백업본은 S3 Lifecycle 규칙을 통해 자동 영구 소거
+* **재해복구 모의 훈련(DR Drill) 규격화**<br>
+  - 인프라 완전 전소 상황에 대응할 수 있도록 가상머신 재배치, 스토리지 마운트, S3 백업본 이관 및 덤프 적재 복원 시나리오를 설계
+  - 실서버 훈련 절차 및 세부 트러블슈팅 매뉴얼을 리포지토리 상대경로 [./docs/dr_drill_guide.md](./docs/dr_drill_guide.md) 문서로 규격화하여 상시 최신화 관리
+
+---
+
+## 1.6. Troubleshooting
+
+### 1.6.1. Host Memory Exhaustion Incident
 * **배경**<br>
   - 인프라 비용 극 최소화(월 $11.45 구성)를 위해 t3a.nano 인스턴스(512MB RAM) 환경을 선택하였으나, 모니터링 수집 에이전트(Grafana Alloy)의 메모리 점유(100MB+)와 블루/그린 배포 시점에 Spring Boot 컨테이너 2개가 일시적으로 동시에 기동하면서 물리 메모리 한계를 초과하여 OOM 및 CPU 스레싱 장애가 빈번히 발생함.
   - 특히 최초 배포 시(콜드 스타트) 로컬 캐시 이미지가 없는 상태에서 수백 MB 상당의 Base Image 다운로드 및 압축 해제가 겹쳐 디스크 I/O 병목이 발생, 배포 파이프라인이 1시간 이상 멈춰있다가 중단되는 현상이 일어남.
@@ -483,6 +502,10 @@ stateDiagram-v2
 ### 2.3.2. Delivery Gates
 * **수동 승인 배포 통제 (Manual Gate)**<br>
   - Staging 환경에서 유닛/E2E 테스트가 100% 합격하면 배포 워크플로우를 일시 정지시키고, 관리자가 직접 GitHub Environment 승인 콘솔에서 릴리즈 안정성을 검토/승인해야만 Production 환경으로 승격 배포되도록 설계하여 오배포 리스크 차단
+* **원클릭 재해 복원 파이프라인 (Automated DR Gate)**<br>
+  - GitHub Actions 수동 복원 워크플로우([db-restore.yml](./.github/workflows/db-restore.yml))를 구동하여 임의의 시점에 Staging 또는 Production 환경을 지정하여 원클릭으로 가동 가능
+  - OIDC 기반 임시 AWS STS 자격을 획득하여 AWS Systems Manager(SSM) API를 통해 대상 실서버에 전용 복구 쉘 스크립트([restore_db.sh.j2](./infra/ansible/restore_db.sh.j2))를 안전하게 전송 및 원격 가동
+  - 데이터베이스 컨테이너 강제 소거, 스키마 재생성, S3 최신 백업본 이관 및 백엔드 컨테이너 롤링 재시작 전 과정을 100% 자동 대행하여 평균 37~38초(RTO) 이내 복구 완료 검증
 
 ---
 
@@ -607,7 +630,7 @@ LLM이 창조한 무작위 패턴 중 논리적 무결성이 결여된 불량 �
 * **실측 지표에 대한 기술 회고 (Operational Metrics Retrospective)**<br>
   - **가용성 저하 요인 분석**: 프로젝트 초기 t3a.nano(512MB RAM)의 극단적인 자원 제약 하에서 Nginx/Spring/PostgreSQL을 동시 구동할 때의 OOM(Out of Memory) 현상과 Docker 레이어를 통한 디스크 고갈이 주 장애 요인으로 기록되었습니다.
   - **복구 시간(MTTR) 지연**: 초기 경보 채널(Slack/Email SNS) 및 SSM 세션 매니저를 통한 복구 자동화 인프라가 완전히 구축되기 전, 수동 SSH 접속 및 데몬 분석 처리에 많은 시간이 지연되었습니다.
-  - **안정화 성과**: 트러블슈팅([1.5.1. Host Memory Exhaustion Incident](#151-host-memory-exhaustion-incident)) 조치(Agentless Pull 스위칭, 30MB 이하 GraalVM Native Image 배포, swap 가상 메모리 구성, Docker GC 스크립트 및 SSM 터널링 고도화)를 완료한 최근 7일 가동 기준으로는 평균 가용성 **98.63%** 및 평균 MTTR **11.76분** 수준으로 안정 궤도에 안착하여 성능 개선 효과를 검증했습니다.
+  - **안정화 성과**: 트러블슈팅([1.6.1. Host Memory Exhaustion Incident](#161-host-memory-exhaustion-incident)) 조치(Agentless Pull 스위칭, 30MB 이하 GraalVM Native Image 배포, swap 가상 메모리 구성, Docker GC 스크립트 및 SSM 터널링 고도화)를 완료한 최근 7일 가동 기준으로는 평균 가용성 **98.63%** 및 평균 MTTR **11.76분** 수준으로 안정 궤도에 안착하여 성능 개선 효과를 검증했습니다.
 
 * **Grafana Live Service SLA Dashboard**<br>
   상세 가용성 메트릭, MTTR, MTBF 실시간 변동 추이를 증빙하는 [Grafana Live Service SLA Dashboard Snapshot](https://grandwalrus3189.grafana.net/dashboard/snapshot/NzCi2k1ikmMxMSvq3Y9Lgi6GyKQiuZ1O?orgId=1&from=2026-06-25T08:08:22.472Z&to=2026-07-02T08:08:22.472Z&timezone=browser&var-application=nemologic&var-instance=springboot-prod&var-env=prod&var-hikaricp=NemologicHikariCP&var-memory_pool_heap=$__all&var-memory_pool_nonheap=$__all&refresh=5s) 캡처본입니다.
