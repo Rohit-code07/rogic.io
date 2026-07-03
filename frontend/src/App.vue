@@ -574,7 +574,7 @@
                     onmouseover="this.style.background='rgba(239, 68, 68, 0.18)'"
                     onmouseout="this.style.background='rgba(239, 68, 68, 0.08)'"
                   >
-                    🚪 Logout
+                    Logout
                   </button>
                 </div>
 
