@@ -517,7 +517,7 @@
         <template v-else-if="currentTab === 'mypage'">
           <!-- Mypage Popup Overlay (Clicking outside the modal card closes it and returns to 'play') -->
           <div class="mypage-popup-overlay" @click.self="onTabChange('play')" style="position: fixed; top: 0; left: 0; right: 0; bottom: 0; display: flex; justify-content: center; align-items: center; background: rgba(15, 23, 42, 0.75); backdrop-filter: blur(8px); z-index: 9999;">
-            <div class="mypage-popup-content" style="position: relative; width: 100%; max-width: 480px; background: #1e293b; border: 1px solid rgba(255,255,255,0.08); border-radius: 20px; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5), 0 10px 10px -5px rgba(0, 0, 0, 0.4); padding: 2rem; display: flex; flex-direction: column; gap: 1.5rem; animation: modalFadeIn 0.25s cubic-bezier(0.16, 1, 0.3, 1);">
+            <div class="mypage-popup-content" style="position: relative; width: 480px; max-width: 95vw; height: 500px; background: #1e293b; border: 1px solid rgba(255,255,255,0.08); border-radius: 20px; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5), 0 10px 10px -5px rgba(0, 0, 0, 0.4); padding: 2rem; display: flex; flex-direction: column; justify-content: flex-start; box-sizing: border-box; animation: modalFadeIn 0.25s cubic-bezier(0.16, 1, 0.3, 1);">
               
               <!-- Close Button (X) at Top Right (Always present to escape back to play) -->
               <button 
@@ -531,8 +531,8 @@
               </button>
 
               <!-- VIEW 1: Review Mode (Displaying the selected completed puzzle board) -->
-              <div v-if="isReviewMode && modalBoard" class="mypage-review-view" style="display: flex; flex-direction: column; gap: 1.25rem; width: 100%; text-align: left; animation: modalFadeIn 0.2s ease-out;">
-                <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.25rem;">
+              <div v-if="isReviewMode && modalBoard" class="mypage-review-view" style="display: flex; flex-direction: column; gap: 0.75rem; width: 100%; text-align: left; height: 100%; justify-content: flex-start; animation: modalFadeIn 0.2s ease-out;">
+                <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.15rem;">
                   <button 
                     @click="isReviewMode = false" 
                     class="mypage-back-arrow-btn"
@@ -545,18 +545,18 @@
                 </div>
                 
                 <h2 style="margin: 0; font-size: 1.25rem; font-weight: 700; color: #f8fafc;">{{ selectedHistory?.stageName }}</h2>
-                <div style="font-size: 0.85rem; color: #64748b; margin-top: -0.75rem; display: flex; gap: 1rem;">
+                <div style="font-size: 0.85rem; color: #64748b; margin-top: -0.25rem; display: flex; gap: 1rem;">
                   <span>⏱️ Clear Time: {{ selectedHistory?.elapsedTime }}s</span>
                   <span>📅 {{ selectedHistory?.clearedAt.split('T')[0] }}</span>
                 </div>
 
-                <div class="modal-canvas-wrapper" style="width: 320px; max-width: 100%; aspect-ratio: 1; margin: 0.5rem auto 0; background-color: #0f172a; border-radius: 12px; overflow: hidden; border: 1px solid rgba(255, 255, 255, 0.08); display: flex; justify-content: center; align-items: center; position: relative;">
+                <div class="modal-canvas-wrapper" style="width: 250px; height: 250px; margin: 0.75rem auto 0; background-color: #0f172a; border-radius: 12px; overflow: hidden; border: 1px solid rgba(255, 255, 255, 0.08); display: flex; justify-content: center; align-items: center; position: relative;">
                   <NonogramCanvas :board="modalBoard" :readOnly="true" :initialAngle="0" />
                 </div>
               </div>
 
               <!-- VIEW 2: Default Profile & History List View -->
-              <div v-else class="mypage-default-view" style="display: flex; flex-direction: column; gap: 1.5rem; width: 100%;">
+              <div v-else class="mypage-default-view" style="display: flex; flex-direction: column; gap: 1.25rem; width: 100%; height: 100%; justify-content: flex-start;">
                 <!-- Non-login Guest Welcome Section -->
                 <div v-if="!currentUser" class="mypage-guest-view" style="display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 1.5rem 1rem; background: rgba(30, 41, 59, 0.3); border: 1px solid rgba(255,255,255,0.05); border-radius: 12px;">
                   <div class="guest-icon" style="font-size: 2.5rem; margin-bottom: 0.75rem;">🎮</div>
@@ -588,7 +588,7 @@
                       :src="currentUser.profileImageUrl" 
                       alt="Profile" 
                       style="width: 54px; height: 54px; border-radius: 50%; border: 2px solid #38bdf8; object-fit: cover;" 
-                    />
+                  />
                     <div v-else class="profile-avatar" style="width: 54px; height: 54px; border-radius: 50%; background: #38bdf8; display: flex; align-items: center; justify-content: center; font-size: 1.35rem; color: #ffffff;">👤</div>
                     <div class="profile-details" style="flex-grow: 1; text-align: left;">
                       <h2 class="profile-username" style="margin: 0; font-size: 1.2rem; font-weight: 700; color: #f8fafc;">{{ currentUser.username }}</h2>
@@ -607,7 +607,7 @@
 
                   <!-- History List Section -->
                   <div class="mypage-history-section" style="text-align: left; margin-top: 0.25rem;">
-                    <div class="stage-card-list" style="display: flex; flex-direction: column; gap: 0.65rem; max-height: 240px; overflow-y: auto; padding-right: 0.25rem;">
+                    <div class="stage-card-list" style="display: flex; flex-direction: column; gap: 0.65rem; max-height: 210px; overflow-y: auto; padding-right: 0.25rem;">
                       <div 
                         v-for="item in histories" 
                         :key="item.id" 
