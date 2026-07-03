@@ -536,11 +536,14 @@
                 <button 
                   @click="isReviewMode = false" 
                   class="mypage-popup-back-btn"
-                  style="position: absolute; top: 1.25rem; left: 1.25rem; width: 32px; height: 32px; border-radius: 50%; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); color: #38bdf8; font-size: 1.1rem; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.2s;"
+                  style="position: absolute; top: 1.25rem; left: 1.25rem; width: 32px; height: 32px; border-radius: 50%; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); color: #38bdf8; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.2s;"
                   onmouseover="this.style.background='rgba(255,255,255,0.08)'; this.style.color='#f8fafc';"
                   onmouseout="this.style.background='rgba(255,255,255,0.03)'; this.style.color='#38bdf8';"
                 >
-                  ←
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                    <line x1="19" y1="12" x2="5" y2="12"></line>
+                    <polyline points="12 19 5 12 12 5"></polyline>
+                  </svg>
                 </button>
                 
                 <!-- 2. Middle Row: Completed Puzzle Canvas -->
