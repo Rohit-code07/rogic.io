@@ -316,6 +316,31 @@
             <span class="btn-text">My Page</span>
           </button>
         </nav>
+        
+        <!-- Mini Profile / Login Widget -->
+        <div class="mini-profile-widget" style="display: flex; align-items: center; margin-left: 0.25rem;">
+          <div v-if="currentUser" @click="onTabChange('mypage')" style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer; padding: 0.25rem 0.5rem; border-radius: 20px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.05); transition: background 0.2s;" onmouseover="this.style.background='rgba(255,255,255,0.06)'" onmouseout="this.style.background='rgba(255,255,255,0.03)'">
+            <img 
+              v-if="currentUser.profileImageUrl" 
+              :src="currentUser.profileImageUrl" 
+              alt="Profile" 
+              style="width: 24px; height: 24px; border-radius: 50%; object-fit: cover; border: 1px solid #38bdf8;" 
+            />
+            <div v-else style="width: 24px; height: 24px; border-radius: 50%; background: #38bdf8; display: flex; align-items: center; justify-content: center; font-size: 0.75rem; color: white;">👤</div>
+            <span class="mini-username" style="font-size: 0.8rem; font-weight: 600; color: #f8fafc; max-width: 80px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">{{ currentUser.username }}</span>
+          </div>
+          <button 
+            v-else 
+            @click="handleGoogleLogin" 
+            class="mini-login-btn"
+            style="padding: 0.35rem 0.75rem; font-size: 0.8rem; font-weight: 600; background: #ffffff; color: #0f172a; border: none; border-radius: 6px; cursor: pointer; transition: opacity 0.2s;"
+            onmouseover="this.style.opacity='0.9'"
+            onmouseout="this.style.opacity='1'"
+          >
+            Login
+          </button>
+        </div>
+
         <button 
           class="leaderboard-toggle-btn" 
           :class="{ active: isLeaderboardOpen }" 
@@ -509,40 +534,83 @@
         </template>
 
         <template v-else-if="currentTab === 'mypage'">
-          <div class="mypage-dashboard">
-            <!-- Profile Info Card -->
-            <div class="mypage-user-profile">
-              <div class="profile-avatar">👤</div>
-              <div class="profile-details">
-                <h2 class="profile-username">{{ currentUser?.username || 'Anonymous User' }}</h2>
-                <div class="profile-stats">
-                  <span class="profile-lv">Level {{ currentUser?.level || 1 }}</span>
-                  <span class="profile-xp">{{ currentUser?.xp || 0 }} XP</span>
-                </div>
-              </div>
+          <div class="mypage-dashboard" style="display: flex; flex-direction: column; width: 100%; max-width: 500px; margin: 0 auto; gap: 1.5rem;">
+            <!-- Non-login Guest Welcome Section -->
+            <div v-if="!currentUser" class="mypage-guest-view" style="display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 2.5rem 1.5rem; background: rgba(30, 41, 59, 0.3); border: 1px solid rgba(255,255,255,0.05); border-radius: 16px; backdrop-filter: blur(12px);">
+              <div class="guest-icon" style="font-size: 3rem; margin-bottom: 1rem;">🎮</div>
+              <h2 style="font-weight: 700; color: #f8fafc; margin-bottom: 0.5rem; font-size: 1.45rem;">Guest Mode Active</h2>
+              <p style="color: #94a3b8; max-width: 320px; font-size: 0.85rem; line-height: 1.5; margin-bottom: 1.5rem;">
+                You are playing as a guest. Clear records, XP, and history won't be saved on the server. Sign in to capture your achievements permanently!
+              </p>
+              <button 
+                @click="handleGoogleLogin" 
+                class="google-login-btn"
+                style="display: flex; align-items: center; justify-content: center; gap: 0.75rem; padding: 0.75rem 1.5rem; background: #ffffff; color: #0f172a; font-weight: 600; border: none; border-radius: 10px; cursor: pointer; transition: all 0.2s; box-shadow: 0 4px 12px rgba(0,0,0,0.15);"
+              >
+                <svg width="18" height="18" viewBox="0 0 18 18">
+                  <path fill="#4285F4" d="M17.64 9.2c0-.63-.06-1.25-.16-1.84H9v3.47h4.84c-.21 1.12-.84 2.07-1.79 2.7v2.24h2.9c1.7-1.57 2.69-3.88 2.69-6.57z"/>
+                  <path fill="#34A853" d="M9 18c2.43 0 4.47-.8 5.96-2.23l-2.9-2.24c-.8.54-1.84.87-3.06.87-2.35 0-4.34-1.59-5.05-3.73H.95v2.3C2.43 15.89 5.5 18 9 18z"/>
+                  <path fill="#FBBC05" d="M3.95 10.66A5.4 5.4 0 0 1 3.6 9c0-.58.1-1.15.27-1.66V5.04H.95A9.02 9.02 0 0 0 0 9c0 1.45.35 2.82.95 4.04l3-2.38z"/>
+                  <path fill="#EA4335" d="M9 3.58c1.32 0 2.5.45 3.44 1.35L15 2.4C13.46.96 11.43 0 9 0 5.5 0 2.43 2.11.95 5.04l3 2.38C4.66 5.17 6.65 3.58 9 3.58z"/>
+                </svg>
+                Sign in with Google
+              </button>
             </div>
 
-            <!-- History List Section -->
-            <div class="mypage-history-section">
-              <div class="stage-card-list" style="display: flex; flex-direction: column; gap: 0.75rem; max-height: 280px; overflow-y: auto; padding-right: 0.25rem;">
-                <div 
-                  v-for="item in histories" 
-                  :key="item.id" 
-                  class="history-item" 
-                  @click="openHistoryModal(item)"
-                  style="cursor: pointer;"
-                >
-                  <div class="history-card-header" style="display: flex; justify-content: space-between; align-items: center;">
-                    <span class="stage-name" style="font-weight: 600;">{{ item.stageName }}</span>
-                    <span class="xp-earned" style="color: #10b981; font-weight: 600;">+{{ item.xpEarned }} XP</span>
-                  </div>
-                  <div class="history-card-body" style="display: flex; justify-content: space-between; margin-top: 0.25rem; font-size: 0.85rem; color: #64748b;">
-                    <span class="elapsed-time">⏱️ {{ item.elapsedTime }}s</span>
-                    <span class="cleared-at">{{ item.clearedAt.split('T')[0] }}</span>
+            <!-- Logged-in User Dashboard -->
+            <div v-else class="mypage-dashboard-content" style="display: flex; flex-direction: column; gap: 1.5rem; width: 100%;">
+              <!-- Profile Info Card -->
+              <div class="mypage-user-profile" style="display: flex; align-items: center; gap: 1.25rem; padding: 1.5rem; background: rgba(30, 41, 59, 0.25); border: 1px solid rgba(255,255,255,0.05); border-radius: 16px;">
+                <img 
+                  v-if="currentUser.profileImageUrl" 
+                  :src="currentUser.profileImageUrl" 
+                  alt="Profile" 
+                  style="width: 54px; height: 54px; border-radius: 50%; border: 2px solid #38bdf8; object-fit: cover;" 
+                />
+                <div v-else class="profile-avatar" style="width: 54px; height: 54px; border-radius: 50%; background: #38bdf8; display: flex; align-items: center; justify-content: center; font-size: 1.35rem; color: #ffffff;">👤</div>
+                <div class="profile-details" style="flex-grow: 1; text-align: left;">
+                  <h2 class="profile-username" style="margin: 0; font-size: 1.25rem; font-weight: 700; color: #f8fafc;">{{ currentUser.username }}</h2>
+                  <p v-if="currentUser.email" class="profile-email" style="margin: 0.15rem 0 0.4rem; font-size: 0.8rem; color: #64748b;">{{ currentUser.email }}</p>
+                  <div class="profile-stats" style="display: flex; gap: 1rem; font-size: 0.85rem; font-weight: 600;">
+                    <span class="profile-lv" style="color: #38bdf8;">Level {{ currentUser.level }}</span>
+                    <span class="profile-xp" style="color: #818cf8;">{{ currentUser.xp }} XP</span>
                   </div>
                 </div>
-                <div v-if="histories.length === 0" class="empty-history" style="text-align: center; padding: 2rem; color: #64748b;">
-                  No history found.
+                <button 
+                  @click="handleGoogleLogout" 
+                  class="logout-outline-btn"
+                  style="padding: 0.4rem 0.85rem; background: transparent; border: 1px solid rgba(239, 68, 68, 0.4); border-radius: 8px; color: #ef4444; font-size: 0.8rem; font-weight: 600; cursor: pointer; transition: all 0.2s;"
+                >
+                  🚪 Logout
+                </button>
+              </div>
+
+              <!-- History List Section -->
+              <div class="mypage-history-section" style="text-align: left;">
+                <h3 style="font-size: 1.05rem; font-weight: 600; color: #94a3b8; margin: 0 0 0.75rem 0.25rem; display: flex; justify-content: space-between;">
+                  <span>🏆 Clear History</span>
+                  <span style="font-size: 0.85rem; color: #64748b;">{{ histories.length }} puzzles</span>
+                </h3>
+                <div class="stage-card-list" style="display: flex; flex-direction: column; gap: 0.75rem; max-height: 280px; overflow-y: auto; padding-right: 0.25rem;">
+                  <div 
+                    v-for="item in histories" 
+                    :key="item.id" 
+                    class="history-item" 
+                    @click="openHistoryModal(item)"
+                    style="cursor: pointer;"
+                  >
+                    <div class="history-card-header" style="display: flex; justify-content: space-between; align-items: center;">
+                      <span class="stage-name" style="font-weight: 600;">{{ item.stageName }}</span>
+                      <span class="xp-earned" style="color: #10b981; font-weight: 600;">+{{ item.xpEarned }} XP</span>
+                    </div>
+                    <div class="history-card-body" style="display: flex; justify-content: space-between; margin-top: 0.25rem; font-size: 0.85rem; color: #64748b;">
+                      <span class="elapsed-time">⏱️ {{ item.elapsedTime }}s</span>
+                      <span class="cleared-at">{{ item.clearedAt.split('T')[0] }}</span>
+                    </div>
+                  </div>
+                  <div v-if="histories.length === 0" class="empty-history" style="text-align: center; padding: 2rem; color: #64748b;">
+                    No history found. Complete puzzles to populate!
+                  </div>
                 </div>
               </div>
             </div>
@@ -614,10 +682,11 @@ import { PuzzleBoard } from './engine/puzzleBoard';
 import { rotateGrid } from './engine/gridRotator';
 import { fetchStages, fetchStageById, fetchAiStages, startStage, likeStage, dislikeStage } from './api/stageApi';
 import type { StageSummary } from './api/stageApi';
-import { fetchRanking, clearStage, registerAnonymousUser, fetchUserHistory } from './api/userApi';
+import { fetchRanking, clearStage, fetchMeFromServer, fetchUserHistory } from './api/userApi';
 import type { User } from './api/userApi';
-import { hasUserSession, getUserSession, setUserSession } from './api/auth';
+import { setUserSession, clearUserSession } from './api/auth';
 import type { UserSession } from './api/auth';
+import { loginWithGoogle, logout as googleLogout, getStoredToken } from './api/cognito';
 import { fetchAdminStages, createStage, approveStage, deleteStage, restoreStage, generateAiStage, loginAdmin, logoutAdmin, isAdminAuthenticated } from './api/adminApi';
 import type { AdminStageInfo } from './api/adminApi';
 
@@ -1067,18 +1136,19 @@ async function handleCellClick() {
         } else if (board.value.colCount >= 10 || board.value.rowCount >= 10) {
           difficulty = 'HARD';
         }
-        const userId = currentUser.value ? currentUser.value.id : 1;
-        const stageId = selectedStageId.value !== null ? selectedStageId.value : (selectedAiStageId.value !== null ? selectedAiStageId.value : undefined);
         const elapsedTime = Math.floor((Date.now() - startTime.value) / 1000);
-        await clearStage(userId, difficulty, stageId, elapsedTime);
-        await loadRankingsList();
-        await loadUserHistory();
+
+        if (currentUser.value) {
+          const userId = currentUser.value.id;
+          const stageId = selectedStageId.value !== null ? selectedStageId.value : (selectedAiStageId.value !== null ? selectedAiStageId.value : undefined);
+          await clearStage(userId, difficulty, stageId, elapsedTime);
+          await loadRankingsList();
+          await loadUserHistory();
+        } else {
+          await loadRankingsList();
+        }
       } catch (error) {
         console.error('Failed to submit stage clear:', error);
-        if (error && String(error).includes('User not found')) {
-          localStorage.removeItem('user_session');
-          await initializeUserSession();
-        }
       } finally {
         startNextPuzzleCountdown();
       }
@@ -1087,8 +1157,12 @@ async function handleCellClick() {
 }
 
 async function loadUserHistory() {
+  if (!currentUser.value) {
+    histories.value = [];
+    return;
+  }
   try {
-    const userId = currentUser.value ? currentUser.value.id : 1;
+    const userId = currentUser.value.id;
     const historyList = await fetchUserHistory(userId);
     histories.value = historyList;
   } catch (error) {
@@ -1556,24 +1630,59 @@ function closeModal() {
   selectedHistory.value = null;
 }
 
+function handleGoogleLogin() {
+  loginWithGoogle();
+}
+
+function handleGoogleLogout() {
+  googleLogout();
+}
+
 async function initializeUserSession() {
-  if (hasUserSession()) {
-    currentUser.value = getUserSession();
-  } else {
+  // 1. Process Google OAuth code callback
+  if (!isTestEnv) {
+    const urlParams = new URLSearchParams(window.location.search);
+    const code = urlParams.get('code');
+    if (code) {
+      try {
+        isLoading.value = true;
+        const { handleCallback: cognitoHandleCallback } = await import('./api/cognito');
+        await cognitoHandleCallback(code);
+        // Clean parameters from browser URL
+        window.history.replaceState({}, document.title, window.location.pathname);
+      } catch (err) {
+        console.error('Failed to exchange authorization code:', err);
+      } finally {
+        isLoading.value = false;
+      }
+    }
+  }
+
+  // 2. Load profile if token is valid
+  const token = getStoredToken();
+  if (token) {
     try {
-      const registered = await registerAnonymousUser();
+      const user = await fetchMeFromServer();
       const session: UserSession = {
-        id: registered.id,
-        uuid: registered.uuid || 'temp-uuid',
-        username: registered.username,
-        xp: registered.xp,
-        level: registered.level
+        id: user.id,
+        username: user.username,
+        xp: user.xp,
+        level: user.level,
+        email: user.email,
+        profileImageUrl: user.profileImageUrl,
+        idToken: token
       };
       setUserSession(session);
       currentUser.value = session;
     } catch (error) {
-      console.error('Failed to register anonymous user:', error);
+      console.error('Failed to validate user token with server:', error);
+      clearUserSession();
+      currentUser.value = null;
     }
+  } else {
+    // Non-login Guest Mode
+    clearUserSession();
+    currentUser.value = null;
   }
 }
 

@@ -16,6 +16,14 @@ public class User {
     private int level;
     private String uuid;
 
+    @Column(name = "oauth_id", unique = true)
+    private String oauthId;
+
+    private String email;
+
+    @Column(name = "profile_image_url")
+    private String profileImageUrl;
+
     public User() {
     }
 
@@ -25,6 +33,9 @@ public class User {
         this.xp = xp;
         this.level = level;
         this.uuid = null;
+        this.oauthId = null;
+        this.email = null;
+        this.profileImageUrl = null;
     }
 
     public User(Long id, String username, int xp, int level, String uuid) {
@@ -33,6 +44,20 @@ public class User {
         this.xp = xp;
         this.level = level;
         this.uuid = uuid;
+        this.oauthId = null;
+        this.email = null;
+        this.profileImageUrl = null;
+    }
+
+    public User(Long id, String username, int xp, int level, String oauthId, String email, String profileImageUrl) {
+        this.id = id;
+        this.username = username;
+        this.xp = xp;
+        this.level = level;
+        this.uuid = null;
+        this.oauthId = oauthId;
+        this.email = email;
+        this.profileImageUrl = profileImageUrl;
     }
 
     public Long getId() {
@@ -94,5 +119,29 @@ public class User {
             }
         }
         this.level = currentLevel;
+    }
+
+    public String getOauthId() {
+        return oauthId;
+    }
+
+    public void setOauthId(String oauthId) {
+        this.oauthId = oauthId;
+    }
+
+    public String getEmail() {
+        return email;
+    }
+
+    public void setEmail(String email) {
+        this.email = email;
+    }
+
+    public String getProfileImageUrl() {
+        return profileImageUrl;
+    }
+
+    public void setProfileImageUrl(String profileImageUrl) {
+        this.profileImageUrl = profileImageUrl;
     }
 }

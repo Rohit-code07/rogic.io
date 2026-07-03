@@ -44,6 +44,12 @@ public class UserService {
         userRepository.save(new User(null, "Player3", 1000, 5));
     }
 
+    @Transactional(readOnly = true)
+    public User getUserById(Long userId) {
+        return userRepository.findById(userId)
+                .orElseThrow(() -> new IllegalArgumentException("User not found: " + userId));
+    }
+
     @Transactional
     public User addXpToUser(Long userId, int xpAmount) {
         User user = userRepository.findById(userId)
@@ -94,10 +100,28 @@ public class UserService {
     }
 
     @Transactional
-    public User registerAnonymousUser() {
-        String uuid = UUID.randomUUID().toString();
-        String username = "Anonymous-" + uuid.substring(0, 8);
-        User newUser = new User(null, username, 0, 1, uuid);
-        return userRepository.save(newUser);
+    public User findOrCreateByOauthId(String oauthId, String name, String email, String pictureUrl) {
+        return userRepository.findByOauthId(oauthId)
+                .map(user -> {
+                    boolean updated = false;
+                    if (name != null && !name.equals(user.getUsername())) {
+                        user.setUsername(name);
+                        updated = true;
+                    }
+                    if (email != null && !email.equals(user.getEmail())) {
+                        user.setEmail(email);
+                        updated = true;
+                    }
+                    if (pictureUrl != null && !pictureUrl.equals(user.getProfileImageUrl())) {
+                        user.setProfileImageUrl(pictureUrl);
+                        updated = true;
+                    }
+                    return updated ? userRepository.save(user) : user;
+                })
+                .orElseGet(() -> {
+                    String username = (name != null && !name.trim().isEmpty()) ? name : "User-" + UUID.randomUUID().toString().substring(0, 8);
+                    User newUser = new User(null, username, 0, 1, oauthId, email, pictureUrl);
+                    return userRepository.save(newUser);
+                });
     }
 }

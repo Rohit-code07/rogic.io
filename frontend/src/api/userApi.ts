@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { getAuthHeader } from './auth';
 
 export interface User {
   id: number;
@@ -6,6 +7,8 @@ export interface User {
   xp: number;
   level: number;
   uuid?: string;
+  email?: string;
+  profileImageUrl?: string;
 }
 
 export interface HistoryResponse {
@@ -35,19 +38,28 @@ export async function clearStage(userId: number, difficulty: string, stageId?: n
   if (elapsedTime !== undefined) {
     params.elapsedTime = elapsedTime;
   }
-  const response = await axios.post<User>(`${API_BASE_URL}/${userId}/clear`, null, { params });
+  const response = await axios.post<User>(`${API_BASE_URL}/${userId}/clear`, null, {
+    params,
+    headers: getAuthHeader(),
+  });
   return response.data;
 }
 
 export async function fetchUserHistory(userId: number): Promise<HistoryResponse[]> {
-  const response = await axios.get<HistoryResponse[]>(`${API_BASE_URL}/${userId}/history`);
+  const response = await axios.get<HistoryResponse[]>(`${API_BASE_URL}/${userId}/history`, {
+    headers: getAuthHeader(),
+  });
   return response.data;
 }
 
-
-export async function registerAnonymousUser(): Promise<User> {
-
-  const response = await axios.post<User>(`${API_BASE_URL}/register`);
+export async function fetchMeFromServer(): Promise<User> {
+  const authBaseUrl = import.meta.env.VITE_API_BASE_URL
+    ? `${import.meta.env.VITE_API_BASE_URL}/api/auth`
+    : (import.meta.env.PROD ? '/api/auth' : 'http://localhost:8080/api/auth');
+  const response = await axios.post<User>(`${authBaseUrl}/me`, null, {
+    headers: getAuthHeader(),
+  });
   return response.data;
 }
+
 

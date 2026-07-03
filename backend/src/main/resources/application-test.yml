@@ -14,8 +14,12 @@ spring:
         "[format_sql]": true
   flyway:
     enabled: false
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          jwk-set-uri: https://nemologic-test.auth.ap-northeast-2.amazoncognito.com/.well-known/jwks.json
 
 admin:
   username: admin
   password: admin123!
-

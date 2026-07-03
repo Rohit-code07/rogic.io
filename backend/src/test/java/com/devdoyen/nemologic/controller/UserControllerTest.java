@@ -14,7 +14,10 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.jwt;
 import org.springframework.test.context.ActiveProfiles;
+import com.devdoyen.nemologic.repository.UserRepository;
+import com.devdoyen.nemologic.model.User;
 
 @ActiveProfiles("test")
 @SpringBootTest
@@ -27,9 +30,16 @@ public class UserControllerTest {
     @Autowired
     private UserService userService;
 
+    @Autowired
+    private UserRepository userRepository;
+
     @BeforeEach
     public void setUp() {
         userService.reset();
+        // Bind oauthId to Player1 (ID 1) for mock security testing
+        User p1 = userRepository.findById(1L).orElseThrow();
+        p1.setOauthId("mock-google-id");
+        userRepository.save(p1);
     }
 
     @Test
@@ -53,7 +63,8 @@ public class UserControllerTest {
         // Alice has ID 1. Initial status: XP 200, Level 2.
         // Clearing EASY adds 50 XP -> Total XP: 250 (Level 2: needs 200 to level up to 3).
         mockMvc.perform(post("/api/users/1/clear")
-                .param("difficulty", "EASY"))
+                .param("difficulty", "EASY")
+                .with(jwt().jwt(builder -> builder.claim("sub", "mock-google-id"))))
                 .andExpect(status().isOk())
                 .andExpect(content().contentType(MediaType.APPLICATION_JSON))
                 .andExpect(jsonPath("$.id", is(1)))
@@ -69,7 +80,8 @@ public class UserControllerTest {
         // Let's check clear stage HARD: adds 200 XP.
         // Let's write the test expectation to verify the updated state.
         mockMvc.perform(post("/api/users/1/clear")
-                .param("difficulty", "HARD"))
+                .param("difficulty", "HARD")
+                .with(jwt().jwt(builder -> builder.claim("sub", "mock-google-id"))))
                 .andExpect(status().isOk())
                 .andExpect(content().contentType(MediaType.APPLICATION_JSON))
                 .andExpect(jsonPath("$.id", is(1)))
@@ -78,28 +90,18 @@ public class UserControllerTest {
     }
 
     @Test
-    public void registerAnonymousUserShouldReturnNewUserWithId4() throws Exception {
-        mockMvc.perform(post("/api/users/register"))
-                .andExpect(status().isOk())
-                .andExpect(content().contentType(MediaType.APPLICATION_JSON))
-                .andExpect(jsonPath("$.id", is(4)))
-                .andExpect(jsonPath("$.uuid", notNullValue()))
-                .andExpect(jsonPath("$.username", startsWith("Anonymous-")))
-                .andExpect(jsonPath("$.xp", is(0)))
-                .andExpect(jsonPath("$.level", is(1)));
-    }
-
-    @Test
     public void getUserHistoryShouldReturnListOfClearedPuzzles() throws Exception {
         // Clear stage 1 with 150 seconds elapsed
         mockMvc.perform(post("/api/users/1/clear")
                 .param("difficulty", "EASY")
                 .param("stageId", "1")
-                .param("elapsedTime", "150"))
+                .param("elapsedTime", "150")
+                .with(jwt().jwt(builder -> builder.claim("sub", "mock-google-id"))))
                 .andExpect(status().isOk());
 
         // Retrieve and verify history
-        mockMvc.perform(get("/api/users/1/history"))
+        mockMvc.perform(get("/api/users/1/history")
+                .with(jwt().jwt(builder -> builder.claim("sub", "mock-google-id"))))
                 .andExpect(status().isOk())
                 .andExpect(content().contentType(MediaType.APPLICATION_JSON))
                 .andExpect(jsonPath("$", hasSize(1)))

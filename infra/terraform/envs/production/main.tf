@@ -536,6 +536,11 @@ resource "aws_iam_policy" "github_actions_production_policy" {
       },
       {
         Effect   = "Allow"
+        Action   = ["cognito-idp:*"]
+        Resource = "*"
+      },
+      {
+        Effect   = "Allow"
         Action   = ["acm:*"]
         Resource = "*"
       },

@@ -20,3 +20,17 @@ variable "alert_email" {
   description = "Email address to receive Gemini API failure alerts"
   type        = string
 }
+
+variable "google_oauth_client_id" {
+  description = "Client ID for Google OAuth"
+  type        = string
+  default     = ""
+}
+
+variable "google_oauth_client_secret" {
+  description = "Client Secret for Google OAuth"
+  type        = string
+  default     = ""
+  sensitive   = true
+}
+

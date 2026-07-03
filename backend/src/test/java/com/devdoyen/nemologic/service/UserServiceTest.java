@@ -73,20 +73,26 @@ public class UserServiceTest {
     }
 
     @Test
-    public void testRegisterAnonymousUserAutoIncrement() {
+    public void testFindOrCreateByOauthId() {
+        when(userRepository.findByOauthId("google-uid-123")).thenReturn(Optional.empty());
         when(userRepository.save(any(User.class))).thenAnswer(invocation -> {
             User u = invocation.getArgument(0);
             u.setId(4L);
             return u;
         });
 
-        User user = userService.registerAnonymousUser();
+        // 1. Create case
+        User user = userService.findOrCreateByOauthId("google-uid-123", "John Doe", "john@example.com", "https://pic.url");
         assertNotNull(user);
         assertEquals(4L, user.getId());
-        assertNotNull(user.getUuid());
-        assertFalse(user.getUuid().isEmpty());
-        assertTrue(user.getUsername().startsWith("Anonymous-"));
-        assertEquals(0, user.getXp());
-        assertEquals(1, user.getLevel());
+        assertEquals("google-uid-123", user.getOauthId());
+        assertEquals("John Doe", user.getUsername());
+        assertEquals("john@example.com", user.getEmail());
+        assertEquals("https://pic.url", user.getProfileImageUrl());
+
+        // 2. Fetch/Update case
+        when(userRepository.findByOauthId("google-uid-123")).thenReturn(Optional.of(user));
+        User existingUser = userService.findOrCreateByOauthId("google-uid-123", "John Doe Changed", "john@example.com", "https://pic.url");
+        assertEquals("John Doe Changed", existingUser.getUsername());
     }
 }

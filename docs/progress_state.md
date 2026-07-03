@@ -361,9 +361,20 @@
   - **인프라 파괴 방지 수명주기 보호**: Staging 및 Production의 EC2 인스턴스 테라폼 설정에 `lifecycle { prevent_destroy = true }`를 주입하여 향후 테라폼 형상 변경 과정에서 의도치 않게 인스턴스가 파괴되는 현상을 원천 방지함.
   - **S3 백업 무음 실패 해결**: EC2 IAM에 불필요하게 넓은 전역 S3 조회 권한(`s3:ListAllMyBuckets`)을 요구하던 동적 S3 버킷 찾기 로직(`aws s3 ls`)을 제거하고, GitHub Actions 러너가 버킷 명칭을 빌드 시점 변수(`backup_bucket_name`)로 직접 주입하도록 Ansible 플레이북(`playbook.yml`) 및 워크플로우(`ci-cd.yml`)를 대폭 보완 개선함.
 
+### AWS Cognito + Google OAuth 단일 소셜 로그인 도입 및 게스트 모드 호환 (Step 89) - 완료
+- **해결 내역**:
+  - **테라폼 Cognito 리소스 정의**: `infra/terraform/envs/staging/cognito.tf`를 작성하여 User Pool, 소셜 전용 App Client(PKCE, Secret 배제), Domain, Google IdP 바인딩 설정을 완료함.
+  - **백엔드 의존성 및 스키마 변경**: Gradle에 `spring-boot-starter-oauth2-resource-server`를 신설하고, Flyway 마이그레이션(`V5__add_oauth_fields.sql`)으로 유저 테이블에 `oauth_id`, `email`, `profile_image_url` 필드를 안전하게 추가함.
+  - **OAuth 사용자 동기화 및 보안 규칙 수립**: `SecurityConfig.java`에 JWT 리소스 서버 필터를 결합하고, `AuthController.java`에 `sub` 클레임을 기반으로 유저를 신설/조회하는 `/api/auth/me` 엔드포인트를 구현함. 어드민 경로에 대해서는 custom `BearerTokenResolver`를 주입하여 JWT 토큰 파싱 에러를 우회(SSM/어드민 세션 동작 완치)함.
+  - **게스트 모드 방어벽 및 예외 처리**: 로그인 상태가 아닌 비로그인 사용자(게스트)의 플레이를 완벽히 허용하기 위해, 게스트가 퍼즐을 완료했을 때 백엔드로의 clear stage 호출을 전면 스킵하고 세션을 초기화하지 않는 예외 조치를 프론트/백엔드에 안전하게 구현함.
+  - **마이페이지 및 헤더 프로필 UI 고도화**: 마이페이지 탭 진입 시 비로그인 유저에게 Google 소셜 로그인을 유도하는 세련된 웰컴 스크린을 띄우고, 로그인 사용자에게는 구글 프로필 사진, 이메일 정보, 레벨/XP 정보와 더불어 로그아웃(Sign out) 기능을 수려하게 제공하도록 Vue 마운팅 및 내비게이션 바 미니 로그인 위젯을 결합함.
+  - **단위/E2E 테스트 무결성 보장**: 테스트 환경에서 context 기동 성공을 위해 `application-test.yml` 및 `application-local.yml` 에 가짜 jwk-set-uri를 주입하고, `AuthControllerTest` 및 `UserControllerTest` 등을 보완하여 전체 백엔드 32개 테스트 및 프론트엔드 컴파일/테스트 빌드(Vite production build)를 100% 녹색 불(Green) 상태로 통과시킴.
+  - **CI/CD 및 배포 연동**: GitHub Actions 워크플로우(`ci-cd.yml`) 및 Ansible `playbook.yml`, `docker-compose.stage.yml` 설정에 `COGNITO_JWK_SET_URI` 환경변수 매핑 파이프라인을 최종 연동하여 배포를 완수함.
+
 ---
 
 ## 2. 다음 목표 (Next Goals)
+- **Cognito Google 소셜 로그인 Staging 실환경 통합 검증**: Staging 서버에 배포하여 Hosted UI와 Google IdP 연동 흐름을 완벽히 모니터링 및 실인증 흐름 체크.
 - **CI/CD 파이프라인 배포 및 인프라 수명주기 보호 최종 검증**: 로컬 패치 변경 사항을 GitHub에 푸시하여 빌드, Trivy 보안 진단, Playwright E2E 검사 및 Staging/Production 인프라 무장애 최종 배포 재검증.
 - **배치 주기별 AI 퍼즐 자동 생성 경과 관찰**: 04:17 AM 크론탭 실행 시 30x30 및 각 그리드별 데일리 퍼즐 생성이 파싱 에러 없이 매끄럽게 수행되는지 추가 모니터링 수행.
 - **Nginx 웹 방화벽(WAF) 도입 검토**: 리소스 제약을 극복하고 Nginx 레벨의 보안 강화를 위한 방화벽 구성안 비교 및 적용 설계 수립.

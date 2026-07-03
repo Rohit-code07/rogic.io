@@ -1,10 +1,19 @@
 export interface UserSession {
   id: number;
-  uuid: string;
+  uuid?: string;
   username: string;
   xp: number;
   level: number;
+  email?: string;
+  profileImageUrl?: string;
+  idToken?: string;
 }
+
+export function getAuthHeader(): Record<string, string> {
+  const token = localStorage.getItem('nemologic_id_token');
+  return token ? { Authorization: `Bearer ${token}` } : {};
+}
+
 
 export const SESSION_KEY = 'nemologic_user_session';
 

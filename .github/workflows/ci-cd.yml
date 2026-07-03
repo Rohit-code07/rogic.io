@@ -167,6 +167,8 @@ jobs:
       - name: Check Terraform Plan
         env:
           TF_VAR_alert_email: ${{ secrets.ALERT_EMAIL }}
+          TF_VAR_google_oauth_client_id: ${{ secrets.GOOGLE_OAUTH_CLIENT_ID }}
+          TF_VAR_google_oauth_client_secret: ${{ secrets.GOOGLE_OAUTH_CLIENT_SECRET }}
         run: |
           cd infra/terraform/envs/staging
           if [ -n "$AWS_ACCESS_KEY_ID" ]; then
@@ -216,6 +218,8 @@ jobs:
           TF_VAR_grafana_auth: ${{ secrets.GRAFANA_AUTH }}
           TF_VAR_grafana_sm_url: ${{ secrets.GRAFANA_SM_URL }}
           TF_VAR_grafana_sm_token: ${{ secrets.GRAFANA_SM_TOKEN }}
+          TF_VAR_google_oauth_client_id: ${{ secrets.GOOGLE_OAUTH_CLIENT_ID }}
+          TF_VAR_google_oauth_client_secret: ${{ secrets.GOOGLE_OAUTH_CLIENT_SECRET }}
         run: |
           cd infra/terraform/envs/production
           if [ -n "$AWS_ACCESS_KEY_ID" ]; then
@@ -251,6 +255,8 @@ jobs:
       - name: Terraform Init & Apply
         env:
           TF_VAR_alert_email: ${{ secrets.ALERT_EMAIL }}
+          TF_VAR_google_oauth_client_id: ${{ secrets.GOOGLE_OAUTH_CLIENT_ID }}
+          TF_VAR_google_oauth_client_secret: ${{ secrets.GOOGLE_OAUTH_CLIENT_SECRET }}
         run: |
           cd infra/terraform/envs/staging
           if [ -n "$AWS_ACCESS_KEY_ID" ]; then
@@ -292,6 +298,8 @@ jobs:
           TF_VAR_grafana_auth: ${{ secrets.GRAFANA_AUTH }}
           TF_VAR_grafana_sm_url: ${{ secrets.GRAFANA_SM_URL }}
           TF_VAR_grafana_sm_token: ${{ secrets.GRAFANA_SM_TOKEN }}
+          TF_VAR_google_oauth_client_id: ${{ secrets.GOOGLE_OAUTH_CLIENT_ID }}
+          TF_VAR_google_oauth_client_secret: ${{ secrets.GOOGLE_OAUTH_CLIENT_SECRET }}
         run: |
           cd infra/terraform/envs/production
           if [ -n "$AWS_ACCESS_KEY_ID" ]; then
@@ -472,6 +480,7 @@ jobs:
           ANSIBLE_BECOME_TIMEOUT: '60'
           AI_API_KEY: ${{ secrets.AI_API_KEY }}
           ALERT_EMAIL: ${{ secrets.ALERT_EMAIL }}
+          COGNITO_JWK_SET_URI: ${{ secrets.COGNITO_JWK_SET_URI }}
           GRAFANA_CLOUD_PROM_URL: ${{ secrets.GRAFANA_CLOUD_PROM_URL }}
           GRAFANA_CLOUD_PROM_USER: ${{ secrets.GRAFANA_CLOUD_PROM_USER }}
           GRAFANA_CLOUD_PROM_TOKEN: ${{ secrets.GRAFANA_CLOUD_PROM_TOKEN }}
@@ -604,6 +613,7 @@ jobs:
           ANSIBLE_BECOME_TIMEOUT: '60'
           AI_API_KEY: ${{ secrets.AI_API_KEY }}
           ALERT_EMAIL: ${{ secrets.ALERT_EMAIL }}
+          COGNITO_JWK_SET_URI: ${{ secrets.COGNITO_JWK_SET_URI }}
           GRAFANA_CLOUD_PROM_URL: ${{ secrets.GRAFANA_CLOUD_PROM_URL }}
           GRAFANA_CLOUD_PROM_USER: ${{ secrets.GRAFANA_CLOUD_PROM_USER }}
           GRAFANA_CLOUD_PROM_TOKEN: ${{ secrets.GRAFANA_CLOUD_PROM_TOKEN }}

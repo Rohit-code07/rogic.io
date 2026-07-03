@@ -26,7 +26,17 @@ public class UserController {
             @PathVariable Long id,
             @RequestParam String difficulty,
             @RequestParam(required = false) Long stageId,
-            @RequestParam(required = false) Integer elapsedTime) {
+            @RequestParam(required = false) Integer elapsedTime,
+            @org.springframework.security.core.annotation.AuthenticationPrincipal org.springframework.security.oauth2.jwt.Jwt jwt) {
+        if (jwt == null) {
+            throw new org.springframework.security.access.AccessDeniedException("Unauthorized");
+        }
+        User targetUser = userService.getUserById(id);
+        String sub = jwt.getClaimAsString("sub");
+        if (targetUser.getOauthId() == null || !targetUser.getOauthId().equals(sub)) {
+            throw new org.springframework.security.access.AccessDeniedException("Access denied: User ID does not match token identity");
+        }
+
         int xpReward;
         switch (difficulty.toUpperCase()) {
             case "EASY":
@@ -45,12 +55,17 @@ public class UserController {
     }
 
     @GetMapping("/{id}/history")
-    public List<HistoryResponse> getUserHistory(@PathVariable Long id) {
+    public List<HistoryResponse> getUserHistory(
+            @PathVariable Long id,
+            @org.springframework.security.core.annotation.AuthenticationPrincipal org.springframework.security.oauth2.jwt.Jwt jwt) {
+        if (jwt == null) {
+            throw new org.springframework.security.access.AccessDeniedException("Unauthorized");
+        }
+        User targetUser = userService.getUserById(id);
+        String sub = jwt.getClaimAsString("sub");
+        if (targetUser.getOauthId() == null || !targetUser.getOauthId().equals(sub)) {
+            throw new org.springframework.security.access.AccessDeniedException("Access denied: User ID does not match token identity");
+        }
         return userService.getUserHistory(id);
-    }
-
-    @PostMapping("/register")
-    public User registerUser() {
-        return userService.registerAnonymousUser();
     }
 }

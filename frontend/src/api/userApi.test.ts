@@ -1,8 +1,11 @@
 import { describe, it, expect, vi } from 'vitest';
 import axios from 'axios';
-import { fetchRanking, clearStage, registerAnonymousUser, fetchUserHistory } from './userApi';
+import { fetchRanking, clearStage, fetchMeFromServer, fetchUserHistory } from './userApi';
 
 vi.mock('axios');
+vi.mock('./auth', () => ({
+  getAuthHeader: () => ({})
+}));
 
 describe('userApi TDD Red Phase', () => {
   it('fetchRanking should call GET /ranking and return user ranking list', async () => {
@@ -25,7 +28,8 @@ describe('userApi TDD Red Phase', () => {
 
     const result = await clearStage(1, 'EASY');
     expect(axios.post).toHaveBeenCalledWith('http://localhost:8080/api/users/1/clear', null, {
-      params: { difficulty: 'EASY' }
+      params: { difficulty: 'EASY' },
+      headers: {}
     });
     expect(result).toEqual(mockUpdatedUser);
   });
@@ -36,7 +40,8 @@ describe('userApi TDD Red Phase', () => {
 
     const result = await clearStage(1, 'EASY', 2, 120);
     expect(axios.post).toHaveBeenCalledWith('http://localhost:8080/api/users/1/clear', null, {
-      params: { difficulty: 'EASY', stageId: 2, elapsedTime: 120 }
+      params: { difficulty: 'EASY', stageId: 2, elapsedTime: 120 },
+      headers: {}
     });
     expect(result).toEqual(mockUpdatedUser);
   });
@@ -48,17 +53,21 @@ describe('userApi TDD Red Phase', () => {
     vi.mocked(axios.get).mockResolvedValue({ data: mockHistory });
 
     const result = await fetchUserHistory(1);
-    expect(axios.get).toHaveBeenCalledWith('http://localhost:8080/api/users/1/history');
+    expect(axios.get).toHaveBeenCalledWith('http://localhost:8080/api/users/1/history', {
+      headers: {}
+    });
     expect(result).toEqual(mockHistory);
   });
 
-  it('registerAnonymousUser should call POST /register and return new anonymous user data', async () => {
-    const mockNewUser = { id: 4, username: 'Anonymous-abc', xp: 0, level: 1, uuid: 'some-uuid' };
-    vi.mocked(axios.post).mockResolvedValue({ data: mockNewUser });
+  it('fetchMeFromServer should call POST /auth/me and return logged-in user profile', async () => {
+    const mockUser = { id: 4, username: 'GoogleUser', xp: 120, level: 2, email: 'user@example.com', profileImageUrl: 'https://example.com' };
+    vi.mocked(axios.post).mockResolvedValue({ data: mockUser });
 
-    const result = await registerAnonymousUser();
-    expect(axios.post).toHaveBeenCalledWith('http://localhost:8080/api/users/register');
-    expect(result).toEqual(mockNewUser);
+    const result = await fetchMeFromServer();
+    expect(axios.post).toHaveBeenCalledWith('http://localhost:8080/api/auth/me', null, {
+      headers: {}
+    });
+    expect(result).toEqual(mockUser);
   });
 });
 

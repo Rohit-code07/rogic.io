@@ -18,6 +18,12 @@ spring:
     hibernate:
       ddl-auto: none
     show-sql: true
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          jwk-set-uri: https://nemologic-test.auth.ap-northeast-2.amazoncognito.com/.well-known/jwks.json
+
 
 admin:
   username: admin

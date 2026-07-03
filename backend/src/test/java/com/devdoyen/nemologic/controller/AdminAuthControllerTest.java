@@ -91,13 +91,13 @@ public class AdminAuthControllerTest {
     @Test
     public void testUnauthorizedAccessToAdminEndpoints() throws Exception {
         mockMvc.perform(get("/api/admin/stages"))
-                .andExpect(status().isForbidden());
+                .andExpect(status().isUnauthorized());
     }
 
     @Test
     public void testInvalidTokenAccessToAdminEndpoints() throws Exception {
         mockMvc.perform(get("/api/admin/stages")
                         .header("Authorization", "Bearer invalid-token"))
-                .andExpect(status().isForbidden());
+                .andExpect(status().isUnauthorized());
     }
 }

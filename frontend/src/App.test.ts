@@ -8,17 +8,25 @@ import * as adminApi from './api/adminApi';
 vi.mock('./api/stageApi');
 vi.mock('./api/userApi');
 vi.mock('./api/adminApi');
+vi.mock('./api/cognito', () => ({
+  loginWithGoogle: vi.fn(),
+  logout: vi.fn(),
+  getStoredToken: vi.fn(() => localStorage.getItem('nemologic_id_token')),
+  isTokenExpired: vi.fn(() => false)
+}));
 
 describe('App.vue Leaderboard Integration TDD', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     localStorage.clear();
-    vi.mocked(userApi.registerAnonymousUser).mockResolvedValue({
+    localStorage.setItem('nemologic_id_token', 'mockHeader.eyzleHAiOjk5OTk5OTk5OTl9.mockSignature');
+    vi.mocked(userApi.fetchMeFromServer).mockResolvedValue({
       id: 1,
-      uuid: 'temp-uuid',
       username: 'Player1',
       xp: 200,
-      level: 2
+      level: 2,
+      email: 'john@example.com',
+      profileImageUrl: 'https://example.com/pic.png'
     });
     vi.mocked(adminApi.fetchAdminStages).mockResolvedValue([
       { id: 1, name: 'Seeded Stage 1', width: 5, height: 5, active: true, approved: true, solutionGrid: [[1]] },
@@ -67,48 +75,41 @@ describe('App.vue Leaderboard Integration TDD', () => {
     expect(items[0].text()).toContain('1000 XP');
   });
 
-  it('should call registerAnonymousUser on mount if no session exists', async () => {
+  it('should stay in guest mode on mount if no session or token exists', async () => {
     localStorage.clear();
     const mockStages = [{ id: 1, name: 'Heart Shape', width: 5, height: 5 }];
     const mockStageDetails = { id: 1, name: 'Heart Shape', width: 5, height: 5, solutionGrid: [[0, 1, 0], [1, 1, 1], [0, 1, 0]] };
     const mockRankings = [{ id: 3, username: 'Player3', xp: 1000, level: 5 }];
-    const mockNewUser = { id: 4, username: 'Anonymous-123', xp: 0, level: 1, uuid: 'temp-uuid' };
 
     vi.spyOn(stageApi, 'fetchStages').mockResolvedValue(mockStages);
     vi.spyOn(stageApi, 'fetchStageById').mockResolvedValue(mockStageDetails);
     vi.spyOn(userApi, 'fetchRanking').mockResolvedValue(mockRankings);
-    const registerSpy = vi.spyOn(userApi, 'registerAnonymousUser').mockResolvedValue(mockNewUser);
+    const fetchMeSpy = vi.spyOn(userApi, 'fetchMeFromServer');
 
     mount(App);
     await new Promise((resolve) => setTimeout(resolve, 50));
 
-    expect(registerSpy).toHaveBeenCalled();
+    expect(fetchMeSpy).not.toHaveBeenCalled();
   });
 
-  it('should not call registerAnonymousUser on mount if session already exists', async () => {
+  it('should call fetchMeFromServer on mount if token is stored', async () => {
     localStorage.clear();
-    const mockSession = {
-      id: 42,
-      uuid: 'abc-123-uuid',
-      username: 'AnonymousHero',
-      xp: 0,
-      level: 1
-    };
-    localStorage.setItem('nemologic_user_session', JSON.stringify(mockSession));
+    localStorage.setItem('nemologic_id_token', 'mockHeader.eyzleHAiOjk5OTk5OTk5OTl9.mockSignature');
 
     const mockStages = [{ id: 1, name: 'Heart Shape', width: 5, height: 5 }];
     const mockStageDetails = { id: 1, name: 'Heart Shape', width: 5, height: 5, solutionGrid: [[0, 1, 0], [1, 1, 1], [0, 1, 0]] };
     const mockRankings = [{ id: 3, username: 'Player3', xp: 1000, level: 5 }];
+    const mockServerUser = { id: 42, username: 'GoogleUser', xp: 100, level: 2, email: 'user@example.com' };
 
     vi.spyOn(stageApi, 'fetchStages').mockResolvedValue(mockStages);
     vi.spyOn(stageApi, 'fetchStageById').mockResolvedValue(mockStageDetails);
     vi.spyOn(userApi, 'fetchRanking').mockResolvedValue(mockRankings);
-    const registerSpy = vi.spyOn(userApi, 'registerAnonymousUser');
+    const fetchMeSpy = vi.spyOn(userApi, 'fetchMeFromServer').mockResolvedValue(mockServerUser);
 
     mount(App);
     await new Promise((resolve) => setTimeout(resolve, 50));
 
-    expect(registerSpy).not.toHaveBeenCalled();
+    expect(fetchMeSpy).toHaveBeenCalled();
   });
 
 

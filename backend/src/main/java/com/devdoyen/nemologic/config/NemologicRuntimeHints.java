@@ -28,5 +28,25 @@ public class NemologicRuntimeHints implements RuntimeHintsRegistrar {
             org.springframework.aot.hint.MemberCategory.INVOKE_PUBLIC_METHODS,
             org.springframework.aot.hint.MemberCategory.DECLARED_FIELDS
         );
+
+        // Register Nimbus JOSE/JWT types for native reflection (required for OAuth2 Resource Server)
+        try {
+            hints.reflection().registerType(
+                Class.forName("com.nimbusds.jwt.SignedJWT"),
+                org.springframework.aot.hint.MemberCategory.INVOKE_PUBLIC_CONSTRUCTORS,
+                org.springframework.aot.hint.MemberCategory.INVOKE_PUBLIC_METHODS
+            );
+            hints.reflection().registerType(
+                Class.forName("com.nimbusds.jose.JWSHeader"),
+                org.springframework.aot.hint.MemberCategory.INVOKE_PUBLIC_CONSTRUCTORS,
+                org.springframework.aot.hint.MemberCategory.INVOKE_PUBLIC_METHODS
+            );
+            hints.reflection().registerType(
+                Class.forName("com.nimbusds.jose.util.JSONObjectUtils"),
+                org.springframework.aot.hint.MemberCategory.INVOKE_PUBLIC_METHODS
+            );
+        } catch (ClassNotFoundException e) {
+            // Ignore if library is not on classpath in certain environments
+        }
     }
 }
