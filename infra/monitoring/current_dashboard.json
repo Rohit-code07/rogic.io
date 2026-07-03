@@ -142,7 +142,7 @@
                         "uid": "${DS_PROMETHEUS}"
                       },
                       "spec": {
-                        "expr": "sum(probe_success{job=\"nemologic-api-health\", instance=\"https://rogic.io/actuator/health\"})",
+                        "expr": "sum(probe_success{job=\"nemologic-api-health\", instance=\"https://$target_domain/actuator/health\"})",
                         "format": "time_series",
                         "legendFormat": "__auto",
                         "instant": true,
@@ -1397,7 +1397,7 @@
                         "uid": "${DS_PROMETHEUS}"
                       },
                       "spec": {
-                        "expr": "changes(probe_success{job=\"nemologic-api-health\", instance=\"https://rogic.io/actuator/health\"}[$__range]) / 2",
+                        "expr": "changes(probe_success{job=\"nemologic-api-health\", instance=\"https://$target_domain/actuator/health\"}[$__range]) / 2",
                         "format": "time_series",
                         "legendFormat": "__auto",
                         "instant": true,
@@ -1485,7 +1485,7 @@
                         "uid": "${DS_PROMETHEUS}"
                       },
                       "spec": {
-                        "expr": "avg_over_time(probe_success{job=\"nemologic-api-health\", instance=\"https://rogic.io/actuator/health\"}[$__range]) * 100",
+                        "expr": "avg_over_time(probe_success{job=\"nemologic-api-health\", instance=\"https://$target_domain/actuator/health\"}[$__range]) * 100",
                         "format": "time_series",
                         "legendFormat": "__auto",
                         "instant": true,
@@ -1575,7 +1575,7 @@
                         "uid": "${DS_PROMETHEUS}"
                       },
                       "spec": {
-                        "expr": "((count_over_time(probe_success{job=\"nemologic-api-health\", instance=\"https://rogic.io/actuator/health\"}[$__range]) - sum_over_time(probe_success{job=\"nemologic-api-health\", instance=\"https://rogic.io/actuator/health\"}[$__range])) * 60) / clamp_min(changes(probe_success{job=\"nemologic-api-health\", instance=\"https://rogic.io/actuator/health\"}[$__range]) / 2, 1)",
+                        "expr": "((count_over_time(probe_success{job=\"nemologic-api-health\", instance=\"https://$target_domain/actuator/health\"}[$__range]) - sum_over_time(probe_success{job=\"nemologic-api-health\", instance=\"https://$target_domain/actuator/health\"}[$__range])) * 60) / clamp_min(changes(probe_success{job=\"nemologic-api-health\", instance=\"https://$target_domain/actuator/health\"}[$__range]) / 2, 1)",
                         "format": "time_series",
                         "legendFormat": "{{probe}}",
                         "instant": true,
@@ -1656,7 +1656,7 @@
                         "uid": "${DS_PROMETHEUS}"
                       },
                       "spec": {
-                        "expr": "(sum_over_time(probe_success{job=\"nemologic-api-health\", instance=\"https://rogic.io/actuator/health\"}[$__range]) * 60) / clamp_min(changes(probe_success{job=\"nemologic-api-health\", instance=\"https://rogic.io/actuator/health\"}[$__range]) / 2, 1)",
+                        "expr": "(sum_over_time(probe_success{job=\"nemologic-api-health\", instance=\"https://$target_domain/actuator/health\"}[$__range]) * 60) / clamp_min(changes(probe_success{job=\"nemologic-api-health\", instance=\"https://$target_domain/actuator/health\"}[$__range]) / 2, 1)",
                         "format": "time_series",
                         "legendFormat": "{{probe}}",
                         "instant": true,
@@ -2107,6 +2107,34 @@
           "sort": "alphabeticalAsc",
           "definition": "label_values(up{scrape_job=\"$instance\"}, scrape_job)",
           "options": [],
+          "multi": false,
+          "includeAll": false,
+          "allowCustomValue": true
+        }
+      },
+      {
+        "kind": "CustomVariable",
+        "spec": {
+          "name": "target_domain",
+          "label": "Target Domain",
+          "hide": "hideVariable",
+          "query": "springboot-prod : rogic.io, springboot-stage : stage.rogic.io",
+          "current": {
+            "text": "rogic.io",
+            "value": "rogic.io"
+          },
+          "options": [
+            {
+              "text": "rogic.io",
+              "value": "rogic.io",
+              "selected": true
+            },
+            {
+              "text": "stage.rogic.io",
+              "value": "stage.rogic.io",
+              "selected": false
+            }
+          ],
           "multi": false,
           "includeAll": false,
           "allowCustomValue": true
