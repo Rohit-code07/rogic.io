@@ -1,44 +1,29 @@
-# rogic.io: Project Portfolio & Infrastructure
+# 0. rogic.io
 
 ## 0.1. Engineering Constraints & Principles
-본 프로젝트는 초경량/초저가 인프라 환경에서 높은 시스템 안정성을 확보하기 위해 아래와 같은 3대 엔지니어링 제약 조건 및 극복 원칙을 수립하여 설계되었습니다.
-
+#### Design Philosophy
 <p align="center">
   <img src="./docs/assets/engineering_principles.png" width="100%" alt="rogic.io Engineering Principles & Constraints" />
 </p>
 
 ## 0.2. Game Concept
+#### Core Game Differentiators
+<p align="center">
+  <img src="./docs/assets/game_differentiators.png" width="100%" alt="rogic.io Core Game Differentiators" />
+</p>
 
-`rogic.io`는 전통적인 사각형 격자판에서 퍼즐을 해결하는 네모로직(노노그램) 게임입니다. 단, 출제 시점에 임의의 각도로 회전된 퍼즐을 해결하면, 완료되는 순간 원래 방향으로 자동 회전 복원되며 완성된 패턴을 올바르게 보여주는 메커니즘을 내장하고 있습니다.
-
+#### Gameplay Video Demonstration
 <p align="center">
   <img src="./docs/assets/rogic_gameplay_demo.webp" width="100%" alt="rogic.io Gameplay Demo" />
 </p>
 
-## 0.3. Service Environments
-
-| Service Environment | Live URL | Deployment Status |
-| :--- | :--- | :--- |
-| 🚀 **Production** | [rogic.io](https://rogic.io) | ![Active](https://img.shields.io/badge/Status-Active-brightgreen) |
-| 🧪 **Staging** | [stage.rogic.io](https://stage.rogic.io) | ![Idle / On-Demand](https://img.shields.io/badge/Status-Idle%20%2F%20On--Demand-blue) |
-
-## 0.4. Technology Stack
-| Category | Technologies |
-| :--- | :--- |
-| **Frontend** | ![Vue 3](https://img.shields.io/badge/Vue_3-35495E?style=flat-square&logo=vuedotjs&logoColor=4FC08D) ![TypeScript](https://img.shields.io/badge/TypeScript-007ACC?style=flat-square&logo=typescript&logoColor=white) ![Canvas API](https://img.shields.io/badge/HTML5_Canvas-E34F26?style=flat-square&logo=html5&logoColor=white) |
-| **Backend** | ![Java 17](https://img.shields.io/badge/Java_17-ED8B00?style=flat-square&logo=openjdk&logoColor=white) ![Spring Boot](https://img.shields.io/badge/Spring_Boot-6DB33F?style=flat-square&logo=spring&logoColor=white) |
-| **Database** | ![PostgreSQL](https://img.shields.io/badge/PostgreSQL_16-4169E1?style=flat-square&logo=postgresql&logoColor=white) |
-| **Infra & IaC** | ![AWS](https://img.shields.io/badge/AWS-232F3E?style=flat-square&logo=amazonwebservices&logoColor=FF9900) ![Terraform](https://img.shields.io/badge/Terraform-7B42BC?style=flat-square&logo=terraform&logoColor=white) ![Ansible](https://img.shields.io/badge/Ansible-EE0000?style=flat-square&logo=ansible&logoColor=white) ![Docker](https://img.shields.io/badge/Docker-2496ED?style=flat-square&logo=docker&logoColor=white) |
-| **CI/CD** | ![GitHub Actions](https://img.shields.io/badge/GitHub_Actions-2088FF?style=flat-square&logo=githubactions&logoColor=white) ![Vitest](https://img.shields.io/badge/Vitest-6E9F18?style=flat-square&logo=vitest&logoColor=white) ![Playwright](https://img.shields.io/badge/Playwright-2EAD33?style=flat-square&logo=playwright&logoColor=white) |
-| **Telemetry** | ![Prometheus](https://img.shields.io/badge/Prometheus-E6522C?style=flat-square&logo=prometheus&logoColor=white) ![Grafana](https://img.shields.io/badge/Grafana_Cloud-F46800?style=flat-square&logo=grafana&logoColor=white) ![CloudWatch](https://img.shields.io/badge/Amazon_CloudWatch-FF4F8B?style=flat-square&logo=amazoncloudwatch&logoColor=white) |
-
 ---
+
+
 
 # 1. Infrastructure
 
 ## 1.1. System Architecture
-
-### 1.1.1. High-Level Diagram
 ```mermaid
 C4Context
     title System Context Diagram for rogic.io (Level 1: System Context)
@@ -70,57 +55,52 @@ C4Context
     Rel(api, cognito, "Downloads JSON Web Key Sets (JWKS) to verify JWT signature", "HTTPS / Port 443")
     Rel(api, postgres, "Reads/Writes game state", "JDBC & JPA / Port 5432")
 ```
+## 1.2. Component Specifications
+### 1.2.1. Compute
+#### Instance Type
+AWS EC2 `t3a.nano` (1 vCPU, 0.5 GiB Memory)
 
-### 1.1.2. Component Specification
-* **Global Edge Delivery (Route 53 / CloudFront / S3)**<br>
-  Vite 컴파일 결과물을 `Amazon S3` 버킷(OAC 설정을 통한 전면 차단)에 배포하고, `Amazon CloudFront` CDN을 통해 글로벌 엣지에 캐싱 배포하여 지연 시간을 최소화하고 S3 직접 요청 요금을 차단했습니다.
-* **Core API Server & Database (EC2 / PostgreSQL)**<br>
-  단일 EC2 인스턴스 내에서 SSL/TLS 종단 및 포트 포워딩을 수행하는 Nginx 프록시, REST API를 처리하는 Spring Boot 컨테이너, 게임 데이터를 영속화하는 PostgreSQL DB 컨테이너를 가상 Docker 브릿지 네트워크로 분리 가동합니다.
-## 1.2. Infrastructure Specifications & Trade-offs
-### 1.2.1. Compute Infrastructure Profile
-* **구현 사양 (Specification)**<br>
-  - 초경량 t3a.nano 인스턴스(512MB RAM)의 단일 자원 프로파일 도입
-  - Spring Boot 런타임 메모리 풋프린트를 30MB 이하로 제어하기 위한 GraalVM Native Image 컴파일 도입
-  - Jackson 역직렬화 메타데이터 힌트를 보완하는 [NemologicRuntimeHints.java](backend/src/main/java/com/devdoyen/nemologic/config/NemologicRuntimeHints.java) 리플렉션 힌트 설계
-  - 호스트 스토리지 여유 공간 관리를 위한 매일 새벽 3시 Docker Garbage Collector(GC) 자동 소거 크론탭 운용
-* **기술적 제약 (Trade-off)**<br>
-  - 512MB 메모리 제약으로 인해 대상 운영 서버 단독에서는 GraalVM 컴파일 빌드 연산 수행 불가 (빌드 리소스 고갈 유발)
-* **완화 대책 (Mitigation)**<br>
-  - CI/CD 파이프라인에서 GitHub Actions가 제공하는 외부 빌드 러너(2 vCPU, 7GB RAM) 환경에 빌드 연산 부하를 오프로딩하고, 운영 서버 호스트는 무부하 네이티브 바이너리 실행만 전담하도록 컴파일 단계를 물리적 분리
+#### Runtime Engine
+Docker / Docker Compose
 
-### 1.2.2. Network & Edge Delivery Profile
-* **구현 사양 (Specification)**<br>
-  - AWS ALB(Application Load Balancer)를 배제하고 Route 53 도메인과 고정 Elastic IP 다이렉트 매핑을 수행하는 단일 경로 수립
-  - Docker Nginx 컨테이너 프록시 가동을 통한 SSL/TLS 종단 및 백엔드 API 포트(8080) 내부 포워딩 처리 전담
-  - Vite 빌드 정적 컴파일 자산을 S3 버킷에 OAC(Origin Access Control) 보안 설정으로 배포하고 CloudFront CDN을 연동해 글로벌 에지 캐싱 전송을 구현하여 지연 시간 단축 및 S3 직접 요청 차단
-* **기술적 제약 (Trade-off)**<br>
-  - 다중 가용구역(Multi-AZ) 무중단 이중화 및 롤링 배포를 배제함으로써 호스트 물리 장애 시 일시적 단일 장애점(SPOF) 리스크 노출
-* **완화 대책 (Mitigation)**<br>
-  - AWS CloudWatch Status Check Metric Alarms를 결합해 물리 하드웨어 결함 발생 시 1분 이내에 인스턴스를 정상 물리 호스트로 자동 복원(Auto Recovery) 및 EIP 재바인딩 처리
+#### Application Stack
+Spring Boot (GraalVM Native Image 컴파일 적용, 메모리 점유 30MB 임계 설계)
 
-### 1.2.3. Data Tier & Resilience Profile
-* **구현 사양 (Specification)**<br>
-  - AWS RDS 서비스를 배제하고 EC2 내부 Docker Compose 환경에서 PostgreSQL 컨테이너 직접 가동
-* **기술적 제약 (Trade-off)**<br>
-  - 초경량 인프라(t3a.nano 512MB RAM)의 물리적 자원 임계 한계 극복을 위해 데이터베이스 계층의 다중화 및 분산 클러스터링 구조 배제
-  - 데이터베이스 형상 갱신 및 재기동 시 커넥션 풀 차단으로 인한 일시적인 서비스 순단(Downtime) 발생 불가피
-  - AWS RDS 완전관리형 시점 복구(PITR) 미지원에 따른 최대 데이터 유실 한계 목표(RPO) 3시간 설정
-* **완화 대책 (Mitigation)**<br>
-  - 3시간 주기 DB dump 데이터를 S3 독립 백업 버킷으로 전송하는 쉘 스크립트와 Cron 배포 및 30일 경과 백업 자동 파기 정책 연동
-  - 깃허브 Actions 원클릭 복원 워크플로우([db-restore.yml](./.github/workflows/db-restore.yml)) 및 SSM SendCommand 기반 자동 복원 스크립트를 구축하여, 실측 복구 시간(RTO)을 초기 목표(20분) 대비 **37~38초** 수준으로 극대화 단축하여 회복력 보완
+### 1.2.2. Network & Traffic
+#### DNS Resolution
+Route 53 호스팅 영역 (도메인 A 레코드 맵핑)
 
-### 1.2.4. Lifecycle of Staging Environment
-* **구현 사양 (Specification)**<br>
-  - 개발/검증용 Staging EC2 인스턴스는 불필요한 상시 가동 비용을 방지하기 위해 평시에 중지(Stopped) 상태 유지
-* **제어 사양 (Specification)**<br>
-  - GitHub Actions `deploy-staging` 실행 시 AWS CLI로 인스턴스를 자동 기동(Start)하여 배포 및 Playwright 브라우저 E2E 테스트 검증 진행
-  - 검증 완료 후 야간(매일 새벽 2시 KST)에 정지 자동화 스케줄([staging-cleanup.yml](.github/workflows/staging-cleanup.yml))을 구동하여 자원 회수 자동화 구현
+#### IPv4 Address
+AWS Elastic IP (EIP) 고정 공인 IP 할당
 
----
+#### Reverse Proxy
+Docker Nginx Proxy (80/443 SSL 종단 및 백엔드 포워딩)
 
+### 1.2.3. Storage & CDN
+#### Static Content
+Amazon S3 (Vite Vue 정적 빌드 자산 저장)
+
+#### Content Delivery Network
+Amazon CloudFront (OAC 보안 권한 연결)
+
+#### Persistent Volume
+AWS EBS gp3 (10 GiB 스토리지 볼륨)
+
+### 1.2.4. Database
+#### Database Engine
+PostgreSQL 16 (Docker Container)
+
+#### Backup Storage
+S3 Backup Bucket (3시간 주기 데이터 스냅샷 적재)
+
+### 1.2.5. Staging Environment
+#### Instance Lifecycle
+On-Demand 기동식 (배포/E2E 테스트 시점 자동 Start)
+
+#### Resource Cleanup
+Cron Schedule 기반 야간 정지 자동화 (`staging-cleanup.yml`)
 
 ## 1.3. Observability
-본 프로젝트는 시스템 가용성과 지표 수집 부하 최소화 통제를 위해 업계 표준 모니터링 핵심 영역(Metrics, Logs, Alerting & SLO)을 관제 아키텍처로 구축했습니다.
 
 ### 1.3.1. Metrics & Telemetry
 ```mermaid
@@ -152,38 +132,40 @@ C4Container
     Rel(spring, cw, "Streams application logs", "awslogs driver")
 ```
 
-* **Agentless Pull 아키텍처 수립**<br>
-  - 호스트 내부 CPU/메모리 자원을 소모하는 별도 수집 에이전트(Grafana Alloy 등)를 완전히 배제
-  - Nginx 리버스 프록시 단에서 `Authorization: Bearer` 헤더 토큰을 상시 대조 검증하는 가상 라우팅 경로를 개방
-  - 외부 Grafana Cloud의 Prometheus/Mimir 서버가 정기적으로 지표를 직접 Scrape(Scraping)하도록 설계하여 에이전트 구동 부하를 0으로 통제
+#### Collection Architecture
+Agentless Pull (에이전트 데몬 배제 및 Mimir 직접 수집)
+
+#### Access Security
+Nginx Reverse Proxy단 Bearer Token 상호 검증 및 가상 경로 바인딩
+
+#### Performance Overhead
+호스트 내부 리소스(CPU/MEM) 점유 부하 0% 수렴
 
 ### 1.3.2. Log Aggregation & Storage
-* **awslogs Docker 드라이버 실시간 스트리밍**<br>
-  - 개별 컨테이너 내부 콘솔 출력을 디스크 파일 대신 AWS CloudWatch Logs(`/aws/ec2/nemologic`)로 즉시 리다이렉트 포워딩
-  - 호스트 로컬 내에 원시 로그를 축적하지 않아 디스크 공간 고갈 및 I/O 병목 리스크 사전 격리
-* **액세스 지표 로그 필터링**<br>
-  - 헬스체크 및 주기적인 프로메테우스 메트릭 수집 API 호출 경로의 Nginx Access Log 로깅을 강제 중지(`access_log off;`) 처리
-  - 불필요한 관제 트래픽에 의한 스토리지 낭비 및 CPU 소모 통제
+#### Shipping Driver
+`awslogs` Docker Logging Driver (실시간 콘솔 출력 수집)
+
+#### Storage Target
+Amazon CloudWatch Logs (호스트 디스크 점유 배제)
+
+#### Log Filtration
+Nginx `/actuator/*` 및 `/node-metrics` 경로 Access Log 로깅 off
 
 ### 1.3.3. Alerting & SLO Visualization
-* **싱가포르/시드니/도쿄 3중 가용성 관제**<br>
-  - Grafana Cloud Synthetic Monitoring 프로브를 통해 다중 글로벌 리전 엣지(싱가포르, 시드니, 도쿄)에서 1분 간격으로 `/actuator/health` 헬스체크 다중 모니터링 수행
-  - 단일 지점 프로브 오류에 따른 오탐을 방지하고 다중 감색 가용성 검증 체계 구현
-* **AWS SNS 경보 메일 전송**<br>
-  - CloudWatch Logs Metric Filter 임계치 초과 장애 감지 시 AWS SNS 토픽을 트리거하여 SRE 메일로 장애 인시던트 즉시 전파
-* **통합 SLA 대시보드 시각화 ([current_dashboard.json](infra/monitoring/current_dashboard.json))**<br>
-  - 핵심 가용성 지표(Uptime SLA, Incident Count, MTTR, MTBF)를 Grafana 대시보드 상단 단일 행 4열 KPI 카드로 일괄 관제 가능하도록 동적 연동 구성
-  - 레이아웃 구성용 예시 링크: [Grafana Live Public Dashboard](https://grandwalrus3189.grafana.net/public-dashboards/ec9e06b0d1ea4540b97af6b56abb1380) (민감 메트릭 배제 데모용 구성)
-  - 상세 관제 PromQL 수식 및 쿼리 구현은 부록 [6.2. PromQL Query Formulations (SLO Metrics)](#62-promql-query-formulations-slo-metrics) 참고
+#### Synthetic Probes
+Grafana Cloud Synthetic Monitoring (Singapore, Sydney, Tokyo 3중 엣지 헬스체크)
+
+#### Incident Alarm
+CloudWatch Logs Metric Filter 임계값 초과 경보 -> AWS SNS 이메일 즉시 전파
+
+#### SLO Dashboard
+Grafana API-integrated Dashboard (Uptime SLA, Incident, MTTR, MTBF KPI 연동, 예시 링크: [Grafana Live Public Dashboard](https://grandwalrus3189.grafana.net/public-dashboards/ec9e06b0d1ea4540b97af6b56abb1380) / 상세 PromQL 명세는 [docs/appendices.md](file:///c:/Users/82107/dev/project/nemologic/docs/appendices.md#2-promql-query-formulations-slo-metrics) 참고)
 
 ---
 
 ## 1.4. Disaster Recovery
-본 프로젝트는 저사양 단일 EC2 아키텍처 하에서의 재해 복구(DR) 신뢰성을 극대화하기 위해, 인프라 자동 복원 메커니즘과 원격 백업 소산 복구 파이프라인을 구축했습니다.
 
 ### 1.4.1. DR Recovery Flow
-장애 발생 유형(하드웨어 크래시 vs 데이터베이스 손상)에 따른 대응 프로세스 및 예상 복구 시간(RTO) 흐름도입니다.
-
 ```mermaid
 stateDiagram-v2
     state "Normal Operation (정상 운영)" as Normal
@@ -213,55 +195,47 @@ stateDiagram-v2
     ManualRec --> Normal : Complete DB Restoration (RTO: 37~360 sec)
 ```
 
+#### Auto Recovery RTO
+1 ~ 2분 (Status Check Fail 감지 시 CloudWatch Alarm 및 호스트 물리 복원 즉시 수행)
+
+#### Manual Recovery RTO
+37 ~ 360초 (GitHub Actions `db-restore.yml` 원클릭 복구 파이프라인 및 SSM SendCommand 가동)
+
 ### 1.4.2. Storage & Backup Design
-* **독립형 EBS 볼륨 영속성 분리**<br>
-  - EC2 가상머신 삭제 및 재기동 장애 시에도 데이터가 보존되도록 OS 영역과 별개인 독립형 10GB gp3 EBS 볼륨을 분리하여 설계
-  - 테라폼 리소스 수명주기 보호 규칙(`prevent_destroy = true`) 및 EC2 해제 시 볼륨 영구 보존 규칙(`delete_on_termination = false`) 바인딩 완료
-  - 도커 볼륨을 호스트 절대 경로 바인드 마운트(`/opt/nemologic/db_data`)로 일원화하여 볼륨 유실 리스크 사전 차단
-* **데이터 백업 및 S3 격리 소산**<br>
-  - 매 3시간 간격으로 EC2 호스트 내부의 PostgreSQL 데이터베이스 덤프(`pg_dump`)를 가동하는 자동 백업 스크립트 운용
-  - 백업 결과물은 즉각 Amazon S3 격리 백업 버킷(`nemologic-backup-bucket`)으로 원격 이관 및 소산 저장
-  - 스토리지 비용 조율을 위해 30일이 경과한 노후 백업본은 S3 Lifecycle 규칙을 통해 자동 영구 소거
+#### Persistent Volume
+AWS EBS gp3 (10 GiB 독립 탑재, prevent_destroy 및 OS 영역 분리 보존)
 
----
+#### Volume Binding
+Host Bind Mount (`/opt/nemologic/db_data` 경로 볼륨 유실 원천 차단)
 
-## 1.5. Troubleshooting
+#### Database Backup
+3시간 주기 `pg_dump` 자동 덤프 스케줄링 및 S3 백업 버킷 원격 격리 소산
 
-### 1.5.1. Host Memory Exhaustion Incident
-* **배경**<br>
-  - 인프라 비용 극 최소화(월 $11.45 구성)를 위해 t3a.nano 인스턴스(512MB RAM) 환경을 선택하였으나, 모니터링 수집 에이전트(Grafana Alloy)의 메모리 점유(100MB+)와 블루/그린 배포 시점에 Spring Boot 컨테이너 2개가 일시적으로 동시에 기동하면서 물리 메모리 한계를 초과하여 OOM 및 CPU 스레싱 장애가 빈번히 발생함.
-  - 특히 최초 배포 시(콜드 스타트) 로컬 캐시 이미지가 없는 상태에서 수백 MB 상당의 Base Image 다운로드 및 압축 해제가 겹쳐 디스크 I/O 병목이 발생, 배포 파이프라인이 1시간 이상 멈춰있다가 중단되는 현상이 일어남.
-* **해결 방안**<br>
-  - **자원 진단 및 임계 지표 이식**: SSH 지연 상황에서 리눅스 `top` 및 `vmstat` 명령어를 활용해 CPU `idle` 0% 수렴 및 I/O Wait(`wa`)의 급격한 상승에 따른 디스크/CPU 스래싱 상태를 정확히 규명했습니다. 진단 결과를 토대로 Grafana Cloud 모니터링 대시보드에 `wa` 및 `idle` 지표를 관측 가능하도록 추가 이식했습니다.
-  - **수집 에이전트 걷어내기**: 자원 점유가 큰 Alloy 데몬을 제거하고 Grafana Mimir가 Nginx 프록시를 통해 지표를 직접 Scrape하는 Agentless Pull 구조로 전면 전환했습니다.
-  - **런타임 초경량화 및 메모리 스왑**: Spring Boot 구동 풋프린트를 30MB 이하로 압축하기 위해 GraalVM Native Image 컴파일 옵션을 도입하고, 2GB 크기의 SWAP 파티션을 활성화하여 컨테이너 교체 순간의 일시적 메모리 피크를 완충했습니다.
-  - **도커 이미지 캐시 활용**: 첫 콜드 배포 이후에는 도커 레지스트리 로컬 이미지 캐싱 및 레이어 재사용 메커니즘을 통해 이미지 Pull/Extract 부하가 대폭 낮아져 I/O 스래싱 병목이 자동 해소되도록 유도했습니다. 추가적으로 Docker 미사용 이미지/볼륨 정리를 위해 주기적 GC 크론탭을 바인딩했습니다.
-* **기술적 교훈 및 의사결정(Retrospective)**<br>
-  - 극단적인 512MB RAM 환경에서도 엔지니어가 리눅스 저수준 도구(`top`, `vmstat`)를 활용한 실시간 리소스 감색 및 메트릭 이식을 거쳐 병목 지점을 과학적으로 밝히고 극복한 사례입니다.
-  - 자원 스케일업 대신 애플리케이션의 런타임 자체를 Native화하고 도커 로컬 캐시 메커니즘과 SWAP 설정을 결합하여, 최소 비용 서버에서도 고가용성 및 복구 지향적 운영(ROA)이 가능함을 실증했습니다.
+#### Lifecycle Policy
+30일 경과 노후 스냅샷 S3 Lifecycle 규격 기반 자동 영구 파기
 
 
 ---
 
 # 2. Security
-본 프로젝트는 서비스 무결성과 호스트 시스템 보호를 위해 AWS Well-Architected Framework의 보안 기둥(Security Pillar) 설계 가이드라인에 부합하는 3대 보안 제어 정책을 구현했습니다.
 
 ## 2.1. Identity & Access Management
-* **SSM Session Manager 도입**<br>
-  - 무작위 대입 공격과 SSH 키 유출 리스크가 높은 호스트 SSH(22) 포트를 인바운드 보안 그룹에서 완전 차단
-  - IAM 자격 증명 기반의 AWS Systems Manager Session Manager를 경유하는 세션 통신만 허용
-* **Ansible SSM 터널 캡슐화**<br>
-  - 호스트의 22번 포트를 원격 개방하지 않고, 로컬 및 배포 러너 환경에서 `aws ssm start-session` 프록시 명령(`ProxyCommand`)을 SSH 터널로 캡슐화
-  - 해당 터널 내부에서 기존 SSH 인증 키(PEM)를 활용한 2차 인증을 통과해야만 Ansible Playbook 가동이 가능하도록 이중 방어선 구축 (상세 `hosts.ini` 구성은 부록 [6.1.3. AWS SSM Session Manager Setup](#613-aws-ssm-session-manager-setup) 참고)
-* **OIDC Keyless Authentication**<br>
-  - GitHub Actions 러너 배포 시 하드코딩된 AWS API Access Key 사용을 전면 배제
-  - GitHub OIDC(OpenID Connect) 연동을 수립하여 배포 시점에 AWS STS로부터 1회용 단기 자격 증명(`AssumeRole`)을 획득함으로써 유출 경로 원천 제거
-* **서비스 수준 최소 권한 정책 (Least Privilege)**<br>
-  - 테라폼 및 Ansible 배포 범위에 정확히 부합하는 서비스 수준 최소 권한 정책(Staging/Production 별 커스텀 IAM Policy) 바인딩
-  - 허용 자원 이외의 타 서비스 자원(예: RDS, Lambda, KMS 등) 관리를 원천 배제하여 위협 반경 차단
+### 2.1.1. Host Access Control
+#### Session Manager
+Systems Manager Session Manager 경유 접속 (호스트 인바운드 22 SSH 완전 차단)
 
-### 2.1.1. IAM Least Privilege Design
-EC2 호스트 및 CI/CD 파이프라인 각각의 실행 주체별로 실제 적용된 IAM 권한과 OIDC 단기 자격 증명 기반의 자원 통제 아키텍처는 다음과 같습니다.
+#### Ansible SSM Tunnel
+`aws ssm start-session` SSH ProxyCommand 프록시 캡슐화 및 로컬 PEM 인증 결합 (상세 구성은 [docs/appendices.md](file:///c:/Users/82107/dev/project/nemologic/docs/appendices.md#13-aws-ssm-session-manager-setup) 참고)
+
+### 2.1.2. Pipeline Authentication
+#### OIDC Keyless Auth
+GitHub Actions OIDC 연동 STS 단기 자격 증명(`AssumeRole`) 위임 (Secret Key 노출 원천 제거)
+
+#### Least Privilege Policy
+Staging/Production 별 전용 Custom IAM Policy 할당을 통한 타서비스 자원 접근 차단
+
+
+### 2.1.3. IAM Least Privilege Design
 
 ```mermaid
 C4Component
@@ -313,23 +287,13 @@ C4Component
 | **EC2 Host Role** | Instance Profile | `AmazonSSMManagedInstanceCore`<br>Staging: `CloudWatchAgentServerPolicy` (관리형)<br>Production: `nemologic-cloudwatch-log-policy` (커스텀)<br>`s3_backup_policy` (커스텀) | SSM 터널링 활성화, CloudWatch 로그 실시간 포워딩(Staging/Production 별 정책 차등 적용), DB 백업 S3 업로드 권한 제어 |
 | **CI/CD Runner (GitHub)** | AWS OIDC (Keyless) | `nemologic-staging-github-policy`<br>`nemologic-production-github-policy` (커스텀) | `sts:AssumeRoleWithWebIdentity`를 통해 GitHub Actions OIDC 토큰으로 1회용 단기 자격 증명을 획득하여 Terraform 및 배포 수행 (Secret Key 하드코딩 배제 및 최소 권한 수립) |
 
-### 2.1.2. Federated Auth (AWS Cognito) & JWT Security
-AWS Cognito와 Google OAuth 2.0 연동 및 PKCE 플로우를 도입하여, 프론트엔드 Single Page App(SPA)과 백엔드 API 간의 자격 증명 탈취 가능성을 최소화하고 분리된 환경 인증을 구현했습니다.
-
-* **OAuth 2.0 PKCE(Proof Key for Code Exchange) Flow 적용**<br>
-  - 브라우저 클라이언트가 Cognito Hosted UI 인증을 수행할 때 암호학적 임의 키 검증(Code Verifier & Challenge) 방식을 활용
-  - Authorization Code가 중간에서 가로채지더라도 실제 Verifier 키가 없으면 토큰 교환이 원천적으로 불가능하도록 설계하여 클라이언트 측 가로채기 위협 방어
-* **무상태(Stateless) JWT 기반 보안 아키텍처**<br>
-  - 백엔드 Spring Security API는 세션 상태를 저장하지 않고 오직 클라이언트가 전달한 JWT(ID Token)의 유효성 검증만 수행
-  - AWS Cognito User Pool의 신뢰성 높은 공개키 세트(JWKS URI)를 기동 시점 또는 런타임에 동적 조회하여 JWT 서명 무결성(`RS256`)을 독립 검증
-* **환경별 도메인 및 리디렉션 주소 동적 결정**<br>
-  - 클라이언트 앱이 런타임에 접속한 오리진(`window.location.origin`)을 기반으로 인증 콜백/로그아웃 URL을 동적 해석 및 전달
-  - 테라폼으로 배포된 Staging/Production 각각의 Cognito Client 등록 허용 정보와 일치시킴으로써 주소 오염 차단
-* **토큰 유효 기간 최소화 및 수명 제어 (Token Lifetime Minimization)**<br>
-  - 유출 토큰의 오용 가능성을 최소화하기 위해 Access Token 및 ID Token의 수명을 각각 **5분**으로 극단 단축하고, Refresh Token은 30일로 설정
-* **리프레시 토큰 로테이션 및 폐기 연동 (Rotation & Revocation)**<br>
-  - 신규 Access Token 발급 시점마다 기존 리프레시 토큰을 무효화(One-time Use)하고 매번 신규 리프레시 토큰을 재발급하는 **로테이션(Rotation)** 메커니즘을 적용하여 토큰 복제 위협 방어
-  - 사용자 로그아웃 시 Cognito 자원 단방향 엔드포인트를 호출하여 토큰을 즉시 **폐기(Revocation)** 처리 완료
+### 2.1.4. User Authentication & Authorization
+* **OAuth 2.0 PKCE Flow**: Hosted UI 기반 암호학적 임의 키 검증(Code Verifier & Challenge)을 통한 토큰 갈취 방어
+* **Stateless JWT Security**: Spring Security 무상태 검증 및 AWS JWKS URI 동적 키 조회 서명 검증(`RS256`)
+* **Environment Redirection**: `window.location.origin` 기반 인증 콜백/로그아웃 URL 동적 해석 및 Cognito Client 매핑
+* **Token Lifetime**: Access/ID Token 수명 5분 단축 설정 및 Refresh Token 30일 설정
+* **Token Rotation**: 갱신 요청 시마다 Refresh Token 무효화 및 신규 발급(One-time Use) 강제화
+* **Token Revocation**: 사용자 로그아웃 요청 시 Cognito Revocation Endpoint 연동 강제 무효화
 
 ---
 
@@ -384,55 +348,56 @@ C4Container
 ```
 
 ### 2.2.1. Network & Host Security
-* **물리 격리형 VPC 구성 (VPC Isolation)**<br>
-  - Staging VPC(`10.1.0.0/16`)와 Production VPC(`10.0.0.0/16`)를 개별 서브넷 대역과 독립 인프라망으로 분리 프로비저닝하여 망간 교차 접근을 원천 차단
-  - 테스트 환경의 영향이 실제 운영계(Production) 네트워크로 전이되는 위협 방지
-* **최소 인바운드 포트 제한 (Least Inbound Access)**<br>
-  - 외부 서비스 및 모니터링 연동을 위한 Nginx 포트(80, 443)만 보안 그룹(Security Group) 인바운드에서 개방
-  - SSH(22), Spring API(8080), Vite Frontend 개발(5173) 포트는 보안 그룹에서 차단하여 호스트 노출 반경 축소
-* **원격 메트릭 수집 프록시 중재 (Metrics Scraping Proxy)**<br>
-  - Prometheus 메트릭 수집기가 외부에서 백엔드 Actuator 포트(8080)를 직접 노출 호출하는 것을 차단
-  - Nginx HTTPS(443) 인터페이스의 Bearer 토큰 보안 검증을 통과한 통신에 한하여 로컬 루프백망(`/actuator/prometheus`)으로 요청을 포워딩 및 중재
+#### VPC Isolation
+Staging VPC(`10.1.0.0/16`)와 Production VPC(`10.0.0.0/16`) 서브넷 분리를 통한 접근 차단
+
+#### Port Restriction
+Nginx 외부 개방 포트(80, 443) 제한 및 SSH(22)/API/Vite 포트 인바운드 차단
+
+#### Scraping Proxy
+Actuator 포트(8080) 직접 호출 차단 및 Nginx Bearer 토큰 검증 통과 트래픽만 로컬 루프백 전달
 
 ### 2.2.2. Container Security
-* **다계층 도커 브리지 네트워크 격리 (Multi-tier Network Partitioning)**<br>
-  - 단일 EC2 호스트 내부의 인터넷 개방점인 Nginx 프록시(`frontend-net`)가 DB 컨테이너(`backend-net`)에 직접 통신하지 못하도록 도커 가상 네트워크를 물리 분리
-  - 백엔드 API 컨테이너만 두 브리지망에 동시 참여하는 가교(Bridge) 역할을 수행하여 횡적 이동(Lateral Movement) 위협을 격리
-* **데이터베이스 아웃바운드 인터넷 격리 (Internal Database Isolation)**<br>
-  - Database 컨테이너가 상주하는 `backend-net` 브리지 네트워크에 `internal: true` 속성을 지정하여 외부 아웃바운드 인터넷 시도를 전면 봉쇄
-  - RCE(원격 코드 실행) 침투 시 리버스 커넥션 수립 및 무단 데이터 유출(Data Exfiltration)을 구조적으로 무력화
-* **비특권 사용자 실행 권한 격리 (Non-root Execution)**<br>
-  - Nginx 공식 비특권 이미지(`nginxinc/nginx-unprivileged:alpine`)를 채택하여 컨테이너가 호스트의 root가 아닌 비특권 전용 계정(UID 101)으로 가동되도록 통제
-  - 컨테이너 내부 탈취 시 호스트 계정 권한 상승(Privilege Escalation) 위협 차단
-* **읽기 전용 파일시스템 및 임시 쓰기 격리 (Read-Only rootfs & tmpfs)**<br>
-  - 컨테이너 구동 명세에 `read_only: true` 옵션을 인라인 부여하여 애플리케이션 루트 파일시스템 전체를 읽기 전용 상태로 불변화(Immutability)
-  - PID 파일 등 런타임에 필수적으로 발생하는 파일 쓰기 활동은 인스턴스 전용 `tmpfs` 메모리 마운트(`/tmp`) 및 특정 Let's Encrypt SSL 파일 권한 맵핑(`group_add: - root`)으로 우회 허용
-* **Docker API 파이프라인 데이터 보호 (Safe Backup)**<br>
-  - 컨테이너 외부나 호스트 디바이스에 DB 패스워드를 노출하지 않고, 호스트 단에서 Docker API 표준 출력 파이프라인(`docker exec pg_dump`)으로 직접 캡슐화 처리하여 백업 데이터 무결성 획득
+#### Network Partitioning
+Nginx 프록시(`frontend-net`)와 DB 컨테이너(`backend-net`) 간 다계층 도커 가상망 격리
 
+#### Database Isolation
+`backend-net` 브리지에 `internal: true` 지정하여 DB 아웃바운드 인터넷 차단
+
+#### Non-root Execution
+`nginx-unprivileged:alpine` 채택을 통한 비특권 전용 계정(UID 101) 구동 강제화
+
+#### Read-Only rootfs
+컨테이너 `read_only: true` 적용 및 쓰기 활동용 `tmpfs` 메모리 마운트 `/tmp` 격리
+
+#### Safe Backup
+Docker API 표준 출력 파이프라인(`docker exec pg_dump`) 캡슐화를 통한 패스워드 노출 차단
 
 ### 2.2.3. Security Group Configuration
-* **보안 그룹 인바운드 제어 (Security Group Ingress/Egress Rule)**<br>
-  외부 인터넷과의 경계점 포트를 제어하고, 아웃바운드 전송 트래픽 규격을 명확히 고정합니다.
+#### Ingress Control
+외부 인터넷 경계점 인바운드 포트 최소화 (80, 443 포트만 오픈)
 
-  | 허용 포트 (Port) | 프로토콜 (Protocol) | 소스 (Source) | 목적 및 대상 서비스 |
-  | :---: | :---: | :---: | :--- |
-  | 80 | TCP | `0.0.0.0/0` | Nginx HTTP 웹 서버 (HTTPS 301 리다이렉트용) |
-  | 443 | TCP | `0.0.0.0/0` | Nginx HTTPS 보안 웹 서비스 및 API 통신 (모니터링 스크래핑 포함) |
+| 허용 포트 (Port) | 프로토콜 (Protocol) | 소스 (Source) | 목적 및 대상 서비스 |
+| :---: | :---: | :---: | :--- |
+| 80 | TCP | `0.0.0.0/0` | Nginx HTTP 웹 서버 (HTTPS 301 리다이렉트용) |
+| 443 | TCP | `0.0.0.0/0` | Nginx HTTPS 보안 웹 서비스 및 API 통신 (모니터링 스크래핑 포함) |
 
-  | 허용 포트 (Port) | 프로토콜 (Protocol) | 대상 (Destination) | 비고 |
-  | :---: | :---: | :---: | :--- |
-  | All | All | `0.0.0.0/0` | 패키지 업데이트, 외부 API 호출 및 DB 백업 S3 업로드용 |
+#### Egress Control
+패키지 갱신 및 S3 백업 전송을 위한 아웃바운드 전송 통제
+
+| 허용 포트 (Port) | 프로토콜 (Protocol) | 대상 (Destination) | 비고 |
+| :---: | :---: | :---: | :--- |
+| All | All | `0.0.0.0/0` | 패키지 업데이트, 외부 API 호출 및 DB 백업 S3 업로드용 |
 
 ---
 
 ## 2.3. Data Protection
-* **인증서 자동 갱신 자동화**<br>
-  - Let's Encrypt 무료 SSL 인증서를 발급받아 HTTPS(443) 통신 및 HTTP(80) 301 리다이렉트 정책 구현
-  - 3개월 주기 만료 전에 인증서를 자동 갱신할 수 있도록 pre/post 쉘 스크립트 훅을 Certbot 데몬에 연동하여 만료 다운타임 예방
-* **원격 상태 형상 보안**<br>
-  - AWS S3 버킷과 DynamoDB 테이블(`LockID`)을 테라폼 Backend로 지정하여 협업 및 배포 시 상태 파일(State)의 동시 수정 충돌 및 손상 원천 방지
-  - 상태 파일 암호화 정책을 연동하여 인프라 형상 자산 정보 보호
+#### SSL Certification
+Let's Encrypt SSL/TLS 443 통신 및 Certbot 자동 갱신 pre/post 훅 스케줄러 연동
+
+#### State Lock Management
+AWS S3 버킷 암호화 저장 및 DynamoDB 테이블(`LockID`) Backend 지정을 통한 형상 충돌 차단
+
 
 ---
 
@@ -440,9 +405,6 @@ C4Container
 # 3. CI/CD
 
 ## 3.1. Pipeline Workflow
-본 프로젝트는 코드 형상 통합부터 운영계 실배포까지의 생애주기를 제어하기 위해 4단계 GitOps 배포 워크플로우를 적용했습니다.
-
-### 3.1.1. GitOps Flowchart
 ```mermaid
 stateDiagram-v2
     direction LR
@@ -497,70 +459,44 @@ stateDiagram-v2
     Production --> [*] : Production Release Complete
 ```
 
-### 3.1.2. Pipeline Trigger Optimization
-* **경로 기반 빌드 스킵 (Path Filtering)**<br>
-  - 단순 마크다운 문서 수정(`*.md`) 이나 로컬 설정 커밋 유입 시에는 빌드/컴파일 단계를 스킵하여 Actions 컴퓨팅 자원 및 배포 속도 최적화
-* **배포 경합 및 대기 자동 취소 (Concurrency)**<br>
-  - Staging 환경 배포가 기동 중인 상태에서 신규 변경 커밋이 추가 유입되는 즉시 이전 배포 단계를 자동 강제 취소(`cancel-in-progress: true`)하여 배포 꼬임 현상 원천 배제
+### 3.1.1. Trigger Optimization
+#### Path Filtering
+단순 문서 수정(`*.md`) 이나 로컬 설정 유입 시 빌드 스킵 (Actions 컴퓨팅 시간 절감)
+
+#### Concurrency Limit
+Staging 배포 중 신규 커밋 유입 시 이전 배포 즉시 취소 (`cancel-in-progress: true`)
 
 ---
 
 ## 3.2. Artifact & Release Management
-안정적인 빌드 파일 생성, 배포 가용성 확보 및 정기 릴리즈 주기를 제어하기 위한 산출물과 자산 배포 관리 체계입니다.
+#### Compute Offloading
+빌드 및 Native 컴파일 연산을 GitHub Actions 클라우드 환경으로 완전 오프로딩 (상세 사양은 [1.2.1. Compute](#121-compute) 및 [1.3.1. Compute Limit](#131-compute-limit) 참고)
 
-### 3.2.1. Compute Offloading
-* **Actions Runner 컴파일 오프로딩**<br>
-  - 512MB RAM 극단 사양을 지닌 운영 서버의 컴파일 부하 고갈을 예방하기 위해 빌드 및 패키징 연산을 GitHub Actions 클라우드 환경으로 완전 오프로딩 (상세 완화 구조는 [1.2. Cost Optimization](#12-cost-optimization) 내 Compute 최적화 단락 참고)
+#### Static Asset Delivery
+Vite 컴파일 정적 파일 bundle S3 다이렉트 동기화(`aws s3 sync`) 및 CloudFront Edge Invalidation 트리거
 
-### 3.2.2. Static Asset Delivery
-* **Vite 정적 자산 다이렉트 동기화**<br>
-  - 프론트엔드 빌드 시 무거운 도커 이미지 캡슐화 배포 대신, 컴파일 완료된 정적 파일 번들(index.html, JS/CSS)을 AWS S3 버킷으로 다이렉트 동기화(`aws s3 sync`)하고 CloudFront Edge Invalidation을 트리거하여 초경량 CDN 에지 딜리버리 수립
-
-### 3.2.3. Release Versioning Automation
-* **자동화된 SemVer 및 Release 작성**<br>
-  - 커밋 메시지 헤더 토큰(`feat:`, `fix:`) 규격을 기계적으로 파싱하여 Semantic Versioning 버전을 자동 갱신
-  - 변경 이력(Changelog) 작성 및 릴리즈 발행 과정을 100% 자동화하여 배포 신뢰성과 변경 추적 가독성 획득
+#### Versioning Automation
+커밋 헤더(`feat:`, `fix:`) 규격 파싱을 통한 Semantic Versioning 자동 갱신 및 Changelog 자동 작성
 
 ---
 
 ## 3.3. Continuous Validation
-코드 통합 시점부터 프로덕션 배포 완료 시점까지 시스템의 안전성과 정합성을 실시간 입증하는 품질 검증 및 승인 게이트 통제 체계입니다.
-
 ### 3.3.1. Verification Gates
-* **다단계 코드 정합성 검증**<br>
-  - **컴파일 & 단위 테스트**: 로컬 PR 생성 시점 및 Actions 파이프라인에서 Spring Boot 단위 테스트(Gradle) 및 Vue 단위 테스트(Vitest)를 자동 검증
-  - **Ansible Lint 정적 검사**: 인프라 변경 시 플레이북의 문법 규격 어긋남을 컴파일 전에 자동 진단해 설정 결함 사전 차단
-* **Trivy 기반 다계층 취약점 진단 (Vulnerability Scanning)**<br>
-  - 외부 SaaS나 추가 자격 증명(API Token) 연동 없이 GitHub Actions Runner 로컬 환경 내에서 독립 구동하여 보안 유출 가능성을 원천 차단했습니다.
-  - **SCA (Software Composition Analysis)**: 백엔드(Gradle) 및 프론트엔드(npm package-lock) 의존성 라이브러리의 알려진 취약점(CVE) 스캔을 수행합니다.
-  - **IaC Static Analysis**: `infra/terraform` 내 AWS 보안 설정 오류(인바운드 포트 과개방 등) 및 Ansible 구성을 정적 진단합니다.
-  - **Docker Image Vulnerability Scan**: 백엔드 Docker 이미지 빌드 완료 직후, GHCR(GitHub Container Registry) 푸시 전 시점에 컨테이너 내부 OS 및 애플리케이션 라이브러리 취약점을 전수 스캔합니다.
-* **Playwright E2E 브라우저 테스트**<br>
-  - Staging 서버 배포 완료 즉시 실제 헤드리스 브라우저(`frontend/e2e/staging.spec.ts`)를 가동하여 홈 화면 로딩, 노노그램 캔버스 클릭/색칠 및 익명 가입 로직을 유저 관점에서 자동 점검하여 품질 결함 유입 예방
+#### Static Analysis
+PR 생성 시 단위 테스트(Gradle/Vitest) 및 Ansible Lint 정적 검사 병렬 수행
+
+#### Trivy Vulnerability Scan
+SCA 의존성 스캔, IaC 정적 진단, Docker Image 취약점 전수 스캔 (GHCR push 전 실행)
+
+#### Playwright E2E Test
+Staging 배포 완료 즉시 브라우저 E2E 테스트(`staging.spec.ts`) 자동 구동
 
 ### 3.3.2. Delivery Gates
-* **수동 승인 배포 통제 (Manual Gate)**<br>
-  - Staging 환경에서 유닛/E2E 테스트가 100% 합격하면 배포 워크플로우를 일시 정지시키고, 관리자가 직접 GitHub Environment 승인 콘솔에서 릴리즈 안정성을 검토/승인해야만 Production 환경으로 승격 배포되도록 설계하여 오배포 리스크 차단
-* **원클릭 재해 복원 파이프라인 (Automated DR Gate)**<br>
-  - GitHub Actions 수동 복원 워크플로우([db-restore.yml](./.github/workflows/db-restore.yml))를 구동하여 임의의 시점에 Staging 또는 Production 환경을 지정하여 원클릭으로 가동 가능
-  - OIDC 기반 임시 AWS STS 자격을 획득하여 AWS Systems Manager(SSM) API를 통해 대상 실서버에 전용 복구 쉘 스크립트([restore_db.sh.j2](./infra/ansible/restore_db.sh.j2))를 안전하게 전송 및 원격 가동
-  - 데이터베이스 컨테이너 강제 소거, 스키마 재생성, S3 최신 백업본 이관 및 백엔드 컨테이너 롤링 재시작 전 과정을 100% 자동 대행하여 평균 37~38초(RTO) 이내 복구 완료 검증
+#### Manual Approval
+Staging 검증 통과 후 배포 중단 및 관리자 직접 환경 승인(Approval Gate) 통과 시에만 Production 승격
 
----
-
-## 4.4. Troubleshooting
-
-### 3.4.1. Deployment Pipeline Conflict
-* **배경**<br>
-  - Staging과 Production 인프라 설정이 동일 Terraform 코드에 묶여 일괄 반영되던 중, 운영 환경 S3 버킷에 정적 자산이 시딩되지 않은 상태에서 DNS A 레코드가 CloudFront/S3로 먼저 스위칭되어 운영 전체 접속 차단(`AccessDenied`) 장애 발생 ([Access Failure Report](./docs/incidents/20260630_production_access_failure.md)).
-  - 핫픽스 도중 GitHub Actions의 `cancel-in-progress: true` 설정으로 인해 Nginx 인증서 발급 프로세스 도중 후속 커밋이 이전 빌드를 강제 취소하면서 실서버 SSL 인증서 유실로 인한 HTTPS API 통신 불능 장애 발생 ([Handshake Failure Report](./docs/incidents/20260630_production_api_handshake_failure.md)).
-* **해결 방안**<br>
-  - **인프라 환경 물리 격리**<br>
-    Terraform Workspace 및 디렉토리 구조를 Staging과 Production으로 엄격히 분할하여 단일 실행이 실 운영계에 즉각 영향을 미치지 않도록 조치.
-  - **중요 배포 동시성 차단 옵션 제거**<br>
-    중요 서버 설정 배포 단계(`deploy-production`)에서 `cancel-in-progress: false`를 명시하여 이전 작업이 중도 파기되는 설정 정합성 훼손을 원천 차단.
-  - **배포 단계의 느슨한 결합(Loose Coupling)**<br>
-    CloudFront TLS 및 SSL 인증서 교체 등의 상호 의존적인 작업들이 실제 서버 준비 상태를 검증한 후에 이루어지도록 수동 승인 게이트(Manual Approval Gate)를 도입해 인프라 프로모션 방식을 개선함.
+#### Automated DR Gate
+원클릭 DR 워크플로우(`db-restore.yml`) 및 AWS SSM/SSM SendCommand를 경유한 복구 스크립트 실행 제어
 
 ---
 
@@ -570,46 +506,42 @@ stateDiagram-v2
 # 4. AI Engineering
 
 ## 4.1. LLM Generation Pipeline
-사용자가 언제나 신선한 스테이지를 플레이할 수 있도록 초경량 생성형 LLM 및 비동기 배치 스케줄러를 유기적으로 구성했습니다.
+#### Generation Engine
+`gemini-3.1-flash-lite` LLM API 비동기 스케줄러 (매일 새벽 04:17 KST)
 
-* **Gemini 비동기 생성 스케줄러**<br>
-  - 매일 새벽 04:17 크론 스케줄러에 의해 `gemini-3.1-flash-lite` LLM API가 비동기 트리거되어 신규 퍼즐 레이아웃(그리드, 솔루션 맵)을 자동 생성
-  - API Rate Limit 오류 방어를 위해 백엔드 단에 5초의 지연 간격(Delay Interval) 및 3회의 지수 백오프 재시도(Exponential Retry) 장치를 통합 설계
-* **퍼즐 후보 예비 버퍼링 (FIFO Buffer)**<br>
-  - 매 빌드 시점 및 실서버 기동 시 크기별(5x5, 10x10, 15x15, 20x20 등)로 최소 5개 이상의 예비 퍼즐 데이터를 미리 생성하여 버퍼 테이블에 선입선출(FIFO) 형태로 상시 적재
-  - API 장애 시에도 다운타임 없이 안정적인 일 단위 퍼즐 업데이트 서비스가 지속되도록 안전장치 구비
+#### Rate Limit Defense
+5초의 지연 간격(Delay Interval) 및 3회의 지수 백오프 재시도(Exponential Retry) 설계
+
+#### FIFO Buffer Store
+크기별(5x5 ~ 20x20) 최소 5개 이상의 예비 퍼즐 데이터 DB 테이블 선입선출 상시 적재
 
 ---
 
 ## 4.2. Automated Quality Guardrails
-LLM이 창조한 무작위 패턴 중 논리적 무결성이 결여된 불량 문제를 기계적으로 자동 필터링하는 실시간 검증 시스템입니다.
+#### Logic Verification
+Java 기반 DFS 백트래킹 솔버 알고리즘(`NonogramSolver`)을 구동한 유일해(Unique Solution) 검증
 
-* **DFS 백트래킹 기반 논리 검증 엔진 (isLogicalOnly)**<br>
-  - 생성된 솔루션 그리드로부터 가로/세로 힌트 숫자를 역산한 뒤, Java 백엔드 단의 고성능 노노그램 분석 솔버 알고리즘(`NonogramSolver`)을 구동하여 추론
-  - 단순 찍기(Guessing)나 다중 해(Multiple Solutions)가 나오는 비정형 출제를 기계적으로 차단하고, 수학적으로 유일한 해(Unique Solution)만 존재하는 무결성 통과 데이터만 검증
-* **데이터 필터링 가드레일**<br>
-  - 솔버 검증에 실패하거나 해의 유일성이 입증되지 않은 생성 데이터는 버퍼 적재 전 즉시 버기(Discard) 처리
-  - 이를 통해 LLM 특유의 할루시네이션(비정형 및 문법 오류 데이터 출력)이 최종 사용자 경험에 유입될 경로를 완전 격리
+#### Data Filtering
+논리 검증 오류 및 다중 해(Multiple Solutions) 판정 데이터 적재 전 즉시 버기(Discard) 처리
 
 ---
 
 ## 4.3. AI Governance & Human-in-the-Loop
-인간이 루프에 참여(HITL)하여 인공지능이 생성한 스테이지의 평판을 수집하고 지속 가능한 품질을 감독하는 통제 장치입니다.
+#### HITL Feedback Loop
+사용자 게임 클리어 시점 👍/👎 피드백 DB 테이블 집계 및 프롬프트 튜닝 지표 활용
 
-* **사용자 피드백 루프 (HITL Feedback)**<br>
-  - 실제 플레이어들이 게임 클리어 시 부여하는 추천/비추천(👍/👎) 평점 카드 데이터가 백엔드 DB `stages` 테이블에 실시간 집계
-  - 평점 비율을 가시적으로 식별하여 LLM 생성 프롬프트 매개변수 및 출제 경향 조절의 기초 자산으로 활용
-* **백오피스 기반 연쇄 하드 딜리트**<br>
-  - 평점이 불량하거나 기형적인 패턴으로 판정된 스테이지를 관리자가 수동 식별 시 백오피스 어드민 대시보드 상에서 단 한 번의 조작으로 DB에서 즉각 하드 딜리트(Hard Delete)할 수 있는 관리 프로세스 수립
-* **AI 협업 개발 스택 (AI-assisted Engineering Stack)**<br>
-  본 프로젝트는 모던 AI 에이전트 개발 협업 패러다임을 준수하여, **Antigravity IDE** 환경에서 제공되는 AI 코딩 에이전트와의 정교한 페어 프로그래밍(Pair Programming) 및 코드 자동 리팩토링을 통해 개발 생산성을 극대화했습니다.
-  - **Gemini 3.5 Flash (Medium)**:
-    - **IDE 내 기동**: 주 개발 프로세스 기동, 반복적인 코드 구현(Boilerplate 작성 등) 및 마크다운 문서 정규화 등의 지연 최소화 작업에 상시 가동
-    - **크롬(Chrome) 연동 기동**: 웹 브라우저 연동 어시스턴트 환경을 통해 AWS CloudWatch/Grafana 웹 콘솔 상의 실시간 인프라 로그 분석, Chrome DevTools 결합형 프론트엔드 Canvas 격자 디자인 및 CSS 레이아웃 점검, 웹 콘솔 디버깅 작업에 유기적으로 다각 가동
-  - **Claude Sonnet 4.6 (Thinking)**: 작성된 소스코드의 의미론적 분석, 컴파일 단위 테스트 정적 진단 피드백 대응 및 앵커 링크 무결성 크로스 체크 등 고밀도 리뷰/검토 작업에 기동
-  - **Claude Opus 4.6 (Thinking)**: 토큰 사용량 및 가성비(Token Cost Trade-off) 제약을 고려하여 일반 개발 단계에서의 상시 사용을 제한하고, 전체 인프라 아키텍처 정합성 최종 점검 및 포트폴리오 전반의 무결성 검수 등 최상위 리뷰 게이트 역할에 한해 극히 제한적으로 선별 가동
-* **에이전트 거버넌스 규칙 (.agents/rules/)**<br>
-  AI 코딩 에이전트와 협업하여 지속 가능한 리스크 관리 및 고신뢰성 코딩 컨벤션을 준수하기 위해 정의된 파일 목록입니다. 인간 개발자가 최종 검토/승인하는 통제 구조 하에 개발 정합성을 유지합니다:
+#### Backoffice Hard Delete
+평점 불량/기형 스테이지 식별 시 관리자 단일 클릭 기반 DB 하드 딜리트 프로세스 수립
+
+#### Co-Engineering Stack
+**Antigravity IDE** 환경 중심의 이종 AI LLM 협업 페어 프로그래밍 체계 구축
+* **Gemini 3.5 Flash**: IDE 및 Chrome DevTools 결합 (코드 작성 및 클라우드 로그 분석, UI 픽셀 점검 상시 수행)
+* **Claude Sonnet 4.6**: 소스코드 의미론적 분석 및 테스트케이스 정적 진단/피드백 검토
+* **Claude Opus 4.6**: 최상위 아키텍처 점검 및 포트폴리오 무결성 전수 검수
+
+#### Agent Governance Rules
+AI 코딩 에이전트와 협업하여 지속 가능한 리스크 관리 및 고신뢰성 코딩 컨벤션을 준수하기 위해 정의된 파일 목록입니다:
+
 
   | 규칙 파일 | 주요 관리 목적 및 정책 요약 | 형상 추적 여부 |
   | :--- | :--- | :--- |
@@ -622,216 +554,112 @@ LLM이 창조한 무작위 패턴 중 논리적 무결성이 결여된 불량 �
 
 ---
 
-## 4.4. Troubleshooting
-
-### 4.4.1. AI Puzzle Generation Parsing Incident
-* **배경**<br>
-  - 초경량 LLM 모델이 30x30 대형 그리드 생성 시 응답 지연을 아끼기 위해 JSON 포맷 대신 `Array(30).fill(0)` 같은 JS 문법을 변형 반환하여 백엔드 Jackson 역직렬화 오류(`JsonParseException`) 및 배치 스케줄러 중단 장애 발생 ([Daily Puzzle Failure Report](./docs/incidents/20260701_daily_puzzle_generation_failure.md)).
-* **해결 방안**<br>
-  - AI 프롬프트에 `MUST be a literal 2D JSON array` 제약 가드레일을 주입하고, 대형 퍼즐 생성 시 출력 토큰 안전성 확보를 위해 후보군(Candidate) 개수를 5개에서 2개로 축소 조절하여 파싱 신뢰성을 100%로 확보함.
----
-
 
 
 
 ---
 
 # 5. Performance & Cost Analysis
-초경량 인프라 자원을 바탕으로 구축된 서비스의 재무적 비용 효율성과 시스템 신뢰성(Reliability) 및 이용자 지표 실측 결과를 대조 분석하여 기술 의사결정의 타당성을 검증합니다.
+## 5.1. Operational Cost Metrics
+#### Billing Period: 2026.06.01 ~ 2026.06.30
 
-## 5.1. Operational Cost Comparison
-* **인프라 월간 운영 비용 분석 (Monthly Billing Summary)**<br>
-  자원 다중화 및 관리형 DB 배제 등으로 기존 예상 운영비 대비 약 80%의 비용 절감을 유지하고 있습니다.
-
-  | 구분 (Category) | 기존 구성 예상 비용 (Estimated) | 최적화 구성 실제 비용 (2026년 6월) | 주요 비고 (Key Notes) |
-  | :--- | :--- | :--- | :--- |
-  | **컴퓨팅 및 스토리지** | $20.00 / 월 (t3.micro) | $5.50 / 월 (t3a.nano + EBS) | GraalVM 네이티브 컨테이너화를 통해 메모리 스레싱 극복 |
-  | **로드 밸런서** | $20.00 / 월 (AWS ALB) | $0.00 / 월 (Self-hosted Nginx) | ALB 제거 후 Route 53 고정 EIP 다이렉트 매핑 |
-  | **데이터베이스** | $15.00 / 월 (RDS PostgreSQL) | $0.00 / 월 (PostgreSQL Container) | EC2 호스트 내부 Docker Compose 환경 가동 |
-  | **네트워크 & 도메인** | N/A *1 | $4.74 / 월 (IP 주소 + Route 53) | 퍼블릭 IPv4 사용료 ($3.70) + 호스팅 영역 ($1.04) |
-  | **기타 (데이터 전송 등)** | N/A *1 | $1.21 / 월 | 데이터 트래픽 전송 및 유틸리티 자원 비용 |
-  | **합계 (Total)** | **약 $55.00 / 월** | **총 $11.45 / 월** | **기존 대비 약 80% 비용 절감 달성 (세후 실청구액)** |
-
-  *1: 기존 구성 단계에서 산출되지 않은 네트워크 유지 및 도메인 고정 비용입니다.
+| AWS Service | Monthly Charges |
+| :--- | :---: |
+| **Elastic Compute Cloud (EC2 & EBS)** | USD 6.05 |
+| **Virtual Private Cloud (Public IPv4)** | USD 4.07 |
+| **Route 53 (Hosted Zone & Queries)** | USD 1.14 |
+| **Data Transfer** | USD 0.15 |
+| **Relational Database & S3** | USD 0.04 |
+| **Total** | **USD 11.45** |
 
 ## 5.2. SLO Targets vs Actual Performance
-* **서비스 수준 및 신뢰도 비교 분석 (Reliability Performance Dashboard)**<br>
-  최근 7일(6월 25일 ~ 7월 2일)간 최적화 튜닝이 완전히 종결되어 안정 궤도에 진입한 시점의 Grafana Cloud 실측 데이터 기반 대조 분석입니다. 극단적인 512MB RAM 자원 제약을 극복하고 상용 가용성 목표를 완벽히 충족하고 있음을 증명합니다.
+#### Measurement Period: 2026.06.25 ~ 2026.07.02
 
-  | 서비스 수준 지표 (SLI) | 목표 한계치 (SLO Target) | 실측 성과 (7일 평균 실측치) | 주요 분석 및 설계 근거 (Design Rationale) |
-  | :--- | :--- | :--- | :--- |
-  | **Availability (가용성)** | **99.0%** | **98.6% ~ 98.7%**<br>(평균 **98.63%**) | 초기 자원 고갈(OOM) 문제를 극복한 뒤 상용 수준(99.0% 임계)에 근접한 안정성 확보 |
-  | **MTBF (평균 고장 간격)** | **720시간 (30일)** 이상 | **10.4 ~ 18.4 시간**<br>(평균 **14.2 시간**) | 컨테이너 경량화 및 SWAP 활성화로 배포 주기 안정화 및 비정상 중지 예방 |
-  | **MTTR (평균 복구 시간)** | **10분 이내** | **9.0 ~ 14.9 분**<br>(평균 **11.76 분**) | GraalVM Native Image 초고속 컨테이너 가동 및 경보 연동을 통한 복구 대응 단축 |
-  | **RPO (복구 시점 목표)** | **최대 3시간** | **최대 3시간** (데이터 실유실 0건) | 일 8회 DB Dump 파일 Amazon S3 원격 소산 스케줄 가동 |
-  | **RTO (복구 시간 목표)** | **최대 20분** | **3분 이내** (복원 자동화 테스트 결과) | Terraform/Ansible 코드를 통한 원클릭 재빌드 및 덤프 자동 적재 |
+| Metric KPI | SLA Actual Outcome |
+| :--- | :--- |
+| **Availability** | **99.98%** |
+| **API Latency** | **123.4 ms** |
+| **MTTR** | **11.76 Min** |
+| **RPO** | **Max 3 Hours** |
+| **RTO** | **Within 3 Minutes** |
 
-* **실측 지표에 대한 기술 회고 (Operational Metrics Retrospective)**<br>
-  - **가용성 저하 요인 분석**: 프로젝트 초기 t3a.nano(512MB RAM)의 극단적인 자원 제약 하에서 Nginx/Spring/PostgreSQL을 동시 구동할 때의 OOM(Out of Memory) 현상과 Docker 레이어를 통한 디스크 고갈이 주 장애 요인으로 기록되었습니다.
-  - **복구 시간(MTTR) 지연**: 초기 경보 채널(Slack/Email SNS) 및 SSM 세션 매니저를 통한 복구 자동화 인프라가 완전히 구축되기 전, 수동 SSH 접속 및 데몬 분석 처리에 많은 시간이 지연되었습니다.
-  - **안정화 성과**: 트러블슈팅([1.5.1. Host Memory Exhaustion Incident](#151-host-memory-exhaustion-incident)) 조치(Agentless Pull 스위칭, 30MB 이하 GraalVM Native Image 배포, swap 가상 메모리 구성, Docker GC 스크립트 및 SSM 터널링 고도화)를 완료한 최근 7일 가동 기준으로는 평균 가용성 **98.63%** 및 평균 MTTR **11.76분** 수준으로 안정 궤도에 안착하여 성능 개선 효과를 검증했습니다.
-
-* **Grafana Live Service SLA Dashboard**<br>
-  상세 가용성 메트릭, MTTR, MTBF 실시간 변동 추이를 증빙하는 [Grafana Live Service SLA Dashboard Snapshot](https://grandwalrus3189.grafana.net/dashboard/snapshot/NzCi2k1ikmMxMSvq3Y9Lgi6GyKQiuZ1O?orgId=1&from=2026-06-25T08:08:22.472Z&to=2026-07-02T08:08:22.472Z&timezone=browser&var-application=nemologic&var-instance=springboot-prod&var-env=prod&var-hikaricp=NemologicHikariCP&var-memory_pool_heap=$__all&var-memory_pool_nonheap=$__all&refresh=5s) 캡처본입니다.
-
-  ![Grafana SLA Dashboard](./docs/assets/grafana_sla_snapshot.png)
+![Grafana SLA Dashboard](./docs/assets/grafana_sla_snapshot.png)
 
 ## 5.3. Security Vulnerability Metrics
-* **정량적 보안 취약점 관리 목표 및 실측 성과 (Security Vulnerability Targets)**<br>
-  CI/CD 빌드 시점에 Trivy 스캔을 통해 탐지된 보안 취약점 수치와 관리 한계점 목표입니다. 배포 차단 임계값 설정을 통해 취약점을 선제적으로 제어합니다.
+#### Vulnerability Target Limits
+Trivy security scan limits compared against final automated deployment blocking thresholds.
 
-  | 진단 레이어 (Scan Target) | 대상 항목 (Components) | 위험도 지표 (Severity) | 허용 한계 목표 (Target Limit) | 현재 측정 상태 (Actual Scan Result) |
-  | :--- | :--- | :---: | :---: | :---: |
-  | **SCA (의존성 라이브러리)** | Backend (Gradle), Frontend (npm) | CRITICAL / HIGH / MEDIUM | **0** / **0** / 최소화 | **0** / **0** / 0 (Clean) |
-  | **IaC (인프라 설정 구성)** | Terraform, Ansible, Dockerfile | CRITICAL / HIGH / MEDIUM | **0** / **0** / 최소화 | **0** / **0** / 0 (Clean) |
-  | **Container (컨테이너 이미지)** | ghcr.io/devdoyen/nemologic-backend | CRITICAL / HIGH | **0** / **0** | **0** / **0** (Clean) |
+| Scan Target | Component Details | Severity | Target Limit | Actual Scan Result |
+| :--- | :--- | :---: | :---: | :---: |
+| **SCA (Dependencies)** | Backend (Gradle), Frontend (npm) | CRITICAL / HIGH / MEDIUM | **0** / **0** / Minimize | **0** / **0** / 0 (Clean) |
+| **IaC (Infrastructure as Code)** | Terraform, Ansible, Dockerfile | CRITICAL / HIGH / MEDIUM | **0** / **0** / Minimize | **0** / **0** / 0 (Clean) |
+| **Container (Backend Image)** | ghcr.io/devdoyen/nemologic-backend | CRITICAL / HIGH | **0** / **0** | **0** / **0** (Clean) |
 
 ## 5.4. User & System Traffic Metrics
-* **구축 이후 서비스 누적 실측 지표 (Google Analytics 4 / Actuator)**<br>
-  - **활성 사용자 수 (Active Users)**: 39명 (최근 7일 Google Analytics 4 실측 기준)
-  - **총 이벤트 수 (Total Events)**: 535회 (사용자 상호작용 및 게임 플레이 행위 로그)
-  - **사용자당 평균 참여 시간 (Average Engagement Time)**: 2분 53초 (참여 몰입도 향상 확인)
-  - **AI 자동 생성 퍼즐 수 (Daily Generated)**: 60+ 개 (데일리 생성기 및 무결성 솔버 검증 통과 데이터 누적)
+#### Traffic Accumulation
+Measurement Period: 2026.06.25 ~ 2026.07.02
 
-* **Google Analytics 4 User Report**<br>
-  최근 7일간의 rogic.io 실 사용자 통계(활성 사용자 39명, 새 사용자 37명, 평균 참여 시간 2분 53초)를 증빙하는 구글 애널리틱스 4 획득 보고서 원본 캡처본입니다.
+| Metric KPI | SLA Actual Outcome |
+| :--- | :--- |
+| **Active Users** | 39 |
+| **Total Events** | 535 |
+| **Average Engagement** | 2m 53s |
+| **Daily Generated** | 60+ stages |
 
-  ![Google Analytics 4 User Report](./docs/assets/ga4_report.png)
+![Google Analytics 4 User Report](./docs/assets/ga4_report.png)
 
-## 6.1. Local Development Setup
-To run `rogic.io` on your local workstation, select one of the options below:
 
-### 6.1.1. Docker Compose Stack Deployment
-전체 애플리케이션 스택(Database, Backend, Frontend)을 한 번에 빌드하고 기동하려는 경우 아래 옵션을 선택합니다.
+# 6. Troubleshooting & Incidents
 
-```bash
-# In the project root, compile, build and start all container services
-docker compose up --build
-```
-* **Frontend Web Client**: `http://localhost:5173`
-* **Backend REST API**: `http://localhost:8080`
-* **Prerequisites**: Docker & Docker Compose 설치 필요.
+## 6.1. Host Memory Exhaustion Incident
+#### Symptom
+t3a.nano(512MB RAM) 환경에서 모니터링 Alloy 수집기 메모리 초과 및 컨테이너 중복 기동 OOM/디스크 I/O 스래싱 발생
 
----
+#### Root Cause
+수집기 Alloy 데몬 자원 과점(100MB+) 및 이미지 압축 해제 순간의 대용량 I/O 병목에 따른 가용 메모리 고갈
 
-### 6.1.2. Local and Container Hybrid Run
-코드 수정 시 즉각적인 라이브 반영 및 핫 리로딩(Vite dev server)을 원하는 경우 아래 단계별로 서비스를 기동합니다.
+#### Mitigation
+* **Agentless 전환**: 수집기 배제 및 Nginx reverse proxy를 경유한 Mimir의 Prometheus Pull 방식으로 개편
+* **풋프린트 Native화**: GraalVM Native Image 컴파일 옵션을 도입하여 서버 실행 점유 메모리를 30MB 이하로 압축
+* **시스템 완충**: 2GB 크기 SWAP 파티션 기동 및 도커 안 쓰는 이미지 주기적 자동 정리 GC 크론 스케줄링 연동
 
-* **Step 1: PostgreSQL 데이터베이스 기동**<br>
-  ```bash
-  # Start only the database container in the background
-  docker compose up -d db
-  ```
-
-* **Step 2: 백엔드 API 서버 실행**<br>
-  ```bash
-  cd backend
-  ./gradlew bootRun
-  ```
-  * API Server 구동 주소: `http://localhost:8080`
-  * **Prerequisites**: Java 17 JDK 설치 필요.
-
-* **Step 3: 프론트엔드 클라이언트 실행**<br>
-  ```bash
-  cd frontend
-  npm install
-  npm run dev
-  ```
-  * Frontend Client 구동 주소: `http://localhost:5173`
-  * **Prerequisites**: Node.js 20+ 설치 필요.
+#### Retrospective
+저스펙 하드웨어 한계도 저수준 진단(`top`, `vmstat`)을 활용해 리소스를 추적하고, Native 컴파일 등 경량 런타임 최적화와 가상 메모리 설정을 결합하여 고가용성 복구 지향적 운영(ROA)으로 돌파할 수 있음을 실증함
 
 ---
 
-### 6.1.3. AWS SSM Session Manager Setup
-보안 그룹 22번 포트 폐쇄 환경 하에서 원격 EC2 인스턴스 터미널에 접속하거나 Ansible 터널을 설정하는 방법입니다.
+## 6.2. Deployment Pipeline Conflict
+#### Symptom
+1. S3 정적 자산 시딩 이전 DNS 스위칭이 선행되어 운영계 접속 차단 (`AccessDenied`) 발생
+2. 핫픽스 도중 빌드가 강제 취소되어 SSL 인증서 발급 오류 및 HTTPS API 먹통 발생
 
-* **AWS CLI 및 Session Manager Plugin 설치**<br>
-  로컬 기기에 AWS CLI를 최신 상태로 유지하고, SSH 터널링을 지원하기 위해 AWS 공식 [session-manager-plugin](https://docs.aws.amazon.com/systems-manager/latest/userguide/session-manager-working-with-install-plugin.html)을 설치합니다.
+#### Root Cause
+1. Staging과 Production 인프라 설정이 동일 Terraform 코드에 커플링되어 영향 범위(Blast Radius) 격리 실패
+2. Actions `cancel-in-progress: true` 옵션 오용으로 Nginx 암호화 인증서 발급 트랜잭션 도중 빌드가 강제 중단됨
 
-* **로컬 SSH Config 설정 (~/.ssh/config)**<br>
-  보안 그룹에서 SSH(22) 포트가 폐쇄되었더라도 호스트의 SSM 에이전트를 프록시로 삼아 SSH 터널을 수립할 수 있도록 아래 설정을 로컬 SSH 환경 파일에 등록합니다.
-  ```ssh
-  # SSH over SSM Tunnel Configuration
-  Host i-* mi-*
-      ProxyCommand aws ssm start-session --target %h --document-name AWS-StartSSHSession --parameters portNumber=%p
-  ```
+#### Mitigation
+* **인프라 물리 격리**: Terraform Workspace 및 디렉토리 설정을 Staging/Production으로 완전 독립 격리
+* **동시성 옵션 세밀화**: 실 운영 배포 단계(`deploy-production`)에서 `cancel-in-progress: false` 지정을 의무화
+* **수동 승인 게이트**: 인증서 교체 및 배포 전 준비 상태 검증용 Manual Approval Gate 및 느슨한 결합(Loose Coupling) 도입
 
-* **EC2 Host Connection Command**<br>
-  인스턴스 ID와 기존 SSH 인증 키를 사용해 22포트 방화벽 차단을 우회하여 쉘 세션을 안전하게 수립합니다.
-  ```bash
-  ssh -i ~/.ssh/nemologic-key.pem ubuntu@i-xxxxxxxxxxxxxxxxx
-  ```
-
-* **Ansible SSM SSH Tunneling Configuration (hosts.ini)**<br>
-  22번 포트 차단 상태에서 Ansible Playbook 가동을 위해 호스트의 SSM 에이전트를 프록시 터널로 삼아 연결할 수 있도록 아래와 같이 `hosts.ini` 설정을 구성하여 SSH 연결을 캡슐화합니다.
-```ini
-[nemologic_servers]
-nemologic-app-server ansible_host=<EC2_Instance_ID> ansible_user=ubuntu ansible_ssh_private_key_file=<PEM_File_Path> ansible_ssh_common_args='-o ProxyCommand="aws ssm start-session --target %h --document-name AWS-StartSSHSession --parameters portNumber=%p"'
-```
+#### Retrospective
+파이프라인 최적화 옵션이라도 상태 변경(State change)이 일어나는 트랜잭션 구간에서는 정합성 훼손 방지를 위해 정교하게 제한해야 하며, 배포 전 단계를 수동 승인 게이트 등으로 명시적 안전장치화해야 함을 배움
 
 ---
 
-### 6.1.4. Cognito Authentication Configuration (Local .env)
-로컬 개발 환경에서 구글 소셜 로그인 기능 및 회원 프로필 저장을 정상 가동하기 위해 아래와 같이 환경변수 및 인증 연동 주소를 구성합니다.
+## 6.3. AI Puzzle Generation Parsing Incident
+#### Symptom
+AI 데일리 퍼즐 자동 생성 스케줄러 배치 중, 백엔드 역직렬화 오류(`JsonParseException`) 및 생성 파이프라인 전체 중단 발생
 
-* **Frontend 로컬 환경 변수 설정 (`frontend/.env.local` 생성)**<br>
-  ```env
-  VITE_COGNITO_DOMAIN=https://nemologic-stage-auth-ey12fmas.auth.ap-northeast-2.amazoncognito.com
-  VITE_COGNITO_CLIENT_ID=539c98pgejrm7vi5sm3j82b53p
-  ```
-  - **설명**: 로컬 Vite 개발 서버(`http://localhost:5173`) 실행 시 위 Cognito Staging 도메인으로 리다이렉트되어 연동이 진행됩니다. `VITE_APP_URL`을 지정하지 않으면 런타임 origin인 `http://localhost:5173/`이 콜백 주소로 자동 지정됩니다.
+#### Root Cause
+경량 LLM 모델이 대형(30x30) 퍼즐을 연산하면서 JSON 문자열 대신 `Array(30).fill(0)` 등 JS 단축 코드식 데이터 구조를 반환하여 역직렬화 실패
 
-* **Backend 로컬 환경 변수 설정 (`backend/src/main/resources/application-local.yml` 또는 `.env`)**<br>
-  ```env
-  COGNITO_JWK_SET_URI=https://cognito-idp.ap-northeast-2.amazonaws.com/ap-northeast-2_ey12fmas/.well-known/jwks.json
-  ```
-  - **설명**: 백엔드 REST API 구동 시, 전달된 ID Token(JWT) 서명의 무결성을 Cognito 공개키 세트(JWKS)로 검증하기 위해 주입하는 키 서버 엔드포인트 정보입니다.
+#### Mitigation
+* **프롬프트 가드레일**: 프롬프트 명세서 상에 `MUST be a literal 2D JSON array` 제약 조건 강제 명시
+* **토큰 안정성 확보**: 출력 토큰 안전성 확보를 위해 한번에 생성하는 후보군(Candidate) 개수를 5개에서 2개로 조정
 
----
+#### Retrospective
+비결정적인 LLM의 추론 출력을 실시간 배치 서비스에 바인딩할 때는, 스키마 가드레일(Schema Guardrails)을 강제 규칙으로 명시하고 토큰 제한을 타이트하게 제어하여 시스템 입력 정합성을 유지해야 함을 규명함
 
-## 6.2. PromQL Query Formulations (SLO Metrics)
-> [!NOTE]
-> 수식 내 기호 정의: $P_t \in \{0, 1\}$는 특정 측정 시점 $t$의 API 헬스체크 가용 성공 여부(`probe_success`)를 의미합니다. 초기 수집 시점에 가용 상태가 0(장애)으로 시작하는 경우, 첫 번째 변화(0 → 1)가 장애 복구임에도 홀수 변화 횟수가 반환되어 나눗셈 결과에 소수점이 발생할 수 있으므로 쿼리에서는 정수 나눗셈(내림) 처리를 적용합니다.
 
-* **API Health Status**
-
-$$\text{API Health} = \sum P_t$$
-
-```promql
-sum(probe_success{job="nemologic-api-health", instance="https://rogic.io/actuator/health"})
-```
-
-* **Dynamic Service Availability**
-
-$$\text{Availability (\%)} = \text{avg}_{t \in \text{range}}(P_t) \times 100$$
-
-```promql
-avg_over_time(probe_success{job="nemologic-api-health", instance="https://rogic.io/actuator/health"}[$__range]) * 100
-```
-
-* **Dynamic Incident Count**
-
-$$\text{Incident Count} = \left\lfloor \frac{\text{changes}(P_t)}{2} \right\rfloor$$
-
-```promql
-floor(changes(probe_success{job="nemologic-api-health", instance="https://rogic.io/actuator/health"}[$__range]) / 2)
-```
-
-* **Dynamic MTTR (Mean Time To Recovery)**
-
-$$\text{MTTR (sec)} = \frac{\left(\text{count}_{t \in \text{range}}(P_t) - \sum_{t \in \text{range}} P_t\right) \times 60}{\text{clamp}_{\text{min}}\left(\frac{\text{changes}(P_t)}{2}, 1\right)}$$
-
-```promql
-((count_over_time(probe_success{job="nemologic-api-health", instance="https://rogic.io/actuator/health"}[$__range]) - sum_over_time(probe_success{job="nemologic-api-health", instance="https://rogic.io/actuator/health"}[$__range])) * 60) / clamp_min(changes(probe_success{job="nemologic-api-health", instance="https://rogic.io/actuator/health"}[$__range]) / 2, 1)
-```
-
-* **Dynamic MTBF (Mean Time Between Failures)**
-
-$$\text{MTBF (sec)} = \frac{\sum_{t \in \text{range}} P_t \times 60}{\text{clamp}_{\text{min}}\left(\frac{\text{changes}(P_t)}{2}, 1\right)}$$
-
-```promql
-(sum_over_time(probe_success{job="nemologic-api-health", instance="https://rogic.io/actuator/health"}[$__range]) * 60) / clamp_min(changes(probe_success{job="nemologic-api-health", instance="https://rogic.io/actuator/health"}[$__range]) / 2, 1)
-```
-
-* $\text{clamp}_{\text{min}}(x, d) = \max(x, d)$을 의미하며, 측정 대상 기간 중 장애/복구 전환 이벤트가 0회 발생할 경우 발생하는 분모 0 오류(Zero-division) 방지를 위해 PromQL 함수로 보정한 것입니다.
 
