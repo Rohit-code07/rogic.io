@@ -409,7 +409,6 @@
                     >
                       <div class="stage-card-info">
                         <div style="display: flex; align-items: center; gap: 0.75rem; width: 100%;">
-                          <span v-if="selectedPlaySizeFilter === 'All'" class="stage-card-size-label" style="font-size: 0.72rem; color: #64748b; background-color: rgba(255, 255, 255, 0.05); padding: 0.1rem 0.4rem; border-radius: 4px; font-weight: 600; width: 52px; text-align: center; flex-shrink: 0; display: inline-block;">{{ stage.width }}x{{ stage.height }}</span>
                           <span class="stage-card-name">{{ stage.name }}</span>
                         </div>
 
@@ -428,19 +427,12 @@
               <div class="play-size-filter-bar-floating" v-if="availablePlaySizes.length > 0">
               <div class="active-size-badge" @click.stop="isSizeListOpen = !isSizeListOpen">
                 <span class="active-size-badge-name">
-                  {{ selectedPlaySizeFilter === 'All' ? 'All' : selectedPlaySizeFilter + 'x' + selectedPlaySizeFilter }}
+                  {{ selectedPlaySizeFilter + 'x' + selectedPlaySizeFilter }}
                 </span>
                 <span class="active-size-arrow" :class="{ 'open': isSizeListOpen }">▲</span>
               </div>
               <transition name="slide-up">
                 <div v-if="isSizeListOpen" class="play-size-filter-dropdown">
-                  <div 
-                    class="play-size-filter-dropdown-item" 
-                    :class="{ active: selectedPlaySizeFilter === 'All' }"
-                    @click.stop="selectSizeFilter('All')"
-                  >
-                    All
-                  </div>
                   <div 
                     v-for="size in availablePlaySizes" 
                     :key="size"
@@ -788,7 +780,7 @@ const allUnclearedStages = computed(() => {
   return combined.filter(s => !clearedStageIds.value.has(s.id));
 });
 
-const selectedPlaySizeFilter = ref<string>('All');
+const selectedPlaySizeFilter = ref<string>('5');
 const isSizeListOpen = ref<boolean>(false);
 
 function selectSizeFilter(size: string) {
@@ -804,10 +796,20 @@ const availablePlaySizes = computed(() => {
   return Array.from(sizes).sort((a, b) => a - b);
 });
 
+watch(availablePlaySizes, (newSizes) => {
+  if (newSizes.length > 0) {
+    const currentVal = selectedPlaySizeFilter.value;
+    if (currentVal === 'All' || !newSizes.includes(parseInt(currentVal))) {
+      selectedPlaySizeFilter.value = String(newSizes[0]);
+    }
+  }
+}, { immediate: true });
+
 const filteredPlayStages = computed(() => {
   const list = allUnclearedStages.value;
-  if (selectedPlaySizeFilter.value === 'All') {
-    return list;
+  if (!selectedPlaySizeFilter.value || selectedPlaySizeFilter.value === 'All') {
+    const defaultSize = availablePlaySizes.value[0] || 5;
+    return list.filter(s => s.width === defaultSize);
   }
   const size = parseInt(selectedPlaySizeFilter.value);
   return list.filter(s => s.width === size);
