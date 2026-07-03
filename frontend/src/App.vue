@@ -532,22 +532,22 @@
 
               <!-- VIEW 1: Review Mode (Displaying the selected completed puzzle board) -->
               <div v-if="isReviewMode && modalBoard" class="mypage-review-view" style="display: flex; flex-direction: column; gap: 0.75rem; width: 100%; text-align: left; height: 100%; justify-content: flex-start; animation: modalFadeIn 0.2s ease-out;">
-                <div style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.15rem;">
-                  <button 
-                    @click="isReviewMode = false" 
-                    class="mypage-back-arrow-btn"
-                    style="background: transparent; border: none; color: #38bdf8; font-size: 1.1rem; font-weight: 600; cursor: pointer; padding: 0.25rem 0.5rem; border-radius: 6px; display: inline-flex; align-items: center; gap: 0.25rem; transition: background 0.2s;"
-                    onmouseover="this.style.background='rgba(56, 189, 248, 0.08)'"
-                    onmouseout="this.style.background='transparent'"
-                  >
-                    ← Back
-                  </button>
-                </div>
-                
-                <h2 style="margin: 0; font-size: 1.25rem; font-weight: 700; color: #f8fafc;">{{ selectedHistory?.stageName }}</h2>
-                <div style="font-size: 0.75rem; font-weight: 600; margin-top: -0.5rem; display: flex; gap: 0.5rem;">
-                  <span style="padding: 0.2rem 0.5rem; background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 6px; color: #94a3b8;">{{ selectedHistory?.clearedAt.split('T')[0] }}</span>
-                  <span style="padding: 0.2rem 0.5rem; background: rgba(56, 189, 248, 0.1); border: 1px solid rgba(56, 189, 248, 0.15); border-radius: 6px; color: #38bdf8;">{{ selectedHistory?.elapsedTime }}s</span>
+                <!-- Header row: Back button, Date, Stage name, Time badge -> all on ONE line -->
+                <div style="display: flex; align-items: center; justify-content: space-between; width: 100%; border-bottom: 1px solid rgba(255, 255, 255, 0.05); padding-bottom: 0.75rem; margin-bottom: 0.25rem;">
+                  <div style="display: flex; align-items: center; gap: 0.5rem;">
+                    <button 
+                      @click="isReviewMode = false" 
+                      class="mypage-back-arrow-btn"
+                      style="background: transparent; border: none; color: #38bdf8; font-size: 1.05rem; font-weight: 600; cursor: pointer; padding: 0.25rem 0.45rem; border-radius: 6px; display: inline-flex; align-items: center; gap: 0.25rem; transition: background 0.2s;"
+                      onmouseover="this.style.background='rgba(56, 189, 248, 0.08)'"
+                      onmouseout="this.style.background='transparent'"
+                    >
+                      ←
+                    </button>
+                    <span style="font-size: 0.75rem; font-weight: 500; color: #64748b;">{{ selectedHistory?.clearedAt.split('T')[0] }}</span>
+                    <span style="font-weight: 700; color: #f8fafc; font-size: 1.05rem; margin-left: 0.15rem;">{{ selectedHistory?.stageName }}</span>
+                  </div>
+                  <span style="font-size: 0.7rem; font-weight: 600; padding: 0.18rem 0.45rem; background: rgba(56, 189, 248, 0.1); border: 1px solid rgba(56, 189, 248, 0.15); border-radius: 5px; color: #38bdf8;">{{ selectedHistory?.elapsedTime }}s</span>
                 </div>
 
                 <div class="modal-canvas-wrapper" style="width: 250px; height: 250px; margin: 0.75rem auto 0; background-color: #0f172a; border-radius: 12px; overflow: hidden; border: 1px solid rgba(255, 255, 255, 0.08); display: flex; justify-content: center; align-items: center; position: relative;">
@@ -617,8 +617,8 @@
                         onmouseover="this.style.background='rgba(255, 255, 255, 0.04)'; this.style.borderColor='rgba(56, 189, 248, 0.2)';"
                         onmouseout="this.style.background='rgba(255, 255, 255, 0.02)'; this.style.borderColor='rgba(255, 255, 255, 0.05)';"
                       >
-                        <div style="display: flex; align-items: center; gap: 0.85rem;">
-                          <span class="cleared-at-badge" style="font-size: 0.7rem; font-weight: 600; padding: 0.18rem 0.45rem; background: rgba(255, 255, 255, 0.04); border: 1px solid rgba(255, 255, 255, 0.06); border-radius: 5px; color: #64748b;">{{ item.clearedAt.split('T')[0] }}</span>
+                        <div style="display: flex; align-items: center; gap: 0.5rem;">
+                          <span class="cleared-at-text" style="font-size: 0.75rem; font-weight: 500; color: #64748b;">{{ item.clearedAt.split('T')[0] }}</span>
                           <span class="stage-name" style="font-weight: 600; color: #f8fafc; font-size: 0.9rem;">{{ item.stageName }}</span>
                         </div>
                         <span class="elapsed-time-badge" style="font-size: 0.7rem; font-weight: 600; padding: 0.18rem 0.45rem; background: rgba(56, 189, 248, 0.1); border: 1px solid rgba(56, 189, 248, 0.15); border-radius: 5px; color: #38bdf8;">{{ item.elapsedTime }}s</span>
