@@ -291,32 +291,6 @@
       </div>
       
       <div class="header-controls" style="display: flex; align-items: center; gap: 0.75rem;">
-        <nav class="app-nav" style="display: flex; gap: 0.5rem; margin: 0;">
-          <button 
-            class="tab-btn-play" 
-            :class="{ active: currentTab === 'play' }" 
-            @click="onTabChange('play')"
-          >
-            <svg class="header-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-              <rect x="2" y="6" width="20" height="12" rx="3" />
-              <path d="M6 12h4M8 10v4M15 12h.01M18 12h.01" stroke-width="2.8" />
-            </svg>
-            <span class="btn-text">Game Play</span>
-          </button>
-          <button 
-            v-if="!currentUser"
-            class="tab-btn-mypage" 
-            :class="{ active: currentTab === 'mypage' }" 
-            @click="onTabChange('mypage')"
-          >
-            <svg class="header-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
-              <circle cx="12" cy="7" r="4" />
-            </svg>
-            <span class="btn-text">My Page</span>
-          </button>
-        </nav>
-        
         <!-- Mini Profile / Login Widget -->
         <div class="mini-profile-widget" style="display: flex; align-items: center; margin-left: 0.25rem;">
           <div 
@@ -335,6 +309,17 @@
             <div v-else style="width: 22px; height: 22px; border-radius: 50%; background: #38bdf8; display: flex; align-items: center; justify-content: center; font-size: 0.7rem; color: white; font-weight: 700;">👤</div>
             <span class="mini-username" style="font-size: 0.8rem; font-weight: 600; color: #f8fafc; max-width: 90px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">{{ currentUser.username }}</span>
           </div>
+          <button 
+            v-else 
+            @click="handleGoogleLogin" 
+            class="mini-login-btn"
+            style="display: flex; align-items: center; gap: 0.35rem; padding: 0.45rem 1rem; font-size: 0.8rem; font-weight: 600; color: #ffffff; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.12); border-radius: 9999px; cursor: pointer; transition: all 0.25s ease;"
+          >
+            <svg class="header-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="width: 14px; height: 14px;">
+              <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4M10 17l5-5-5-5M13.8 12H3" />
+            </svg>
+            <span>Login</span>
+          </button>
         </div>
 
         <button 
@@ -572,13 +557,24 @@
                     <span class="profile-xp" style="color: #818cf8;">{{ currentUser.xp }} XP</span>
                   </div>
                 </div>
-                <button 
-                  @click="handleGoogleLogout" 
-                  class="logout-outline-btn"
-                  style="padding: 0.4rem 0.85rem; background: transparent; border: 1px solid rgba(239, 68, 68, 0.4); border-radius: 8px; color: #ef4444; font-size: 0.8rem; font-weight: 600; cursor: pointer; transition: all 0.2s;"
-                >
-                  🚪 Logout
-                </button>
+                <div style="display: flex; flex-direction: column; gap: 0.5rem;">
+                  <button 
+                    @click="onTabChange('play')" 
+                    class="back-to-game-btn"
+                    style="padding: 0.4rem 0.85rem; background: rgba(56, 189, 248, 0.1); border: 1px solid rgba(56, 189, 248, 0.3); border-radius: 8px; color: #38bdf8; font-size: 0.8rem; font-weight: 600; cursor: pointer; transition: all 0.2s;"
+                    onmouseover="this.style.background='rgba(56, 189, 248, 0.2)'"
+                    onmouseout="this.style.background='rgba(56, 189, 248, 0.1)'"
+                  >
+                    🎮 Play
+                  </button>
+                  <button 
+                    @click="handleGoogleLogout" 
+                    class="logout-outline-btn"
+                    style="padding: 0.4rem 0.85rem; background: transparent; border: 1px solid rgba(239, 68, 68, 0.4); border-radius: 8px; color: #ef4444; font-size: 0.8rem; font-weight: 600; cursor: pointer; transition: all 0.2s;"
+                  >
+                    🚪 Logout
+                  </button>
+                </div>
               </div>
 
               <!-- History List Section -->
