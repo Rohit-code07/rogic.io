@@ -102,10 +102,12 @@ C4Context
 * **최적화 조치 (Optimization)**<br>
   - 월 $15~20 이상의 RDS 서비스 비용 절감을 위해 EC2 내부 Docker Compose 환경에서 PostgreSQL 컨테이너를 직접 가동
 * **기술적 제약 (Trade-off)**<br>
-  - AWS RDS의 완전관리형 이중화 복구 및 시점 복구(PITR) 편의성을 상실하였으며, 재해 복구 시 백업 덤프 기반 수동 복원 처리가 요구됨에 따라 복구 목표 시간(RTO) 약 20분 및 최대 데이터 손실 한계(RPO) 6시간으로 조정됨
+  - 초경량 인프라(t3a.nano 512MB RAM)의 물리적 자원 임계 한계 극복 및 비용 절감을 위해, 데이터베이스 계층의 다중화/이중화 및 블루-그린 분산 클러스터링 구조를 배제하고 단일 데이터베이스 컨테이너로 운용
+  - 이에 따라 데이터베이스 형상 갱신 및 재기동 시 커넥션 풀 차단으로 인한 일시적인 서비스 순단(Downtime) 발생 불가피
+  - AWS RDS 완전관리형 시점 복구(PITR) 미지원에 따른 최대 데이터 유실 한계 목표(RPO) 6시간 설정
 * **완화 대책 (Mitigation)**<br>
   - 6시간 주기 DB dump 데이터를 S3 독립 백업 버킷으로 전송하는 쉘 스크립트와 Cron 배포 및 30일 경과 백업 자동 파기 정책 연동
-  - Terraform/Ansible 코드화를 통해 전체 유실 발생 시에도 5분 이내 인프라 재설치 및 데이터 수동 복구 절차 수립 (ROA)
+  - 깃허브 Actions 원클릭 복원 워크플로우([db-restore.yml](./.github/workflows/db-restore.yml)) 및 SSM SendCommand 기반 자동 복원 스크립트를 구축하여, 실측 복구 시간(RTO)을 초기 목표(20분) 대비 **37~38초** 수준으로 극대화 단축하여 회복력 보완
 
 ### 1.2.4. Staging Environment
 * **최적화 조치 (Optimization)**<br>
