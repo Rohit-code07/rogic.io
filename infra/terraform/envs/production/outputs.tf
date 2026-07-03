@@ -50,3 +50,18 @@ output "github_actions_role_arn" {
   value       = aws_iam_role.github_actions_production.arn
 }
 
+output "cognito_user_pool_id" {
+  description = "Cognito User Pool ID"
+  value       = aws_cognito_user_pool.user_pool.id
+}
+
+output "cognito_client_id" {
+  description = "Cognito User Pool Client ID"
+  value       = aws_cognito_user_pool_client.client.id
+}
+
+output "cognito_domain" {
+  description = "Cognito User Pool Domain"
+  value       = "${aws_cognito_user_pool_domain.domain.domain}.auth.ap-northeast-2.amazoncognito.com"
+}
+

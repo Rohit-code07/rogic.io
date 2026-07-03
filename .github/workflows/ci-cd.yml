@@ -343,38 +343,7 @@ jobs:
           cd backend
           ./gradlew nativeCompile
 
-      - name: Set up Node.js
-        if: needs.changes.outputs.frontend == 'true' || github.event_name == 'workflow_dispatch'
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-          cache: 'npm'
-          cache-dependency-path: frontend/package-lock.json
 
-      - name: Build Frontend Assets
-        if: needs.changes.outputs.frontend == 'true' || github.event_name == 'workflow_dispatch'
-        run: |
-          # Query Cognito Staging configuration dynamically
-          STAGING_POOL_ID=$(aws cognito-idp list-user-pools --max-results 60 --query "UserPools[?starts_with(Name, 'nemologic-staging')].Id" --output text)
-          STAGING_CLIENT_ID=$(aws cognito-idp list-user-pool-clients --user-pool-id $STAGING_POOL_ID --max-results 20 --query "UserPoolClients[?starts_with(ClientName, 'nemologic-staging-client')].ClientId" --output text)
-          STAGING_DOMAIN_PREFIX=$(aws cognito-idp describe-user-pool --user-pool-id $STAGING_POOL_ID --query "UserPool.Domain" --output text)
-          STAGING_COGNITO_DOMAIN="https://${STAGING_DOMAIN_PREFIX}.auth.ap-northeast-2.amazoncognito.com"
-          
-          echo "Compiling frontend with:"
-          echo "VITE_COGNITO_DOMAIN=$STAGING_COGNITO_DOMAIN"
-          echo "VITE_COGNITO_CLIENT_ID=$STAGING_CLIENT_ID"
-          
-          cd frontend
-          npm ci
-          VITE_COGNITO_DOMAIN=$STAGING_COGNITO_DOMAIN VITE_COGNITO_CLIENT_ID=$STAGING_CLIENT_ID npm run build
-
-      - name: Upload Frontend Build Artifact
-        if: needs.changes.outputs.frontend == 'true' || github.event_name == 'workflow_dispatch'
-        uses: actions/upload-artifact@v4
-        with:
-          name: frontend-dist
-          path: frontend/dist/
-          retention-days: 1
 
       - name: Set Image Tag env
         if: needs.changes.outputs.backend == 'true' || github.event_name == 'workflow_dispatch'
@@ -564,21 +533,36 @@ jobs:
           BACKUP_BUCKET=$(aws s3 ls | grep nemologic-db-backup-stage | head -n1 | awk '{print $3}')
           ansible-playbook -i hosts.ini playbook.yml --extra-vars "env=stage backup_bucket_name=$BACKUP_BUCKET"
 
-      - name: Download Frontend Build Artifact
+      - name: Set up Node.js for Frontend Build
         if: needs.changes.outputs.frontend == 'true' || github.event_name == 'workflow_dispatch'
-        uses: actions/download-artifact@v4
+        uses: actions/setup-node@v4
         with:
-          name: frontend-dist
-          path: frontend/dist
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
 
-      - name: Deploy Frontend to S3 (Staging)
+      - name: Build and Deploy Frontend to S3 (Staging)
         if: needs.changes.outputs.frontend == 'true' || github.event_name == 'workflow_dispatch'
         run: |
           if [ -n "$AWS_ACCESS_KEY_ID" ]; then
+            # Query Cognito Staging configuration dynamically
+            STAGING_POOL_ID=$(aws cognito-idp list-user-pools --max-results 60 --query "UserPools[?starts_with(Name, 'nemologic-staging')].Id" --output text)
+            STAGING_CLIENT_ID=$(aws cognito-idp list-user-pool-clients --user-pool-id $STAGING_POOL_ID --max-results 20 --query "UserPoolClients[?starts_with(ClientName, 'nemologic-staging-client')].ClientId" --output text)
+            STAGING_DOMAIN_PREFIX=$(aws cognito-idp describe-user-pool --user-pool-id $STAGING_POOL_ID --query "UserPool.Domain" --output text)
+            STAGING_COGNITO_DOMAIN="https://${STAGING_DOMAIN_PREFIX}.auth.ap-northeast-2.amazoncognito.com"
+
+            echo "Compiling Staging frontend with:"
+            echo "VITE_COGNITO_DOMAIN=$STAGING_COGNITO_DOMAIN"
+            echo "VITE_COGNITO_CLIENT_ID=$STAGING_CLIENT_ID"
+
+            cd frontend
+            npm ci
+            VITE_COGNITO_DOMAIN=$STAGING_COGNITO_DOMAIN VITE_COGNITO_CLIENT_ID=$STAGING_CLIENT_ID npm run build
+
             STAGE_BUCKET=$(aws s3 ls | grep rogic-frontend-stage | awk '{print $3}')
             if [ -n "$STAGE_BUCKET" ]; then
               echo "Syncing frontend to staging S3 bucket: $STAGE_BUCKET"
-              aws s3 sync frontend/dist/ s3://$STAGE_BUCKET/ --delete
+              aws s3 sync dist/ s3://$STAGE_BUCKET/ --delete
               
               STAGE_DIST_ID=$(aws cloudfront list-distributions --query "DistributionList.Items[?Aliases.Items[?@=='stage.rogic.io']].Id" --output text)
               if [ -n "$STAGE_DIST_ID" ] && [ "$STAGE_DIST_ID" != "None" ]; then
@@ -700,21 +684,36 @@ jobs:
             echo "Skipping Production Deploy: EC2_IP secret not set."
           fi
 
-      - name: Download Frontend Build Artifact
+      - name: Set up Node.js for Frontend Build
         if: needs.changes.outputs.frontend == 'true' || github.event_name == 'workflow_dispatch'
-        uses: actions/download-artifact@v4
+        uses: actions/setup-node@v4
         with:
-          name: frontend-dist
-          path: frontend/dist
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
 
-      - name: Deploy Frontend to S3 (Production)
+      - name: Build and Deploy Frontend to S3 (Production)
         if: needs.changes.outputs.frontend == 'true' || github.event_name == 'workflow_dispatch'
         run: |
           if [ -n "$AWS_ACCESS_KEY_ID" ]; then
+            # Query Cognito Production configuration dynamically
+            PROD_POOL_ID=$(aws cognito-idp list-user-pools --max-results 60 --query "UserPools[?starts_with(Name, 'nemologic-production')].Id" --output text)
+            PROD_CLIENT_ID=$(aws cognito-idp list-user-pool-clients --user-pool-id $PROD_POOL_ID --max-results 20 --query "UserPoolClients[?starts_with(ClientName, 'nemologic-production-client')].ClientId" --output text)
+            PROD_DOMAIN_PREFIX=$(aws cognito-idp describe-user-pool --user-pool-id $PROD_POOL_ID --query "UserPool.Domain" --output text)
+            PROD_COGNITO_DOMAIN="https://${PROD_DOMAIN_PREFIX}.auth.ap-northeast-2.amazoncognito.com"
+
+            echo "Compiling Production frontend with:"
+            echo "VITE_COGNITO_DOMAIN=$PROD_COGNITO_DOMAIN"
+            echo "VITE_COGNITO_CLIENT_ID=$PROD_CLIENT_ID"
+
+            cd frontend
+            npm ci
+            VITE_COGNITO_DOMAIN=$PROD_COGNITO_DOMAIN VITE_COGNITO_CLIENT_ID=$PROD_CLIENT_ID npm run build
+
             PROD_BUCKET=$(aws s3 ls | grep rogic-frontend-prod | awk '{print $3}')
             if [ -n "$PROD_BUCKET" ]; then
               echo "Syncing frontend to production S3 bucket: $PROD_BUCKET"
-              aws s3 sync frontend/dist/ s3://$PROD_BUCKET/ --delete
+              aws s3 sync dist/ s3://$PROD_BUCKET/ --delete
               
               PROD_DIST_ID=$(aws cloudfront list-distributions --query "DistributionList.Items[?Aliases.Items[?@=='rogic.io']].Id" --output text)
               if [ -n "$PROD_DIST_ID" ] && [ "$PROD_DIST_ID" != "None" ]; then
