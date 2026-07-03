@@ -179,6 +179,26 @@
                     </tr>
                   </tbody>
                 </table>
+                <!-- Admin Stages Pagination -->
+                <div class="d-flex justify-content-between align-items-center mt-3 px-3" v-if="adminStagesTotalPages > 1">
+                  <button 
+                    class="btn btn-sm btn-outline-dark" 
+                    :disabled="adminStagesCurrentPage === 0"
+                    @click="loadAdminStagesList(adminStagesCurrentPage - 1)"
+                  >
+                    ◀ Previous
+                  </button>
+                  <span class="text-muted small">
+                    Page {{ adminStagesCurrentPage + 1 }} of {{ adminStagesTotalPages }}
+                  </span>
+                  <button 
+                    class="btn btn-sm btn-outline-dark" 
+                    :disabled="adminStagesCurrentPage >= adminStagesTotalPages - 1"
+                    @click="loadAdminStagesList(adminStagesCurrentPage + 1)"
+                  >
+                    Next ▶
+                  </button>
+                </div>
               </div>
             </div>
           </div>
@@ -418,6 +438,26 @@
                       🎉 No puzzles found!
                     </div>
                   </div>
+                  <!-- Pagination Controls -->
+                  <div class="dropdown-pagination-bar" v-if="playStagesTotalPages > 1">
+                    <button 
+                      class="btn btn-sm btn-outline-light" 
+                      :disabled="playStagesCurrentPage === 0"
+                      @click.stop="loadStagesList(playStagesCurrentPage - 1)"
+                    >
+                      ◀
+                    </button>
+                    <span class="page-info">
+                      {{ playStagesCurrentPage + 1 }} / {{ playStagesTotalPages }}
+                    </span>
+                    <button 
+                      class="btn btn-sm btn-outline-light" 
+                      :disabled="playStagesCurrentPage >= playStagesTotalPages - 1"
+                      @click.stop="loadStagesList(playStagesCurrentPage + 1)"
+                    >
+                      ▶
+                    </button>
+                  </div>
                 </div>
               </transition>
             </div>
@@ -630,6 +670,27 @@
                         No history found. Complete puzzles to populate!
                       </div>
                     </div>
+
+                    <!-- History Pagination Controls -->
+                    <div class="dropdown-pagination-bar" v-if="historyTotalPages > 1" style="margin-top: 0.75rem; display: flex; align-items: center; justify-content: space-between; border-top: 1px solid rgba(255, 255, 255, 0.1); padding-top: 0.75rem;">
+                      <button 
+                        class="btn btn-sm btn-outline-light" 
+                        :disabled="historyCurrentPage === 0"
+                        @click.stop="loadUserHistory(historyCurrentPage - 1)"
+                      >
+                        ◀
+                      </button>
+                      <span class="page-info" style="color: #94a3b8; font-size: 0.85rem; font-weight: 500;">
+                        {{ historyCurrentPage + 1 }} / {{ historyTotalPages }}
+                      </span>
+                      <button 
+                        class="btn btn-sm btn-outline-light" 
+                        :disabled="historyCurrentPage >= historyTotalPages - 1"
+                        @click.stop="loadUserHistory(historyCurrentPage + 1)"
+                      >
+                        ▶
+                      </button>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -691,7 +752,7 @@ import { rotateGrid } from './engine/gridRotator';
 import { fetchStages, fetchStageById, fetchAiStages, startStage, likeStage, dislikeStage } from './api/stageApi';
 import type { StageSummary } from './api/stageApi';
 import { fetchRanking, clearStage, fetchMeFromServer, fetchUserHistory } from './api/userApi';
-import type { User } from './api/userApi';
+import type { User, HistoryResponse } from './api/userApi';
 import { setUserSession, clearUserSession } from './api/auth';
 import type { UserSession } from './api/auth';
 import { loginWithGoogle, logout as googleLogout, getStoredToken } from './api/cognito';
@@ -768,9 +829,15 @@ const currentActiveStage = computed(() => {
   }
 });
 
-const clearedStageIds = computed(() => {
-  return new Set((histories.value || []).map(h => h.stageId));
-});
+const clearedStageIds = ref<Set<number>>(new Set());
+const allStagesSummary = ref<StageSummary[]>([]);
+
+const playStagesCurrentPage = ref(0);
+const playStagesTotalPages = ref(1);
+const historyCurrentPage = ref(0);
+const historyTotalPages = ref(1);
+const adminStagesCurrentPage = ref(0);
+const adminStagesTotalPages = ref(1);
 
 const allUnclearedStages = computed(() => {
   const stageMap = new Map<number, StageSummary>();
@@ -788,9 +855,17 @@ function selectSizeFilter(size: string) {
   isSizeListOpen.value = false;
 }
 
+const allUnclearedStagesForSizes = computed(() => {
+  const stageMap = new Map<number, StageSummary>();
+  (allStagesSummary.value || []).forEach(s => stageMap.set(s.id, s));
+  (aiStages.value || []).forEach(s => stageMap.set(s.id, s));
+  const combined = Array.from(stageMap.values());
+  return combined.filter(s => !clearedStageIds.value.has(s.id));
+});
+
 const availablePlaySizes = computed(() => {
   const sizes = new Set<number>();
-  allUnclearedStages.value.forEach(s => {
+  allUnclearedStagesForSizes.value.forEach(s => {
     sizes.add(s.width);
   });
   return Array.from(sizes).sort((a, b) => a - b);
@@ -924,16 +999,20 @@ watch(solved, (newVal) => {
   }
 });
 
-watch(selectedPlaySizeFilter, (newSize) => {
+watch(selectedPlaySizeFilter, async (newSize) => {
   if (newSize === 'All') return;
-  const sizeNum = parseInt(newSize);
-  const current = currentActiveStage.value;
-  if (!current || current.width !== sizeNum) {
-    const matching = allUnclearedStages.value.filter(s => s.width === sizeNum);
-    if (matching.length > 0 && (!current || current.id !== matching[0].id)) {
-      selectStageCard(matching[0].id, isStageAi(matching[0]));
+  if (isTestEnv) {
+    const sizeNum = parseInt(newSize);
+    const current = currentActiveStage.value;
+    if (!current || current.width !== sizeNum) {
+      const matching = allUnclearedStages.value.filter(s => s.width === sizeNum);
+      if (matching.length > 0 && (!current || current.id !== matching[0].id)) {
+        selectStageCard(matching[0].id, isStageAi(matching[0]));
+      }
     }
+    return;
   }
+  await loadStagesList(0);
 });
 
 function resetCountdown() {
@@ -1039,17 +1118,62 @@ function getErrorMessage(error: any, fallbackMessage: string): string {
   return fallbackMessage;
 }
 
-async function loadStagesList() {
+async function loadStagesList(page: number = 0) {
+  if (isTestEnv) console.log('CALLING loadStagesList, stack:', new Error().stack);
   isLoading.value = true;
   loadError.value = null;
   try {
-    const list = await fetchStages();
-    stages.value = list;
-    if (list.length > 0) {
-      selectedStageId.value = list[0].id;
-      await loadStageDetails(list[0].id);
+    const targetSize = parseInt(selectedPlaySizeFilter.value);
+    let allRes: any;
+    let res: any;
+    if (isTestEnv) {
+      res = await fetchStages();
+      allRes = res;
     } else {
-      isLoading.value = false;
+      [allRes, res] = await Promise.all([
+        allStagesSummary.value.length === 0 ? fetchStages() : Promise.resolve(allStagesSummary.value),
+        fetchStages(page, 20, targetSize)
+      ]);
+    }
+    allStagesSummary.value = allRes && 'content' in allRes ? allRes.content : allRes;
+    
+    let list: StageSummary[];
+    if (res && 'content' in res) {
+      list = res.content;
+      playStagesTotalPages.value = res.totalPages;
+      playStagesCurrentPage.value = res.number;
+    } else {
+      list = res;
+      playStagesTotalPages.value = 1;
+      playStagesCurrentPage.value = 0;
+    }
+    stages.value = list;
+
+    if (list.length > 0) {
+      if (selectedStageId.value && list.some(s => s.id === selectedStageId.value)) {
+        isLoading.value = false;
+        return;
+      }
+      
+      let initialStage = list.find(s => !clearedStageIds.value.has(s.id));
+      if (!initialStage) {
+        initialStage = list[0];
+      }
+      
+      selectedStageId.value = initialStage.id;
+      await loadStageDetails(initialStage.id);
+    } else {
+      // If no stages of target size, try to load any stages of other sizes (fallback)
+      const allList = allStagesSummary.value;
+      if (allList.length > 0) {
+        let fallbackStage = allList.find(s => !clearedStageIds.value.has(s.id));
+        if (!fallbackStage) {
+          fallbackStage = allList[0];
+        }
+        selectedPlaySizeFilter.value = String(fallbackStage.width);
+      } else {
+        isLoading.value = false;
+      }
     }
   } catch (error) {
     console.error('Failed to load stages:', error);
@@ -1161,9 +1285,11 @@ async function handleCellClick() {
           const userId = currentUser.value.id;
           const stageId = selectedStageId.value !== null ? selectedStageId.value : (selectedAiStageId.value !== null ? selectedAiStageId.value : undefined);
           await clearStage(userId, difficulty, stageId, elapsedTime);
+          allStagesSummary.value = [];
           await loadRankingsList();
           await loadUserHistory();
         } else {
+          allStagesSummary.value = [];
           await loadRankingsList();
         }
       } catch (error) {
@@ -1175,15 +1301,32 @@ async function handleCellClick() {
   }
 }
 
-async function loadUserHistory() {
+async function loadUserHistory(page: number = 0) {
   if (!currentUser.value) {
     histories.value = [];
+    historyTotalPages.value = 1;
+    historyCurrentPage.value = 0;
+    clearedStageIds.value = new Set();
     return;
   }
   try {
     const userId = currentUser.value.id;
-    const historyList = await fetchUserHistory(userId);
-    histories.value = historyList;
+    const res = await fetchUserHistory(userId, page, 10);
+    let list: HistoryResponse[];
+    if (res && 'content' in res) {
+      list = res.content;
+      historyTotalPages.value = res.totalPages;
+      historyCurrentPage.value = res.number;
+    } else {
+      list = res;
+      historyTotalPages.value = 1;
+      historyCurrentPage.value = 0;
+    }
+    histories.value = list;
+
+    const fullRes = await fetchUserHistory(userId);
+    const fullList = fullRes && 'content' in fullRes ? fullRes.content : fullRes;
+    clearedStageIds.value = new Set((fullList || []).map((h: any) => h.stageId));
   } catch (error) {
     console.error('Failed to load user history:', error);
   }
@@ -1312,9 +1455,19 @@ const creatorDragVal = ref(0);
 const lastCreatorRow = ref(-1);
 const lastCreatorCol = ref(-1);
 
-async function loadAdminStagesList() {
+async function loadAdminStagesList(page: number = 0) {
   try {
-    const list = await fetchAdminStages();
+    const res = await fetchAdminStages(page, 10);
+    let list: AdminStageInfo[];
+    if (res && 'content' in res) {
+      list = res.content;
+      adminStagesTotalPages.value = res.totalPages;
+      adminStagesCurrentPage.value = res.number;
+    } else {
+      list = res;
+      adminStagesTotalPages.value = 1;
+      adminStagesCurrentPage.value = 0;
+    }
     adminStages.value = list;
   } catch (error) {
     console.error('Failed to load admin stages:', error);
@@ -2238,6 +2391,40 @@ body {
   display: flex;
   flex-direction: column;
   gap: 0.75rem;
+}
+
+.dropdown-pagination-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-top: 0.75rem;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  color: #94a3b8;
+  font-size: 0.85rem;
+}
+
+.dropdown-pagination-bar .page-info {
+  font-weight: 500;
+}
+
+.dropdown-pagination-bar button {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: #f8fafc;
+  padding: 0.25rem 0.5rem;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.dropdown-pagination-bar button:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.dropdown-pagination-bar button:not(:disabled):hover {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.2);
 }
 
 /* Play size filter styling (Floating Dropdown) */

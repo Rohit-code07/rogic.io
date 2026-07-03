@@ -45,10 +45,22 @@ export async function clearStage(userId: number, difficulty: string, stageId?: n
   return response.data;
 }
 
-export async function fetchUserHistory(userId: number): Promise<HistoryResponse[]> {
-  const response = await axios.get<HistoryResponse[]>(`${API_BASE_URL}/${userId}/history`, {
-    headers: getAuthHeader(),
-  });
+import type { PageResponse } from './stageApi';
+
+export async function fetchUserHistory(userId: number, page?: number, size?: number): Promise<HistoryResponse[] | PageResponse<HistoryResponse>> {
+  const params: any = {};
+  if (page !== undefined) params.page = page;
+  if (size !== undefined) params.size = size;
+  
+  const hasParams = Object.keys(params).length > 0;
+  const config: any = {
+    headers: getAuthHeader()
+  };
+  if (hasParams) {
+    config.params = params;
+  }
+  
+  const response = await axios.get<HistoryResponse[] | PageResponse<HistoryResponse>>(`${API_BASE_URL}/${userId}/history`, config);
   return response.data;
 }
 

@@ -7,6 +7,10 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Optional;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 
 @Service
 public class StageService {
@@ -15,6 +19,21 @@ public class StageService {
 
     public StageService(StageRepository stageRepository) {
         this.stageRepository = stageRepository;
+    }
+
+    @Transactional(readOnly = true)
+    public Page<Stage> getStagesPaged(int page, int size, Integer width) {
+        Pageable pageable = PageRequest.of(page, size, Sort.by("id").ascending());
+        if (width != null) {
+            return stageRepository.findByActiveAndApprovedAndWidth(true, true, width, pageable);
+        }
+        return stageRepository.findByActiveAndApproved(true, true, pageable);
+    }
+
+    @Transactional(readOnly = true)
+    public Page<Stage> getStagesForAdminPaged(int page, int size) {
+        Pageable pageable = PageRequest.of(page, size, Sort.by("id").descending());
+        return stageRepository.findAll(pageable);
     }
 
     @Transactional(readOnly = true)

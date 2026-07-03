@@ -16,13 +16,32 @@ export interface StageDetails extends StageSummary {
   solutionGrid: number[][];
 }
 
+export interface PageResponse<T> {
+  content: T[];
+  totalPages: number;
+  totalElements: number;
+  size: number;
+  number: number;
+}
+
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL
   ? `${import.meta.env.VITE_API_BASE_URL}/api/stages`
   : (import.meta.env.PROD ? '/api/stages' : 'http://localhost:8080/api/stages');
 
-export async function fetchStages(): Promise<StageSummary[]> {
-  const response = await axios.get<StageSummary[]>(API_BASE_URL);
-  return response.data;
+export async function fetchStages(page?: number, size?: number, width?: number): Promise<StageSummary[] | PageResponse<StageSummary>> {
+  const params: any = {};
+  if (page !== undefined) params.page = page;
+  if (size !== undefined) params.size = size;
+  if (width !== undefined) params.width = width;
+  
+  const hasParams = Object.keys(params).length > 0;
+  if (hasParams) {
+    const response = await axios.get<StageSummary[] | PageResponse<StageSummary>>(API_BASE_URL, { params });
+    return response.data;
+  } else {
+    const response = await axios.get<StageSummary[] | PageResponse<StageSummary>>(API_BASE_URL);
+    return response.data;
+  }
 }
 
 export async function fetchStageById(id: number): Promise<StageDetails> {

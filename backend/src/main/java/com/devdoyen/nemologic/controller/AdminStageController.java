@@ -25,8 +25,21 @@ public class AdminStageController {
     }
 
     @GetMapping
-    public List<Stage> getAllStages() {
-        return stageService.getAllStagesForAdmin();
+    public ResponseEntity<?> getAllStages(
+            @org.springframework.web.bind.annotation.RequestParam(required = false) Integer page,
+            @org.springframework.web.bind.annotation.RequestParam(required = false) Integer size) {
+        if (page == null && size == null) {
+            List<Stage> stages = stageService.getAllStagesForAdmin();
+            if (stages.size() > 100) {
+                stages = stages.subList(0, 100);
+            }
+            return ResponseEntity.ok(stages);
+        }
+
+        int pageVal = (page != null) ? Math.max(0, page) : 0;
+        int sizeVal = (size != null) ? Math.min(100, Math.max(1, size)) : 20;
+
+        return ResponseEntity.ok(stageService.getStagesForAdminPaged(pageVal, sizeVal));
     }
 
     @PostMapping

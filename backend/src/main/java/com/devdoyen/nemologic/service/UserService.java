@@ -93,6 +93,21 @@ public class UserService {
     }
 
     @Transactional(readOnly = true)
+    public org.springframework.data.domain.Page<HistoryResponse> getUserHistoryPaged(Long userId, int page, int size) {
+        org.springframework.data.domain.Pageable pageable = org.springframework.data.domain.PageRequest.of(page, size, org.springframework.data.domain.Sort.by("clearedAt").descending());
+        return historyRepository.findByUserId(userId, pageable)
+                .map(h -> new HistoryResponse(
+                        h.getId(),
+                        h.getUser().getId(),
+                        h.getStage().getId(),
+                        h.getStage().getName(),
+                        h.getClearedAt(),
+                        h.getXpEarned(),
+                        h.getElapsedTime()
+                ));
+    }
+
+    @Transactional(readOnly = true)
     public List<User> getGlobalRanking() {
         return userRepository.findAll().stream()
                 .sorted(Comparator.comparingInt(User::getXp).reversed())

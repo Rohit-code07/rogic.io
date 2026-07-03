@@ -9,4 +9,5 @@ import java.util.List;
 @Repository
 public interface HistoryRepository extends JpaRepository<History, Long> {
     List<History> findByUserId(Long userId);
+    org.springframework.data.domain.Page<History> findByUserId(Long userId, org.springframework.data.domain.Pageable pageable);
 }

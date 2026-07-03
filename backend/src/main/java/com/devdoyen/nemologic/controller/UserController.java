@@ -55,8 +55,10 @@ public class UserController {
     }
 
     @GetMapping("/{id}/history")
-    public List<HistoryResponse> getUserHistory(
+    public org.springframework.http.ResponseEntity<?> getUserHistory(
             @PathVariable Long id,
+            @org.springframework.web.bind.annotation.RequestParam(required = false) Integer page,
+            @org.springframework.web.bind.annotation.RequestParam(required = false) Integer size,
             @org.springframework.security.core.annotation.AuthenticationPrincipal org.springframework.security.oauth2.jwt.Jwt jwt) {
         if (jwt == null) {
             throw new org.springframework.security.access.AccessDeniedException("Unauthorized");
@@ -66,6 +68,18 @@ public class UserController {
         if (targetUser.getOauthId() == null || !targetUser.getOauthId().equals(sub)) {
             throw new org.springframework.security.access.AccessDeniedException("Access denied: User ID does not match token identity");
         }
-        return userService.getUserHistory(id);
+
+        if (page == null && size == null) {
+            List<HistoryResponse> history = userService.getUserHistory(id);
+            if (history.size() > 100) {
+                history = history.subList(0, 100);
+            }
+            return org.springframework.http.ResponseEntity.ok(history);
+        }
+
+        int pageVal = (page != null) ? Math.max(0, page) : 0;
+        int sizeVal = (size != null) ? Math.min(100, Math.max(1, size)) : 20;
+
+        return org.springframework.http.ResponseEntity.ok(userService.getUserHistoryPaged(id, pageVal, sizeVal));
     }
 }

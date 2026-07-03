@@ -25,8 +25,23 @@ public class StageController {
     }
 
     @GetMapping
-    public List<Stage> getAllStages() {
-        return stageService.getAllStages();
+    public ResponseEntity<?> getAllStages(
+            @org.springframework.web.bind.annotation.RequestParam(required = false) Integer page,
+            @org.springframework.web.bind.annotation.RequestParam(required = false) Integer size,
+            @org.springframework.web.bind.annotation.RequestParam(required = false) Integer width,
+            @org.springframework.web.bind.annotation.RequestParam(required = false) Integer height) {
+        if (page == null && size == null) {
+            List<Stage> stages = stageService.getAllStages();
+            if (stages.size() > 100) {
+                stages = stages.subList(0, 100);
+            }
+            return ResponseEntity.ok(stages);
+        }
+
+        int pageVal = (page != null) ? Math.max(0, page) : 0;
+        int sizeVal = (size != null) ? Math.min(100, Math.max(1, size)) : 20;
+
+        return ResponseEntity.ok(stageService.getStagesPaged(pageVal, sizeVal, width));
     }
 
     @GetMapping("/{id}")
