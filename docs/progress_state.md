@@ -426,6 +426,21 @@
 
 ---
 
+### README.md 보안 대분류 격상, RPO 3시간 단축 정책 적용 및 크론탭 스케줄 패치 (Step 94) - 완료
+- **해결 내역**:
+  - **보안 대분류 독립 격상 및 README.md 아웃라인 전면 개편**: 
+    - 기존 `## 1.3. Security Infrastructure` 섹션을 대등한 위계인 `# 2. Security` 대단원으로 승격하고, 인프라 단원 하단(Troubleshooting 아래)으로 완전 이전하여 포트폴리오 가독성 및 가치 극대화.
+    - 이에 따라 인프라 하위 서브섹션을 `1.3. Observability`, `1.4. Disaster Recovery`, `1.5. Troubleshooting` 으로 한 인덱스씩 당겨 정합성 복원.
+    - 후속 대단원들을 `# 3. CI/CD`, `# 4. AI Engineering`, `# 5. Performance & Cost Analysis`, `# 6. Appendices` 로 각각 한 단원씩 밀고, 문서 내부의 200여 개 앵커 링크 참조 주소를 전량 갱신하여 링크 깨짐 방지.
+  - **RPO 3시간 단축 적용 및 크론 스케줄 패치**:
+    - 데이터 유실 한계를 대폭 최소화하기 위해 복구 시점 목표(RPO)를 기존 6시간에서 **3시간**으로 전격 단축.
+    - `playbook.yml` 의 DB 일일 백업 크론 스케줄을 `hour: "*/3"` (일 8회)으로 단축 튜닝 완료.
+    - README.md 및 [docs/dr_drill_guide.md](./docs/dr_drill_guide.md) 문서 내 RPO/백업 간격 관련 명시를 전량 3시간으로 보정 완료.
+  - **README.md 문서 경량화**:
+    - 별도 훈련 매뉴얼([dr_drill_guide.md](./docs/dr_drill_guide.md))과 중복되던 README.md 본문 내 '재해복구 모의 훈련 규격화' 서술 영역을 삭제하여 팩트 중심 경량성 확보.
+
+---
+
 ## 2. 다음 목표 (Next Goals)
 - **Cognito 소셜 로그인 프로덕션 실환경 운영 관찰**: Cognito User Pool과 Google OAuth IdP 간의 프로덕션 유저 인입 흐름 및 세션 모니터링 수행.
 - **Nginx 웹 방화벽(WAF) 도입 검토**: 리소스 제약을 극복하고 Nginx 레벨의 보안 강화를 위한 방화벽 구성안 비교 및 적용 설계 수립.
