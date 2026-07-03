@@ -325,6 +325,11 @@ AWS Cognito와 Google OAuth 2.0 연동 및 PKCE 플로우를 도입하여, 프�
 * **환경별 도메인 및 리디렉션 주소 동적 결정**<br>
   - 클라이언트 앱이 런타임에 접속한 오리진(`window.location.origin`)을 기반으로 인증 콜백/로그아웃 URL을 동적 해석 및 전달
   - 테라폼으로 배포된 Staging/Production 각각의 Cognito Client 등록 허용 정보와 일치시킴으로써 주소 오염 차단
+* **토큰 유효 기간 최소화 및 수명 제어 (Token Lifetime Minimization)**<br>
+  - 유출 토큰의 오용 가능성을 최소화하기 위해 Access Token 및 ID Token의 수명을 각각 **5분**으로 극단 단축하고, Refresh Token은 30일로 설정
+* **리프레시 토큰 로테이션 및 폐기 연동 (Rotation & Revocation)**<br>
+  - 신규 Access Token 발급 시점마다 기존 리프레시 토큰을 무효화(One-time Use)하고 매번 신규 리프레시 토큰을 재발급하는 **로테이션(Rotation)** 메커니즘을 적용하여 토큰 복제 위협 방어
+  - 사용자 로그아웃 시 Cognito 자원 단방향 엔드포인트를 호출하여 토큰을 즉시 **폐기(Revocation)** 처리 완료
 
 ---
 
