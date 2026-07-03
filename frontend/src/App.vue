@@ -323,7 +323,7 @@
           <div 
             v-if="currentUser" 
             @click="onTabChange('mypage')" 
-            class="mini-profile-card"
+            class="mini-profile-card tab-btn-mypage"
             :class="{ active: currentTab === 'mypage' }"
             style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer; padding: 0.35rem 0.75rem; border-radius: 9999px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); transition: all 0.25s ease;"
           >
