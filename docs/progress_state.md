@@ -398,3 +398,11 @@
   - **단위/통합 테스트 및 Playwright E2E 코드 보정**: UI 변경으로 실패하던 Vitest 테스트 시나리오(`App.test.ts`)의 구식 XP 검증 구문 삭제 및 단일 팝업 내 전환 검증 보정 작업을 수행하여 68개 프론트엔드 테스트를 전원 성공(100% Pass)시킴. 또한, 비로그인 상태일 때는 마이페이지 진입을 차단하고 로그인 게이트만 제공하는 실제 서비스 기획 사양에 맞게 Playwright E2E 테스트 시나리오(`staging.spec.ts`)를 보정하여 CI/CD 자동화 빌드 배포 및 git push 검증 훅을 무사 통과시킴.
   - **스테이지 크기 All 필터 제거**: 플레이 화면 우측 하단의 플로팅 크기 필터 목록에서 'All' 옵션을 영구 제거함. 기본 필터 활성 선택값을 최소 단위 크기인 `'5'`(5x5)로 매핑하고, 서버 데이터가 수집되어 가용 크기 목록(`availablePlaySizes`)이 갱신될 때 만약 선택된 크기 규격이 가용 목록에 존재하지 않는다면 가용 목록 중 첫 번째 크기값으로 자동 폴백 및 교정해주는 감시 장치(Watcher)를 Vue 런타임에 이식함. 이로 인해 유저 경험의 규격 통일성과 직관성을 대폭 향상함.
 
+
+### AWS Cognito Production 통합 및 README.md 프로젝트 가이드라인 갱신 (Step 91) - 완료
+- **해결 내역**:
+  - **AWS Cognito Production 인프라 프로비저닝**: `envs/production/cognito.tf` 를 신설하여 프로덕션 용 Cognito User Pool, User Pool Client, Google Identity Provider, Domain을 테라폼 코드로 정의함. 콜백 및 로그아웃 URL 도메인을 서비스 실환경 도메인(`https://rogic.io/`)으로 타겟 매핑 완료하고, Google client ID/Secret 변수 전달 구조를 `variables.tf`/`outputs.tf` 에 연동함.
+  - **CI/CD 프론트엔드 환경별 격리 빌드 파이프라인 수립**: Staging과 Production에 단일 정적 빌드물이 공유되며 Staging용 Cognito 정보가 혼입되던 배포 결함을 영구 차단하기 위해, 공통 `build` 잡 내의 프론트엔드 정적 번들 컴파일 및 업로드 과정을 전면 제거함. 대신 `deploy-staging` 및 `deploy-production` 각 배포 작업 내부에서 AWS 임시 자격 증명을 획득한 후 해당 환경의 Cognito 설정 값을 동적 질의하여 해당 정보를 소스에 구워 직접 `npm run build` 후 각자 S3 버킷에 동기화하도록 파이프라인을 리팩토링함.
+  - **로그인 redirect_mismatch 장애 조치**: 클라이언트 앱의 `APP_URL` 디폴트 해석 로직이 `stage.rogic.io` 로 하드코딩되어 실환경 로그인 시 Cognito Hosted UI 인증 도메인과 불일치(400)를 일으키던 문제를 해결하기 위해, 브라우저의 `window.location.origin` 을 런타임에 동적 파싱하여 자동으로 리디렉션 주소 규격을 맞추도록 `cognito.ts` 소스코드를 리팩토링함.
+  - **백엔드 토큰 검증 401 Unauthorized 장애 해결**: 백엔드 컨테이너 실행 환경인 `docker-compose.prod.yml` 에서 `COGNITO_JWK_SET_URI` 환경변수 주입 매핑이 유실되어 Spring Security 자원 서버가 JWT 공개키 서명을 대조할 수 없던 문제를 환경변수 목록(`SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWK_SET_URI`)을 바인딩하여 완전 해소함.
+  - **구글 OAuth 검수 자원 추가 및 README.md 갱신**: 구글 클라우드 콘솔 OAuth 동의 화면 심사 통과를 위해, 빌드 시 그대로 호스팅되는 개인정보처리방침(`privacy.html`), 서비스이용약관(`terms.html`) 및 120x120 크기로 정밀 래스터화된 앱 로고(`logo.png`)를 `frontend/public` 하위에 구현함. 또한, 새로 개편된 Cognito 연동 인증 아키텍처 다이어그램을 Mermaid C4Context로 업데이트하고 로컬/배포용 환경변수 셋업 가이드라인을 README.md 프로젝트 명세서에 동기화함.

@@ -51,15 +51,23 @@ C4Context
         System(s3, "Amazon S3 Bucket", "Stores Vite-built Vue static compilation files.")
     }
 
+    System_Boundary(identity_provider, "Identity & Access Management") {
+        System_Ext(cognito, "AWS Cognito User Pool", "Managed identity pool handling Federated Sign-In & token issuing.")
+        System_Ext(google_oauth, "Google Identity Provider", "Handles third-party authentication via Google accounts.")
+    }
+
     System_Boundary(backend, "Core API Server") {
-        System(api, "rogic.io REST API (EC2)", "Spring Boot backend handling gameplay, XP levels, and leadership stats.")
-        SystemDb(postgres, "PostgreSQL DB", "Relational database storing user logs, statistics, and stage metadata.")
+        System(api, "rogic.io REST API (EC2)", "Spring Boot backend verifying JWT signatures and exposing secured game services.")
+        SystemDb(postgres, "PostgreSQL DB", "Relational database storing user profiles, history logs, and stage metadata.")
     }
 
     Rel(player, route53, "Queries DNS for rogic.io / api.rogic.io", "DNS Protocol")
     Rel(player, cloudfront, "Requests static assets", "HTTPS / Port 443")
     Rel(cloudfront, s3, "Pulls origin static files", "S3 Protocol")
-    Rel(player, api, "Calls REST API services (via DNS mapped to EC2 EIP)", "HTTPS / Port 443")
+    Rel(player, cognito, "Initiates federated login & exchanges codes via PKCE", "HTTPS / Port 443")
+    Rel(cognito, google_oauth, "Delegates user identity lookup", "OIDC / OAuth 2.0")
+    Rel(player, api, "Calls REST API services with ID Token JWT", "HTTPS / Port 443")
+    Rel(api, cognito, "Downloads JSON Web Key Sets (JWKS) to verify JWT signature", "HTTPS / Port 443")
     Rel(api, postgres, "Reads/Writes game state", "JDBC & JPA / Port 5432")
 ```
 
@@ -177,6 +185,19 @@ C4Component
 | :--- | :--- | :--- | :--- |
 | **EC2 Host Role** | Instance Profile | `AmazonSSMManagedInstanceCore`<br>Staging: `CloudWatchAgentServerPolicy` (관리형)<br>Production: `nemologic-cloudwatch-log-policy` (커스텀)<br>`s3_backup_policy` (커스텀) | SSM 터널링 활성화, CloudWatch 로그 실시간 포워딩(Staging/Production 별 정책 차등 적용), DB 백업 S3 업로드 권한 제어 |
 | **CI/CD Runner (GitHub)** | AWS OIDC (Keyless) | `nemologic-staging-github-policy`<br>`nemologic-production-github-policy` (커스텀) | `sts:AssumeRoleWithWebIdentity`를 통해 GitHub Actions OIDC 토큰으로 1회용 단기 자격 증명을 획득하여 Terraform 및 배포 수행 (Secret Key 하드코딩 배제 및 최소 권한 수립) |
+
+#### 1.3.1.2. Federated Auth (AWS Cognito) & JWT Security
+AWS Cognito와 Google OAuth 2.0 연동 및 PKCE 플로우를 도입하여, 프론트엔드 Single Page App(SPA)과 백엔드 API 간의 자격 증명 탈취 가능성을 최소화하고 분리된 환경 인증을 구현했습니다.
+
+* **OAuth 2.0 PKCE(Proof Key for Code Exchange) Flow 적용**<br>
+  - 브라우저 클라이언트가 Cognito Hosted UI 인증을 수행할 때 암호학적 임의 키 검증(Code Verifier & Challenge) 방식을 활용
+  - Authorization Code가 중간에서 가로채지더라도 실제 Verifier 키가 없으면 토큰 교환이 원천적으로 불가능하도록 설계하여 클라이언트 측 가로채기 위협 방어
+* **무상태(Stateless) JWT 기반 보안 아키텍처**<br>
+  - 백엔드 Spring Security API는 세션 상태를 저장하지 않고 오직 클라이언트가 전달한 JWT(ID Token)의 유효성 검증만 수행
+  - AWS Cognito User Pool의 신뢰성 높은 공개키 세트(JWKS URI)를 기동 시점 또는 런타임에 동적 조회하여 JWT 서명 무결성(`RS256`)을 독립 검증
+* **환경별 도메인 및 리디렉션 주소 동적 결정**<br>
+  - 클라이언트 앱이 런타임에 접속한 오리진(`window.location.origin`)을 기반으로 인증 콜백/로그아웃 URL을 동적 해석 및 전달
+  - 테라폼으로 배포된 Staging/Production 각각의 Cognito Client 등록 허용 정보와 일치시킴으로써 주소 오염 차단
 
 ---
 
@@ -685,8 +706,23 @@ docker compose up --build
 nemologic-app-server ansible_host=<EC2_Instance_ID> ansible_user=ubuntu ansible_ssh_private_key_file=<PEM_File_Path> ansible_ssh_common_args='-o ProxyCommand="aws ssm start-session --target %h --document-name AWS-StartSSHSession --parameters portNumber=%p"'
 ```
 
+---
 
+### 5.1.4. Cognito Authentication Configuration (Local .env)
+로컬 개발 환경에서 구글 소셜 로그인 기능 및 회원 프로필 저장을 정상 가동하기 위해 아래와 같이 환경변수 및 인증 연동 주소를 구성합니다.
 
+* **Frontend 로컬 환경 변수 설정 (`frontend/.env.local` 생성)**<br>
+  ```env
+  VITE_COGNITO_DOMAIN=https://nemologic-stage-auth-ey12fmas.auth.ap-northeast-2.amazoncognito.com
+  VITE_COGNITO_CLIENT_ID=539c98pgejrm7vi5sm3j82b53p
+  ```
+  - **설명**: 로컬 Vite 개발 서버(`http://localhost:5173`) 실행 시 위 Cognito Staging 도메인으로 리다이렉트되어 연동이 진행됩니다. `VITE_APP_URL`을 지정하지 않으면 런타임 origin인 `http://localhost:5173/`이 콜백 주소로 자동 지정됩니다.
+
+* **Backend 로컬 환경 변수 설정 (`backend/src/main/resources/application-local.yml` 또는 `.env`)**<br>
+  ```env
+  COGNITO_JWK_SET_URI=https://cognito-idp.ap-northeast-2.amazonaws.com/ap-northeast-2_ey12fmas/.well-known/jwks.json
+  ```
+  - **설명**: 백엔드 REST API 구동 시, 전달된 ID Token(JWT) 서명의 무결성을 Cognito 공개키 세트(JWKS)로 검증하기 위해 주입하는 키 서버 엔드포인트 정보입니다.
 
 ---
 
