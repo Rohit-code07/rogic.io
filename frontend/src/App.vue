@@ -530,9 +530,6 @@
                 &times;
               </button>
 
-              <!-- Mypage Title -->
-              <h2 style="margin: 0 0 0.25rem 0; font-size: 1.35rem; font-weight: 700; color: #f8fafc; text-align: left;">👤 User Profile</h2>
-
               <!-- Non-login Guest Welcome Section -->
               <div v-if="!currentUser" class="mypage-guest-view" style="display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 1.5rem 1rem; background: rgba(30, 41, 59, 0.3); border: 1px solid rgba(255,255,255,0.05); border-radius: 12px;">
                 <div class="guest-icon" style="font-size: 2.5rem; margin-bottom: 0.75rem;">🎮</div>
@@ -547,7 +544,7 @@
                 >
                   <svg width="18" height="18" viewBox="0 0 18 18">
                     <path fill="#4285F4" d="M17.64 9.2c0-.63-.06-1.25-.16-1.84H9v3.47h4.84c-.21 1.12-.84 2.07-1.79 2.7v2.24h2.9c1.7-1.57 2.69-3.88 2.69-6.57z"/>
-                    <path fill="#34A853" d="M9 18c2.43 0 4.47-.8 5.96-2.23l-2.9-2.24c-.8.54-1.84.87-3.06.87-2.35 0-4.34-1.59-5.05-3.73H.95v2.3C2.43 15.89 5.5 18 9 18z"/>
+                    <path fill="#34A853" d="M9 18c2.43 0 4.47-.8 5.96-2.23l-2.9-2.24c-.8.54-1.84.87-3.06.87-2.35 0-4.34-1.59-5.05-3.73H.95v2.3C2.43 15.89(5.5 18 9 18z"/>
                     <path fill="#FBBC05" d="M3.95 10.66A5.4 5.4 0 0 1 3.6 9c0-.58.1-1.15.27-1.66V5.04H.95A9.02 9.02 0 0 0 0 9c0 1.45.35 2.82.95 4.04l3-2.38z"/>
                     <path fill="#EA4335" d="M9 3.58c1.32 0 2.5.45 3.44 1.35L15 2.4C13.46.96 11.43 0 9 0 5.5 0 2.43 2.11.95 5.04l3 2.38C4.66 5.17 6.65 3.58 9 3.58z"/>
                   </svg>
@@ -569,10 +566,6 @@
                   <div class="profile-details" style="flex-grow: 1; text-align: left;">
                     <h2 class="profile-username" style="margin: 0; font-size: 1.2rem; font-weight: 700; color: #f8fafc;">{{ currentUser.username }}</h2>
                     <p v-if="currentUser.email" class="profile-email" style="margin: 0.15rem 0 0.4rem; font-size: 0.8rem; color: #64748b;">{{ currentUser.email }}</p>
-                    <div class="profile-stats" style="display: flex; gap: 1rem; font-size: 0.85rem; font-weight: 600;">
-                      <span class="profile-lv" style="color: #38bdf8;">Level {{ currentUser.level }}</span>
-                      <span class="profile-xp" style="color: #818cf8;">{{ currentUser.xp }} XP</span>
-                    </div>
                   </div>
                   <button 
                     @click="handleGoogleLogout" 
@@ -586,11 +579,7 @@
                 </div>
 
                 <!-- History List Section -->
-                <div class="mypage-history-section" style="text-align: left;">
-                  <h3 style="font-size: 1rem; font-weight: 600; color: #94a3b8; margin: 0 0 0.75rem 0.25rem; display: flex; justify-content: space-between;">
-                    <span>🏆 Clear History</span>
-                    <span style="font-size: 0.85rem; color: #64748b;">{{ histories.length }} puzzles</span>
-                  </h3>
+                <div class="mypage-history-section" style="text-align: left; margin-top: 0.25rem;">
                   <div class="stage-card-list" style="display: flex; flex-direction: column; gap: 0.65rem; max-height: 240px; overflow-y: auto; padding-right: 0.25rem;">
                     <div 
                       v-for="item in histories" 
@@ -601,7 +590,6 @@
                     >
                       <div class="history-card-header" style="display: flex; justify-content: space-between; align-items: center;">
                         <span class="stage-name" style="font-weight: 600;">{{ item.stageName }}</span>
-                        <span class="xp-earned" style="color: #10b981; font-weight: 600;">+{{ item.xpEarned }} XP</span>
                       </div>
                       <div class="history-card-body" style="display: flex; justify-content: space-between; margin-top: 0.25rem; font-size: 0.85rem; color: #64748b;">
                         <span class="elapsed-time">⏱️ {{ item.elapsedTime }}s</span>
