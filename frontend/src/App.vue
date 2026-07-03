@@ -313,9 +313,9 @@
             v-else 
             @click="handleGoogleLogin" 
             class="mini-login-btn"
-            style="display: flex; align-items: center; gap: 0.35rem; padding: 0.45rem 1rem; font-size: 0.8rem; font-weight: 600; color: #ffffff; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.12); border-radius: 9999px; cursor: pointer; transition: all 0.25s ease;"
+            style="display: flex; align-items: center; gap: 0.35rem; padding: 0.5rem 1rem; font-size: 0.85rem; font-weight: 600; color: #94a3b8; background: transparent; border: 1px solid transparent; border-radius: 8px; cursor: pointer; transition: all 0.2s ease;"
           >
-            <svg class="header-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="width: 14px; height: 14px;">
+            <svg class="header-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="width: 1.1rem; height: 1.1rem;">
               <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4M10 17l5-5-5-5M13.8 12H3" />
             </svg>
             <span>Login</span>
