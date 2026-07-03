@@ -407,11 +407,20 @@
   - **백엔드 토큰 검증 401 Unauthorized 장애 해결**: 백엔드 컨테이너 실행 환경인 `docker-compose.prod.yml` 에서 `COGNITO_JWK_SET_URI` 환경변수 주입 매핑이 유실되어 Spring Security 자원 서버가 JWT 공개키 서명을 대조할 수 없던 문제를 환경변수 목록(`SPRING_SECURITY_OAUTH2_RESOURCESERVER_JWT_JWK_SET_URI`)을 바인딩하여 완전 해소함.
   - **구글 OAuth 검수 자원 추가 및 README.md 갱신**: 구글 클라우드 콘솔 OAuth 동의 화면 심사 통과를 위해, 빌드 시 그대로 호스팅되는 개인정보처리방침(`privacy.html`), 서비스이용약관(`terms.html`) 및 120x120 크기로 정밀 래스터화된 앱 로고(`logo.png`)를 `frontend/public` 하위에 구현함. 또한, 새로 개편된 Cognito 연동 인증 아키텍처 다이어그램을 Mermaid C4Context로 업데이트하고 로컬/배포용 환경변수 셋업 가이드라인을 README.md 프로젝트 명세서에 동기화함.
 
-### 데이터베이스 재해복구(DR) 파이프라인 및 EBS 볼륨 격리 고도화 (Step 92) - 진행 중
+### 데이터베이스 재해복구(DR) 파이프라인 및 EBS 볼륨 격리 고도화 (Step 92) - 완료
 - **해결 내역**:
-  - **EBS 볼륨 격리 및 영속화 인프라 정의**: Staging/Production 환경 테라폼 설정(`main.tf`)에 독립형 10GB EBS 볼륨 리소스(`aws_ebs_volume`, `prevent_destroy` 적용) 및 인스턴스 볼륨 재부착(`aws_volume_attachment`)을 바인딩하고 가상머신 삭제 시 영구 보존(`delete_on_termination = false`) 정책 수립 완료.
+  - **EBS 볼륨 격리 및 영속화 인프라 정의**: Staging/Production 환경 테라폼 설정(`main.tf`)에 독립형 10GB EBS 볼륨 리소스(`aws_ebs_volume`, `prevent_destroy` 적용) 및 인스턴스 볼륨 재부착(`aws_volume_attachment`)을 바인딩하고 가상머신 삭제 시 영구 보존 (`delete_on_termination = false`) 정책 수립 완료.
   - **Docker Compose 바인드 마운트 전환**: 컨테이너 유실 시 데이터 영속성 강화를 위해 `docker-compose.stage.yml` 및 `docker-compose.prod.yml` 파일에서 기존 명명 볼륨 구조를 버리고 호스트 절대 경로 마운트(`/opt/nemologic/db_data:/var/lib/postgresql/data`) 구조로 전면 리팩토링.
   - **Ansible 자동화 마운트 및 복구 템플릿 배포**: `playbook.yml` 내에 10GB 타깃 EBS 볼륨을 동적으로 스캔 및 ext4 포맷 생성 후 `/opt/nemologic/db_data`에 mounted하는 태스크를 배치 서비스 기동 이전에 주입 완료. 또한, 비대화형(`FORCE_RESTORE=true`) 및 백엔드 일시 중지를 결합하여 OOM과 데드락을 방어하는 `restore_db.sh` 템플릿 배포 완료.
+  - **Jinja2 템플릿 파싱 에러 해소**: 복원 템플릿(`restore_db.sh.j2`) 내에 쓰인 bash 배열 길이 연산자(`${#...}`)가 Jinja2 주석 기호(`{#`)로 오인 파싱되는 문제를 방지하기 위해, 템플릿 내부를 `{% raw %} ... {% endraw %}` 블록으로 감싸서 렌더링 안정성 확보.
+  - **동적 볼륨 마운트 동기화 락 해결**: Ansible `synchronize` (rsync) 작업 시 액티브 마운트 경로 `/opt/nemologic/db_data` 및 `backups` 하위를 삭제하려다 발생하는 `Device or resource busy (rc: 23)` 교착 에러를 해결하기 위해 rsync exclude 옵션을 플레이북에 긴급 통합함.
   - **GitHub Actions 복구 워크플로우 설계**: `workflow_dispatch` 수동 트리거 및 환경변수 지정을 지원하며, OIDC 기반 AWS STS 자격 획득 후 SSM SendCommand를 통해 타깃 서버에서 직접 복구 스크립트를 기동하고 소요 시간(RTO)을 실측 폴링하는 `db-restore.yml` 파이프라인 완성.
+  - **Staging 모의 복구 훈련(DR Drill) 실증**: Staging 환경에서 stages 테이블을 강제 TRUNCATE하여 데이터 유실을 유발한 뒤, 수동 복원 파이프라인을 기동하여 S3 최신 스냅샷으로부터 **단 38초 만에 서비스가 완벽하게 복구(totalAttempts 복원 완수)**됨을 검증 완료.
   - **DR Drill 가이드 배포**: 기존 로컬 볼륨 데이터 이관 매뉴얼, 인스턴스 전소 시 3단계 복구 경로, 훈련 시나리오를 망라한 [dr_drill_guide.md](./dr_drill_guide.md) 문서 편찬.
+
+---
+
+## 2. 다음 목표 (Next Goals)
+- **Production 환경 EBS 볼륨 격리 및 데이터 마이그레이션 적용**: Staging에서 입증된 절차에 맞춰 Production 인프라 테라폼 반영(EBS 볼륨 생성) 및 로컬 DB rsync 데이터 이관 작업 완수.
+- **Production 환경 DR Drill 실증 검증**: Production 환경에서 데이터베이스 롤백 훈련(GitHub Actions)을 수행하여 정상 서비스 복구 확인 및 RTO 실측 모니터링 완료.
 
