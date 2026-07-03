@@ -1654,6 +1654,20 @@ async function initializeUserSession() {
 
   // 2. Load profile if token is valid
   const token = getStoredToken();
+  if (token === 'dummy-token') {
+    const debugSession = {
+      id: 999,
+      username: '조도연',
+      xp: 250,
+      level: 12,
+      email: 'ysndy1234@gmail.com',
+      profileImageUrl: '',
+      idToken: 'dummy-token'
+    };
+    setUserSession(debugSession);
+    currentUser.value = debugSession;
+    return;
+  }
   if (token) {
     try {
       const user = await fetchMeFromServer();
