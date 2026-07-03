@@ -2,7 +2,7 @@ import axios from 'axios';
 
 const COGNITO_DOMAIN = import.meta.env.VITE_COGNITO_DOMAIN || 'https://nemologic-stage-auth.auth.ap-northeast-2.amazoncognito.com';
 const CLIENT_ID = import.meta.env.VITE_COGNITO_CLIENT_ID || '';
-const APP_URL = import.meta.env.VITE_APP_URL || (import.meta.env.PROD ? 'https://stage.rogic.io' : 'http://localhost:5173');
+const APP_URL = import.meta.env.VITE_APP_URL || (typeof window !== 'undefined' ? window.location.origin : 'http://localhost:5173');
 
 const TOKEN_KEY = 'nemologic_id_token';
 const VERIFIER_KEY = 'nemologic_code_verifier';
