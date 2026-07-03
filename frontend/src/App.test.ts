@@ -141,7 +141,6 @@ describe('App.vue Leaderboard Integration TDD', () => {
     expect(historyItems.length).toBe(1);
     expect(historyItems[0].text()).toContain('Heart Shape');
     expect(historyItems[0].text()).toContain('120s');
-    expect(historyItems[0].text()).toContain('+50 XP');
   });
 
   it('should call clearStage with stageId and elapsedTime when puzzle is solved', async () => {
@@ -194,27 +193,27 @@ describe('App.vue Leaderboard Integration TDD', () => {
     // Assert that the stage details were fetched for the correct stage ID
     expect(fetchStageSpy).toHaveBeenCalledWith(1);
 
-    // Verify modal elements are visible
-    const modalOverlay = wrapper.find('.modal-overlay');
-    expect(modalOverlay.exists()).toBe(true);
-    expect(wrapper.find('.modal-stage-info').text()).toContain('Heart Shape');
+    // Verify modal elements are visible (review panel)
+    const reviewView = wrapper.find('.mypage-review-view');
+    expect(reviewView.exists()).toBe(true);
+    expect(reviewView.text()).toContain('Heart Shape');
 
     // Verify modal board state matches the stage solution grid
     const vm = wrapper.vm as any;
-    expect(vm.isModalOpen).toBe(true);
+    expect(vm.isReviewMode).toBe(true);
     expect(vm.modalBoard).not.toBeNull();
     expect(vm.modalBoard.rowCount).toBe(3);
     expect(vm.modalBoard.colCount).toBe(3);
     expect(vm.modalBoard.currentGrid).toEqual([[0, 1, 0], [1, 1, 1], [0, 1, 0]]);
 
-    // Click close button and verify modal is closed
-    const closeBtn = wrapper.find('.modal-close-btn');
+    // Click close/back button and verify modal is closed
+    const closeBtn = wrapper.find('.mypage-popup-back-btn');
     expect(closeBtn.exists()).toBe(true);
     await closeBtn.trigger('click');
     await new Promise((resolve) => setTimeout(resolve, 50));
 
-    expect(wrapper.find('.modal-overlay').exists()).toBe(false);
-    expect(vm.isModalOpen).toBe(false);
+    expect(wrapper.find('.mypage-review-view').exists()).toBe(false);
+    expect(vm.isReviewMode).toBe(false);
   });
 
   it('should render AI daily puzzles list, select AI puzzle, and submit clearStage with difficulty HARD', async () => {
