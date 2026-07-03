@@ -613,14 +613,14 @@
                         :key="item.id" 
                         class="history-item" 
                         @click="openHistoryModal(item)"
-                        style="cursor: pointer;"
+                        style="cursor: pointer; display: flex; justify-content: space-between; align-items: center; padding: 0.75rem 0.95rem; background: rgba(255, 255, 255, 0.02); border: 1px solid rgba(255, 255, 255, 0.05); border-radius: 10px; transition: all 0.2s;"
+                        onmouseover="this.style.background='rgba(255, 255, 255, 0.04)'; this.style.borderColor='rgba(56, 189, 248, 0.2)';"
+                        onmouseout="this.style.background='rgba(255, 255, 255, 0.02)'; this.style.borderColor='rgba(255, 255, 255, 0.05)';"
                       >
-                        <div class="history-card-header" style="display: flex; justify-content: space-between; align-items: center;">
-                          <span class="stage-name" style="font-weight: 600;">{{ item.stageName }}</span>
-                        </div>
-                        <div class="history-card-body" style="display: flex; gap: 0.5rem; margin-top: 0.5rem; font-size: 0.75rem; font-weight: 600;">
-                          <span class="elapsed-time-badge" style="padding: 0.2rem 0.5rem; background: rgba(56, 189, 248, 0.1); border: 1px solid rgba(56, 189, 248, 0.15); border-radius: 6px; color: #38bdf8;">{{ item.elapsedTime }}s</span>
-                          <span class="cleared-at-badge" style="padding: 0.2rem 0.5rem; background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 6px; color: #94a3b8;">{{ item.clearedAt.split('T')[0] }}</span>
+                        <span class="stage-name" style="font-weight: 600; color: #f8fafc; font-size: 0.9rem;">{{ item.stageName }}</span>
+                        <div class="history-badges" style="display: flex; gap: 0.4rem; font-size: 0.7rem; font-weight: 600;">
+                          <span class="elapsed-time-badge" style="padding: 0.18rem 0.45rem; background: rgba(56, 189, 248, 0.1); border: 1px solid rgba(56, 189, 248, 0.15); border-radius: 5px; color: #38bdf8;">{{ item.elapsedTime }}s</span>
+                          <span class="cleared-at-badge" style="padding: 0.18rem 0.45rem; background: rgba(255, 255, 255, 0.04); border: 1px solid rgba(255, 255, 255, 0.06); border-radius: 5px; color: #64748b;">{{ item.clearedAt.split('T')[0] }}</span>
                         </div>
                       </div>
                       <div v-if="histories.length === 0" class="empty-history" style="text-align: center; padding: 2rem; color: #64748b; font-size: 0.85rem;">
