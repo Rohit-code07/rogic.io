@@ -603,11 +603,16 @@
                     <button 
                       @click="handleGoogleLogout" 
                       class="logout-outline-btn"
-                      style="padding: 0.45rem 1rem; background: rgba(239, 68, 68, 0.08); border: 1px solid rgba(239, 68, 68, 0.3); border-radius: 8px; color: #ef4444; font-size: 0.8rem; font-weight: 600; cursor: pointer; transition: all 0.2s;"
+                      title="Logout"
+                      style="width: 34px; height: 34px; border-radius: 8px; background: rgba(239, 68, 68, 0.08); border: 1px solid rgba(239, 68, 68, 0.3); color: #ef4444; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.2s; flex-shrink: 0;"
                       onmouseover="this.style.background='rgba(239, 68, 68, 0.18)'"
                       onmouseout="this.style.background='rgba(239, 68, 68, 0.08)'"
                     >
-                      Logout
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+                        <polyline points="16 17 21 12 16 7"></polyline>
+                        <line x1="21" y1="12" x2="9" y2="12"></line>
+                      </svg>
                     </button>
                   </div>
 
