@@ -531,27 +531,32 @@
               </button>
 
               <!-- VIEW 1: Review Mode (Displaying the selected completed puzzle board) -->
-              <div v-if="isReviewMode && modalBoard" class="mypage-review-view" style="display: flex; flex-direction: column; gap: 0.75rem; width: 100%; text-align: left; height: 100%; justify-content: flex-start; animation: modalFadeIn 0.2s ease-out;">
-                <!-- Header row: Back button, Date, Stage name, Time badge -> all on ONE line -->
-                <div style="display: flex; align-items: center; justify-content: space-between; width: 100%; border-bottom: 1px solid rgba(255, 255, 255, 0.05); padding-bottom: 0.75rem; margin-bottom: 0.25rem;">
-                  <div style="display: flex; align-items: center; gap: 0.5rem;">
-                    <button 
-                      @click="isReviewMode = false" 
-                      class="mypage-back-arrow-btn"
-                      style="background: transparent; border: none; color: #38bdf8; font-size: 1.05rem; font-weight: 600; cursor: pointer; padding: 0.25rem 0.45rem; border-radius: 6px; display: inline-flex; align-items: center; gap: 0.25rem; transition: background 0.2s;"
-                      onmouseover="this.style.background='rgba(56, 189, 248, 0.08)'"
-                      onmouseout="this.style.background='transparent'"
-                    >
-                      ←
-                    </button>
-                    <span style="font-size: 0.75rem; font-weight: 500; color: #64748b;">{{ selectedHistory?.clearedAt.split('T')[0] }}</span>
-                    <span style="font-weight: 700; color: #f8fafc; font-size: 1.05rem; margin-left: 0.15rem;">{{ selectedHistory?.stageName }}</span>
-                  </div>
-                  <span style="font-size: 0.7rem; font-weight: 600; padding: 0.18rem 0.45rem; background: rgba(56, 189, 248, 0.1); border: 1px solid rgba(56, 189, 248, 0.15); border-radius: 5px; color: #38bdf8;">{{ selectedHistory?.elapsedTime }}s</span>
+              <div v-if="isReviewMode && modalBoard" class="mypage-review-view" style="display: flex; flex-direction: column; gap: 0.5rem; width: 100%; text-align: left; height: 100%; justify-content: space-between; box-sizing: border-box; animation: modalFadeIn 0.2s ease-out;">
+                <!-- 1. Top row: Only Back button (Positioned safely away from X button) -->
+                <div style="display: flex; align-items: center; width: 100%; margin-top: -0.25rem;">
+                  <button 
+                    @click="isReviewMode = false" 
+                    class="mypage-back-arrow-btn"
+                    style="background: transparent; border: none; color: #38bdf8; font-size: 1.25rem; font-weight: 600; cursor: pointer; padding: 0.35rem 0.6rem; border-radius: 6px; display: inline-flex; align-items: center; transition: background 0.2s;"
+                    onmouseover="this.style.background='rgba(56, 189, 248, 0.08)'"
+                    onmouseout="this.style.background='transparent'"
+                  >
+                    ←
+                  </button>
+                </div>
+                
+                <!-- 2. Middle Row: Completed Puzzle Canvas -->
+                <div class="modal-canvas-wrapper" style="width: 250px; height: 250px; margin: 0 auto; background-color: #0f172a; border-radius: 12px; overflow: hidden; border: 1px solid rgba(255, 255, 255, 0.08); display: flex; justify-content: center; align-items: center; position: relative;">
+                  <NonogramCanvas :board="modalBoard" :readOnly="true" :initialAngle="0" />
                 </div>
 
-                <div class="modal-canvas-wrapper" style="width: 250px; height: 250px; margin: 0.75rem auto 0; background-color: #0f172a; border-radius: 12px; overflow: hidden; border: 1px solid rgba(255, 255, 255, 0.08); display: flex; justify-content: center; align-items: center; position: relative;">
-                  <NonogramCanvas :board="modalBoard" :readOnly="true" :initialAngle="0" />
+                <!-- 3. Bottom Row: Date, Stage name, Time badge (Clean layout) -->
+                <div style="display: flex; align-items: center; justify-content: space-between; width: 100%; border-top: 1px solid rgba(255, 255, 255, 0.05); padding-top: 0.75rem; margin-top: 0.25rem;">
+                  <div style="display: flex; align-items: center; gap: 0.5rem;">
+                    <span style="font-size: 0.75rem; font-weight: 500; color: #64748b;">{{ selectedHistory?.clearedAt.split('T')[0] }}</span>
+                    <span style="font-weight: 700; color: #f8fafc; font-size: 1.05rem;">{{ selectedHistory?.stageName }}</span>
+                  </div>
+                  <span style="font-size: 0.7rem; font-weight: 600; padding: 0.18rem 0.45rem; background: rgba(56, 189, 248, 0.1); border: 1px solid rgba(56, 189, 248, 0.15); border-radius: 5px; color: #38bdf8;">{{ selectedHistory?.elapsedTime }}s</span>
                 </div>
               </div>
 
@@ -613,7 +618,7 @@
                         :key="item.id" 
                         class="history-item" 
                         @click="openHistoryModal(item)"
-                        style="cursor: pointer; display: flex; justify-content: space-between; align-items: center; padding: 0.75rem 0.95rem; background: rgba(255, 255, 255, 0.02); border: 1px solid rgba(255, 255, 255, 0.05); border-radius: 10px; transition: all 0.2s;"
+                        style="cursor: pointer; display: flex; justify-content: space-between; align-items: center; padding: 0.45rem 0.95rem; background: rgba(255, 255, 255, 0.02); border: 1px solid rgba(255, 255, 255, 0.05); border-radius: 10px; transition: all 0.2s;"
                         onmouseover="this.style.background='rgba(255, 255, 255, 0.04)'; this.style.borderColor='rgba(56, 189, 248, 0.2)';"
                         onmouseout="this.style.background='rgba(255, 255, 255, 0.02)'; this.style.borderColor='rgba(255, 255, 255, 0.05)';"
                       >
