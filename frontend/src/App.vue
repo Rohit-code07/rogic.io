@@ -532,18 +532,16 @@
 
               <!-- VIEW 1: Review Mode (Displaying the selected completed puzzle board) -->
               <div v-if="isReviewMode && modalBoard" class="mypage-review-view" style="display: flex; flex-direction: column; gap: 0.5rem; width: 100%; text-align: left; height: 100%; justify-content: space-between; box-sizing: border-box; animation: modalFadeIn 0.2s ease-out;">
-                <!-- 1. Top row: Only Back button (Positioned safely away from X button) -->
-                <div style="display: flex; align-items: center; width: 100%; margin-top: -0.25rem;">
-                  <button 
-                    @click="isReviewMode = false" 
-                    class="mypage-back-arrow-btn"
-                    style="background: transparent; border: none; color: #38bdf8; font-size: 1.25rem; font-weight: 600; cursor: pointer; padding: 0.35rem 0.6rem; border-radius: 6px; display: inline-flex; align-items: center; transition: background 0.2s;"
-                    onmouseover="this.style.background='rgba(56, 189, 248, 0.08)'"
-                    onmouseout="this.style.background='transparent'"
-                  >
-                    ←
-                  </button>
-                </div>
+                <!-- Absolute Position Back Button (Perfect symmetry with X button at top 1.25rem) -->
+                <button 
+                  @click="isReviewMode = false" 
+                  class="mypage-popup-back-btn"
+                  style="position: absolute; top: 1.25rem; left: 1.25rem; width: 32px; height: 32px; border-radius: 50%; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); color: #38bdf8; font-size: 1.1rem; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.2s;"
+                  onmouseover="this.style.background='rgba(255,255,255,0.08)'; this.style.color='#f8fafc';"
+                  onmouseout="this.style.background='rgba(255,255,255,0.03)'; this.style.color='#38bdf8';"
+                >
+                  ←
+                </button>
                 
                 <!-- 2. Middle Row: Completed Puzzle Canvas -->
                 <div class="modal-canvas-wrapper" style="width: 250px; height: 250px; margin: 0 auto; background-color: #0f172a; border-radius: 12px; overflow: hidden; border: 1px solid rgba(255, 255, 255, 0.08); display: flex; justify-content: center; align-items: center; position: relative;">
