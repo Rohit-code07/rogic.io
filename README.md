@@ -118,16 +118,141 @@ C4Context
 
 ---
 
-## 1.3. Security Infrastructure
+
+## 1.3. Observability
+본 프로젝트는 시스템 가용성과 지표 수집 부하 최소화 통제를 위해 업계 표준 모니터링 핵심 영역(Metrics, Logs, Alerting & SLO)을 관제 아키텍처로 구축했습니다.
+
+### 1.3.1. Metrics & Telemetry
+```mermaid
+C4Container
+    title Telemetry Diagram for rogic.io (Level 3: Observability & Alerting)
+
+    System_Boundary(host, "AWS EC2 Instance (Target Host)") {
+        Container(nginx, "Nginx Reverse Proxy", "Docker", "Bearer Token Authentication Endpoint.")
+        Container(spring, "Spring Boot Backend", "Docker (GraalVM)", "Exposes Prometheus Actuator Metrics.")
+        Rel(nginx, spring, "Forwards prometheus scraping requests", "Port 8080")
+    }
+
+    System_Boundary(grafana_cloud, "Grafana Cloud Platform") {
+        Container(grafana, "Grafana Dashboards", "SaaS Dashboard", "Visualizes SLA metrics, CPU, Memory, and log groups.")
+        Container(prometheus, "Prometheus / Mimir", "SaaS TSDB", "Scrapes metrics via Agentless Pull architecture.")
+        Rel(grafana, prometheus, "Queries metrics data")
+    }
+
+    System_Boundary(observability, "AWS Management & Alerting") {
+        Container(cw, "Amazon CloudWatch", "AWS Logging", "Collects application stdout log streams via awslogs driver.")
+        Container(sns, "AWS SNS Topic", "AWS Alerting", "Triggers notifications based on metric filter threshold alarms.")
+        Person(sre, "SRE Developer", "Receives real-time incident warning emails.")
+        
+        Rel(cw, sns, "Metric Filter Threshold Alarmed")
+        Rel(sns, sre, "Sends warning email notification")
+    }
+
+    Rel(prometheus, nginx, "Scrapes metrics (Agentless Pull)", "HTTPS Bearer Auth / Port 443")
+    Rel(spring, cw, "Streams application logs", "awslogs driver")
+```
+
+* **Agentless Pull 아키텍처 수립**<br>
+  - 호스트 내부 CPU/메모리 자원을 소모하는 별도 수집 에이전트(Grafana Alloy 등)를 완전히 배제
+  - Nginx 리버스 프록시 단에서 `Authorization: Bearer` 헤더 토큰을 상시 대조 검증하는 가상 라우팅 경로를 개방
+  - 외부 Grafana Cloud의 Prometheus/Mimir 서버가 정기적으로 지표를 직접 Scrape(Scraping)하도록 설계하여 에이전트 구동 부하를 0으로 통제
+
+### 1.3.2. Log Aggregation & Storage
+* **awslogs Docker 드라이버 실시간 스트리밍**<br>
+  - 개별 컨테이너 내부 콘솔 출력을 디스크 파일 대신 AWS CloudWatch Logs(`/aws/ec2/nemologic`)로 즉시 리다이렉트 포워딩
+  - 호스트 로컬 내에 원시 로그를 축적하지 않아 디스크 공간 고갈 및 I/O 병목 리스크 사전 격리
+* **액세스 지표 로그 필터링**<br>
+  - 헬스체크 및 주기적인 프로메테우스 메트릭 수집 API 호출 경로의 Nginx Access Log 로깅을 강제 중지(`access_log off;`) 처리
+  - 불필요한 관제 트래픽에 의한 스토리지 낭비 및 CPU 소모 통제
+
+### 1.3.3. Alerting & SLO Visualization
+* **싱가포르/시드니/도쿄 3중 가용성 관제**<br>
+  - Grafana Cloud Synthetic Monitoring 프로브를 통해 다중 글로벌 리전 엣지(싱가포르, 시드니, 도쿄)에서 1분 간격으로 `/actuator/health` 헬스체크 다중 모니터링 수행
+  - 단일 지점 프로브 오류에 따른 오탐을 방지하고 다중 감색 가용성 검증 체계 구현
+* **AWS SNS 경보 메일 전송**<br>
+  - CloudWatch Logs Metric Filter 임계치 초과 장애 감지 시 AWS SNS 토픽을 트리거하여 SRE 메일로 장애 인시던트 즉시 전파
+* **통합 SLA 대시보드 시각화 ([current_dashboard.json](infra/monitoring/current_dashboard.json))**<br>
+  - 핵심 가용성 지표(Uptime SLA, Incident Count, MTTR, MTBF)를 Grafana 대시보드 상단 단일 행 4열 KPI 카드로 일괄 관제 가능하도록 동적 연동 구성
+  - 레이아웃 구성용 예시 링크: [Grafana Live Public Dashboard](https://grandwalrus3189.grafana.net/public-dashboards/ec9e06b0d1ea4540b97af6b56abb1380) (민감 메트릭 배제 데모용 구성)
+  - 상세 관제 PromQL 수식 및 쿼리 구현은 부록 [6.2. PromQL Query Formulations (SLO Metrics)](#62-promql-query-formulations-slo-metrics) 참고
+
+---
+
+## 1.4. Disaster Recovery
+본 프로젝트는 저사양 단일 EC2 아키텍처 하에서의 재해 복구(DR) 신뢰성을 극대화하기 위해, 인프라 자동 복원 메커니즘과 원격 백업 소산 복구 파이프라인을 구축했습니다.
+
+### 1.4.1. DR Recovery Flow
+장애 발생 유형(하드웨어 크래시 vs 데이터베이스 손상)에 따른 대응 프로세스 및 예상 복구 시간(RTO) 흐름도입니다.
+
+```mermaid
+stateDiagram-v2
+    state "Normal Operation (정상 운영)" as Normal
+    state "Hardware / Instance Failure (인스턴스 물리 장애)" as HardFail
+    state "Data / Volume Corruption (데이터/스토리지 손상)" as DataFail
+
+    state "AWS Auto Recovery (자동 인스턴스 복원)" as AutoRec {
+        [*] --> Detect : Status Check Failed (1 min)
+        Detect --> TerminateAndStart : Trigger CloudWatch Alarm
+        TerminateAndStart --> CompleteAutoRec : Re-attach EBS & Re-bind EIP
+    }
+
+    state "GitHub Actions DR Restore (수동 원클릭 복구)" as ManualRec {
+        [*] --> TriggerWorkflow : Dispatch db-restore.yml
+        TriggerWorkflow --> FetchS3 : Pull latest pg_dump from S3
+        FetchS3 --> DockerRestore : Exec pg_restore & Restart Stack
+    }
+
+    [*] --> Normal
+    Normal --> HardFail : Host Hardware Crash
+    Normal --> DataFail : DB dropped / Volume Corrupted
+
+    HardFail --> AutoRec : Trigger Alarm
+    AutoRec --> Normal : Complete Auto Recovery (RTO: 1~2 min)
+
+    DataFail --> ManualRec : Run Restore Pipeline
+    ManualRec --> Normal : Complete DB Restoration (RTO: 37~360 sec)
+```
+
+### 1.4.2. Storage & Backup Design
+* **독립형 EBS 볼륨 영속성 분리**<br>
+  - EC2 가상머신 삭제 및 재기동 장애 시에도 데이터가 보존되도록 OS 영역과 별개인 독립형 10GB gp3 EBS 볼륨을 분리하여 설계
+  - 테라폼 리소스 수명주기 보호 규칙(`prevent_destroy = true`) 및 EC2 해제 시 볼륨 영구 보존 규칙(`delete_on_termination = false`) 바인딩 완료
+  - 도커 볼륨을 호스트 절대 경로 바인드 마운트(`/opt/nemologic/db_data`)로 일원화하여 볼륨 유실 리스크 사전 차단
+* **데이터 백업 및 S3 격리 소산**<br>
+  - 매 3시간 간격으로 EC2 호스트 내부의 PostgreSQL 데이터베이스 덤프(`pg_dump`)를 가동하는 자동 백업 스크립트 운용
+  - 백업 결과물은 즉각 Amazon S3 격리 백업 버킷(`nemologic-backup-bucket`)으로 원격 이관 및 소산 저장
+  - 스토리지 비용 조율을 위해 30일이 경과한 노후 백업본은 S3 Lifecycle 규칙을 통해 자동 영구 소거
+
+---
+
+## 1.5. Troubleshooting
+
+### 1.5.1. Host Memory Exhaustion Incident
+* **배경**<br>
+  - 인프라 비용 극 최소화(월 $11.45 구성)를 위해 t3a.nano 인스턴스(512MB RAM) 환경을 선택하였으나, 모니터링 수집 에이전트(Grafana Alloy)의 메모리 점유(100MB+)와 블루/그린 배포 시점에 Spring Boot 컨테이너 2개가 일시적으로 동시에 기동하면서 물리 메모리 한계를 초과하여 OOM 및 CPU 스레싱 장애가 빈번히 발생함.
+  - 특히 최초 배포 시(콜드 스타트) 로컬 캐시 이미지가 없는 상태에서 수백 MB 상당의 Base Image 다운로드 및 압축 해제가 겹쳐 디스크 I/O 병목이 발생, 배포 파이프라인이 1시간 이상 멈춰있다가 중단되는 현상이 일어남.
+* **해결 방안**<br>
+  - **자원 진단 및 임계 지표 이식**: SSH 지연 상황에서 리눅스 `top` 및 `vmstat` 명령어를 활용해 CPU `idle` 0% 수렴 및 I/O Wait(`wa`)의 급격한 상승에 따른 디스크/CPU 스래싱 상태를 정확히 규명했습니다. 진단 결과를 토대로 Grafana Cloud 모니터링 대시보드에 `wa` 및 `idle` 지표를 관측 가능하도록 추가 이식했습니다.
+  - **수집 에이전트 걷어내기**: 자원 점유가 큰 Alloy 데몬을 제거하고 Grafana Mimir가 Nginx 프록시를 통해 지표를 직접 Scrape하는 Agentless Pull 구조로 전면 전환했습니다.
+  - **런타임 초경량화 및 메모리 스왑**: Spring Boot 구동 풋프린트를 30MB 이하로 압축하기 위해 GraalVM Native Image 컴파일 옵션을 도입하고, 2GB 크기의 SWAP 파티션을 활성화하여 컨테이너 교체 순간의 일시적 메모리 피크를 완충했습니다.
+  - **도커 이미지 캐시 활용**: 첫 콜드 배포 이후에는 도커 레지스트리 로컬 이미지 캐싱 및 레이어 재사용 메커니즘을 통해 이미지 Pull/Extract 부하가 대폭 낮아져 I/O 스래싱 병목이 자동 해소되도록 유도했습니다. 추가적으로 Docker 미사용 이미지/볼륨 정리를 위해 주기적 GC 크론탭을 바인딩했습니다.
+* **기술적 교훈 및 의사결정(Retrospective)**<br>
+  - 극단적인 512MB RAM 환경에서도 엔지니어가 리눅스 저수준 도구(`top`, `vmstat`)를 활용한 실시간 리소스 감색 및 메트릭 이식을 거쳐 병목 지점을 과학적으로 밝히고 극복한 사례입니다.
+  - 자원 스케일업 대신 애플리케이션의 런타임 자체를 Native화하고 도커 로컬 캐시 메커니즘과 SWAP 설정을 결합하여, 최소 비용 서버에서도 고가용성 및 복구 지향적 운영(ROA)이 가능함을 실증했습니다.
+
+
+---
+
+# 2. Security
 본 프로젝트는 서비스 무결성과 호스트 시스템 보호를 위해 AWS Well-Architected Framework의 보안 기둥(Security Pillar) 설계 가이드라인에 부합하는 3대 보안 제어 정책을 구현했습니다.
 
-### 1.3.1. Identity & Access Management
+## 2.1. Identity & Access Management
 * **SSM Session Manager 도입**<br>
   - 무작위 대입 공격과 SSH 키 유출 리스크가 높은 호스트 SSH(22) 포트를 인바운드 보안 그룹에서 완전 차단
   - IAM 자격 증명 기반의 AWS Systems Manager Session Manager를 경유하는 세션 통신만 허용
 * **Ansible SSM 터널 캡슐화**<br>
   - 호스트의 22번 포트를 원격 개방하지 않고, 로컬 및 배포 러너 환경에서 `aws ssm start-session` 프록시 명령(`ProxyCommand`)을 SSH 터널로 캡슐화
-  - 해당 터널 내부에서 기존 SSH 인증 키(PEM)를 활용한 2차 인증을 통과해야만 Ansible Playbook 가동이 가능하도록 이중 방어선 구축 (상세 `hosts.ini` 구성은 부록 [5.1.3. AWS SSM Session Manager Setup](#513-aws-ssm-session-manager-setup) 참고)
+  - 해당 터널 내부에서 기존 SSH 인증 키(PEM)를 활용한 2차 인증을 통과해야만 Ansible Playbook 가동이 가능하도록 이중 방어선 구축 (상세 `hosts.ini` 구성은 부록 [6.1.3. AWS SSM Session Manager Setup](#613-aws-ssm-session-manager-setup) 참고)
 * **OIDC Keyless Authentication**<br>
   - GitHub Actions 러너 배포 시 하드코딩된 AWS API Access Key 사용을 전면 배제
   - GitHub OIDC(OpenID Connect) 연동을 수립하여 배포 시점에 AWS STS로부터 1회용 단기 자격 증명(`AssumeRole`)을 획득함으로써 유출 경로 원천 제거
@@ -135,7 +260,7 @@ C4Context
   - 테라폼 및 Ansible 배포 범위에 정확히 부합하는 서비스 수준 최소 권한 정책(Staging/Production 별 커스텀 IAM Policy) 바인딩
   - 허용 자원 이외의 타 서비스 자원(예: RDS, Lambda, KMS 등) 관리를 원천 배제하여 위협 반경 차단
 
-#### 1.3.1.1. IAM Least Privilege Design
+### 2.1.1. IAM Least Privilege Design
 EC2 호스트 및 CI/CD 파이프라인 각각의 실행 주체별로 실제 적용된 IAM 권한과 OIDC 단기 자격 증명 기반의 자원 통제 아키텍처는 다음과 같습니다.
 
 ```mermaid
@@ -188,7 +313,7 @@ C4Component
 | **EC2 Host Role** | Instance Profile | `AmazonSSMManagedInstanceCore`<br>Staging: `CloudWatchAgentServerPolicy` (관리형)<br>Production: `nemologic-cloudwatch-log-policy` (커스텀)<br>`s3_backup_policy` (커스텀) | SSM 터널링 활성화, CloudWatch 로그 실시간 포워딩(Staging/Production 별 정책 차등 적용), DB 백업 S3 업로드 권한 제어 |
 | **CI/CD Runner (GitHub)** | AWS OIDC (Keyless) | `nemologic-staging-github-policy`<br>`nemologic-production-github-policy` (커스텀) | `sts:AssumeRoleWithWebIdentity`를 통해 GitHub Actions OIDC 토큰으로 1회용 단기 자격 증명을 획득하여 Terraform 및 배포 수행 (Secret Key 하드코딩 배제 및 최소 권한 수립) |
 
-#### 1.3.1.2. Federated Auth (AWS Cognito) & JWT Security
+### 2.1.2. Federated Auth (AWS Cognito) & JWT Security
 AWS Cognito와 Google OAuth 2.0 연동 및 PKCE 플로우를 도입하여, 프론트엔드 Single Page App(SPA)과 백엔드 API 간의 자격 증명 탈취 가능성을 최소화하고 분리된 환경 인증을 구현했습니다.
 
 * **OAuth 2.0 PKCE(Proof Key for Code Exchange) Flow 적용**<br>
@@ -203,7 +328,7 @@ AWS Cognito와 Google OAuth 2.0 연동 및 PKCE 플로우를 도입하여, 프�
 
 ---
 
-### 1.3.2. Infrastructure Protection
+## 2.2. Infrastructure Protection
 ```mermaid
 C4Container
     title Container Diagram for rogic.io (Level 2: Network & Containers)
@@ -253,7 +378,7 @@ C4Container
     Rel(sre, nginx_stg, "Calls API endpoints (Stage) during tests", "HTTPS / Port 443 (Forwarded to 8443)")
 ```
 
-#### 1.3.2.1. Network & Host Security
+### 2.2.1. Network & Host Security
 * **물리 격리형 VPC 구성 (VPC Isolation)**<br>
   - Staging VPC(`10.1.0.0/16`)와 Production VPC(`10.0.0.0/16`)를 개별 서브넷 대역과 독립 인프라망으로 분리 프로비저닝하여 망간 교차 접근을 원천 차단
   - 테스트 환경의 영향이 실제 운영계(Production) 네트워크로 전이되는 위협 방지
@@ -264,7 +389,7 @@ C4Container
   - Prometheus 메트릭 수집기가 외부에서 백엔드 Actuator 포트(8080)를 직접 노출 호출하는 것을 차단
   - Nginx HTTPS(443) 인터페이스의 Bearer 토큰 보안 검증을 통과한 통신에 한하여 로컬 루프백망(`/actuator/prometheus`)으로 요청을 포워딩 및 중재
 
-#### 1.3.2.2. Container Security
+### 2.2.2. Container Security
 * **다계층 도커 브리지 네트워크 격리 (Multi-tier Network Partitioning)**<br>
   - 단일 EC2 호스트 내부의 인터넷 개방점인 Nginx 프록시(`frontend-net`)가 DB 컨테이너(`backend-net`)에 직접 통신하지 못하도록 도커 가상 네트워크를 물리 분리
   - 백엔드 API 컨테이너만 두 브리지망에 동시 참여하는 가교(Bridge) 역할을 수행하여 횡적 이동(Lateral Movement) 위협을 격리
@@ -281,7 +406,7 @@ C4Container
   - 컨테이너 외부나 호스트 디바이스에 DB 패스워드를 노출하지 않고, 호스트 단에서 Docker API 표준 출력 파이프라인(`docker exec pg_dump`)으로 직접 캡슐화 처리하여 백업 데이터 무결성 획득
 
 
-#### 1.3.2.3. Security Group Configuration
+### 2.2.3. Security Group Configuration
 * **보안 그룹 인바운드 제어 (Security Group Ingress/Egress Rule)**<br>
   외부 인터넷과의 경계점 포트를 제어하고, 아웃바운드 전송 트래픽 규격을 명확히 고정합니다.
 
@@ -296,7 +421,7 @@ C4Container
 
 ---
 
-### 1.3.3. Data Protection
+## 2.3. Data Protection
 * **인증서 자동 갱신 자동화**<br>
   - Let's Encrypt 무료 SSL 인증서를 발급받아 HTTPS(443) 통신 및 HTTP(80) 301 리다이렉트 정책 구현
   - 3개월 주기 만료 전에 인증서를 자동 갱신할 수 있도록 pre/post 쉘 스크립트 훅을 Certbot 데몬에 연동하여 만료 다운타임 예방
@@ -306,136 +431,13 @@ C4Container
 
 ---
 
-## 1.4. Observability
-본 프로젝트는 시스템 가용성과 지표 수집 부하 최소화 통제를 위해 업계 표준 모니터링 핵심 영역(Metrics, Logs, Alerting & SLO)을 관제 아키텍처로 구축했습니다.
 
-### 1.4.1. Metrics & Telemetry
-```mermaid
-C4Container
-    title Telemetry Diagram for rogic.io (Level 3: Observability & Alerting)
+# 3. CI/CD
 
-    System_Boundary(host, "AWS EC2 Instance (Target Host)") {
-        Container(nginx, "Nginx Reverse Proxy", "Docker", "Bearer Token Authentication Endpoint.")
-        Container(spring, "Spring Boot Backend", "Docker (GraalVM)", "Exposes Prometheus Actuator Metrics.")
-        Rel(nginx, spring, "Forwards prometheus scraping requests", "Port 8080")
-    }
-
-    System_Boundary(grafana_cloud, "Grafana Cloud Platform") {
-        Container(grafana, "Grafana Dashboards", "SaaS Dashboard", "Visualizes SLA metrics, CPU, Memory, and log groups.")
-        Container(prometheus, "Prometheus / Mimir", "SaaS TSDB", "Scrapes metrics via Agentless Pull architecture.")
-        Rel(grafana, prometheus, "Queries metrics data")
-    }
-
-    System_Boundary(observability, "AWS Management & Alerting") {
-        Container(cw, "Amazon CloudWatch", "AWS Logging", "Collects application stdout log streams via awslogs driver.")
-        Container(sns, "AWS SNS Topic", "AWS Alerting", "Triggers notifications based on metric filter threshold alarms.")
-        Person(sre, "SRE Developer", "Receives real-time incident warning emails.")
-        
-        Rel(cw, sns, "Metric Filter Threshold Alarmed")
-        Rel(sns, sre, "Sends warning email notification")
-    }
-
-    Rel(prometheus, nginx, "Scrapes metrics (Agentless Pull)", "HTTPS Bearer Auth / Port 443")
-    Rel(spring, cw, "Streams application logs", "awslogs driver")
-```
-
-* **Agentless Pull 아키텍처 수립**<br>
-  - 호스트 내부 CPU/메모리 자원을 소모하는 별도 수집 에이전트(Grafana Alloy 등)를 완전히 배제
-  - Nginx 리버스 프록시 단에서 `Authorization: Bearer` 헤더 토큰을 상시 대조 검증하는 가상 라우팅 경로를 개방
-  - 외부 Grafana Cloud의 Prometheus/Mimir 서버가 정기적으로 지표를 직접 Scrape(Scraping)하도록 설계하여 에이전트 구동 부하를 0으로 통제
-
-### 1.4.2. Log Aggregation & Storage
-* **awslogs Docker 드라이버 실시간 스트리밍**<br>
-  - 개별 컨테이너 내부 콘솔 출력을 디스크 파일 대신 AWS CloudWatch Logs(`/aws/ec2/nemologic`)로 즉시 리다이렉트 포워딩
-  - 호스트 로컬 내에 원시 로그를 축적하지 않아 디스크 공간 고갈 및 I/O 병목 리스크 사전 격리
-* **액세스 지표 로그 필터링**<br>
-  - 헬스체크 및 주기적인 프로메테우스 메트릭 수집 API 호출 경로의 Nginx Access Log 로깅을 강제 중지(`access_log off;`) 처리
-  - 불필요한 관제 트래픽에 의한 스토리지 낭비 및 CPU 소모 통제
-
-### 1.4.3. Alerting & SLO Visualization
-* **싱가포르/시드니/도쿄 3중 가용성 관제**<br>
-  - Grafana Cloud Synthetic Monitoring 프로브를 통해 다중 글로벌 리전 엣지(싱가포르, 시드니, 도쿄)에서 1분 간격으로 `/actuator/health` 헬스체크 다중 모니터링 수행
-  - 단일 지점 프로브 오류에 따른 오탐을 방지하고 다중 감색 가용성 검증 체계 구현
-* **AWS SNS 경보 메일 전송**<br>
-  - CloudWatch Logs Metric Filter 임계치 초과 장애 감지 시 AWS SNS 토픽을 트리거하여 SRE 메일로 장애 인시던트 즉시 전파
-* **통합 SLA 대시보드 시각화 ([current_dashboard.json](infra/monitoring/current_dashboard.json))**<br>
-  - 핵심 가용성 지표(Uptime SLA, Incident Count, MTTR, MTBF)를 Grafana 대시보드 상단 단일 행 4열 KPI 카드로 일괄 관제 가능하도록 동적 연동 구성
-  - 레이아웃 구성용 예시 링크: [Grafana Live Public Dashboard](https://grandwalrus3189.grafana.net/public-dashboards/ec9e06b0d1ea4540b97af6b56abb1380) (민감 메트릭 배제 데모용 구성)
-  - 상세 관제 PromQL 수식 및 쿼리 구현은 부록 [5.2. PromQL Query Formulations (SLO Metrics)](#52-promql-query-formulations-slo-metrics) 참고
-
----
-
-## 1.5. Disaster Recovery
-본 프로젝트는 저사양 단일 EC2 아키텍처 하에서의 재해 복구(DR) 신뢰성을 극대화하기 위해, 인프라 자동 복원 메커니즘과 원격 백업 소산 복구 파이프라인을 구축했습니다.
-
-### 1.5.1. DR Recovery Flow
-장애 발생 유형(하드웨어 크래시 vs 데이터베이스 손상)에 따른 대응 프로세스 및 예상 복구 시간(RTO) 흐름도입니다.
-
-```mermaid
-stateDiagram-v2
-    state "Normal Operation (정상 운영)" as Normal
-    state "Hardware / Instance Failure (인스턴스 물리 장애)" as HardFail
-    state "Data / Volume Corruption (데이터/스토리지 손상)" as DataFail
-
-    state "AWS Auto Recovery (자동 인스턴스 복원)" as AutoRec {
-        [*] --> Detect : Status Check Failed (1 min)
-        Detect --> TerminateAndStart : Trigger CloudWatch Alarm
-        TerminateAndStart --> CompleteAutoRec : Re-attach EBS & Re-bind EIP
-    }
-
-    state "GitHub Actions DR Restore (수동 원클릭 복구)" as ManualRec {
-        [*] --> TriggerWorkflow : Dispatch db-restore.yml
-        TriggerWorkflow --> FetchS3 : Pull latest pg_dump from S3
-        FetchS3 --> DockerRestore : Exec pg_restore & Restart Stack
-    }
-
-    [*] --> Normal
-    Normal --> HardFail : Host Hardware Crash
-    Normal --> DataFail : DB dropped / Volume Corrupted
-
-    HardFail --> AutoRec : Trigger Alarm
-    AutoRec --> Normal : Complete Auto Recovery (RTO: 1~2 min)
-
-    DataFail --> ManualRec : Run Restore Pipeline
-    ManualRec --> Normal : Complete DB Restoration (RTO: 37~360 sec)
-```
-
-### 1.5.2. Storage & Backup Design
-* **독립형 EBS 볼륨 영속성 분리**<br>
-  - EC2 가상머신 삭제 및 재기동 장애 시에도 데이터가 보존되도록 OS 영역과 별개인 독립형 10GB gp3 EBS 볼륨을 분리하여 설계
-  - 테라폼 리소스 수명주기 보호 규칙(`prevent_destroy = true`) 및 EC2 해제 시 볼륨 영구 보존 규칙(`delete_on_termination = false`) 바인딩 완료
-  - 도커 볼륨을 호스트 절대 경로 바인드 마운트(`/opt/nemologic/db_data`)로 일원화하여 볼륨 유실 리스크 사전 차단
-* **데이터 백업 및 S3 격리 소산**<br>
-  - 매 3시간 간격으로 EC2 호스트 내부의 PostgreSQL 데이터베이스 덤프(`pg_dump`)를 가동하는 자동 백업 스크립트 운용
-  - 백업 결과물은 즉각 Amazon S3 격리 백업 버킷(`nemologic-backup-bucket`)으로 원격 이관 및 소산 저장
-  - 스토리지 비용 조율을 위해 30일이 경과한 노후 백업본은 S3 Lifecycle 규칙을 통해 자동 영구 소거
-
----
-
-## 1.6. Troubleshooting
-
-### 1.6.1. Host Memory Exhaustion Incident
-* **배경**<br>
-  - 인프라 비용 극 최소화(월 $11.45 구성)를 위해 t3a.nano 인스턴스(512MB RAM) 환경을 선택하였으나, 모니터링 수집 에이전트(Grafana Alloy)의 메모리 점유(100MB+)와 블루/그린 배포 시점에 Spring Boot 컨테이너 2개가 일시적으로 동시에 기동하면서 물리 메모리 한계를 초과하여 OOM 및 CPU 스레싱 장애가 빈번히 발생함.
-  - 특히 최초 배포 시(콜드 스타트) 로컬 캐시 이미지가 없는 상태에서 수백 MB 상당의 Base Image 다운로드 및 압축 해제가 겹쳐 디스크 I/O 병목이 발생, 배포 파이프라인이 1시간 이상 멈춰있다가 중단되는 현상이 일어남.
-* **해결 방안**<br>
-  - **자원 진단 및 임계 지표 이식**: SSH 지연 상황에서 리눅스 `top` 및 `vmstat` 명령어를 활용해 CPU `idle` 0% 수렴 및 I/O Wait(`wa`)의 급격한 상승에 따른 디스크/CPU 스래싱 상태를 정확히 규명했습니다. 진단 결과를 토대로 Grafana Cloud 모니터링 대시보드에 `wa` 및 `idle` 지표를 관측 가능하도록 추가 이식했습니다.
-  - **수집 에이전트 걷어내기**: 자원 점유가 큰 Alloy 데몬을 제거하고 Grafana Mimir가 Nginx 프록시를 통해 지표를 직접 Scrape하는 Agentless Pull 구조로 전면 전환했습니다.
-  - **런타임 초경량화 및 메모리 스왑**: Spring Boot 구동 풋프린트를 30MB 이하로 압축하기 위해 GraalVM Native Image 컴파일 옵션을 도입하고, 2GB 크기의 SWAP 파티션을 활성화하여 컨테이너 교체 순간의 일시적 메모리 피크를 완충했습니다.
-  - **도커 이미지 캐시 활용**: 첫 콜드 배포 이후에는 도커 레지스트리 로컬 이미지 캐싱 및 레이어 재사용 메커니즘을 통해 이미지 Pull/Extract 부하가 대폭 낮아져 I/O 스래싱 병목이 자동 해소되도록 유도했습니다. 추가적으로 Docker 미사용 이미지/볼륨 정리를 위해 주기적 GC 크론탭을 바인딩했습니다.
-* **기술적 교훈 및 의사결정(Retrospective)**<br>
-  - 극단적인 512MB RAM 환경에서도 엔지니어가 리눅스 저수준 도구(`top`, `vmstat`)를 활용한 실시간 리소스 감색 및 메트릭 이식을 거쳐 병목 지점을 과학적으로 밝히고 극복한 사례입니다.
-  - 자원 스케일업 대신 애플리케이션의 런타임 자체를 Native화하고 도커 로컬 캐시 메커니즘과 SWAP 설정을 결합하여, 최소 비용 서버에서도 고가용성 및 복구 지향적 운영(ROA)이 가능함을 실증했습니다.
-
-
----
-
-# 2. CI/CD
-
-## 2.1. Pipeline Workflow
+## 3.1. Pipeline Workflow
 본 프로젝트는 코드 형상 통합부터 운영계 실배포까지의 생애주기를 제어하기 위해 4단계 GitOps 배포 워크플로우를 적용했습니다.
 
-### 2.1.1. GitOps Flowchart
+### 3.1.1. GitOps Flowchart
 ```mermaid
 stateDiagram-v2
     direction LR
@@ -490,7 +492,7 @@ stateDiagram-v2
     Production --> [*] : Production Release Complete
 ```
 
-### 2.1.2. Pipeline Trigger Optimization
+### 3.1.2. Pipeline Trigger Optimization
 * **경로 기반 빌드 스킵 (Path Filtering)**<br>
   - 단순 마크다운 문서 수정(`*.md`) 이나 로컬 설정 커밋 유입 시에는 빌드/컴파일 단계를 스킵하여 Actions 컴퓨팅 자원 및 배포 속도 최적화
 * **배포 경합 및 대기 자동 취소 (Concurrency)**<br>
@@ -498,28 +500,28 @@ stateDiagram-v2
 
 ---
 
-## 2.2. Artifact & Release Management
+## 3.2. Artifact & Release Management
 안정적인 빌드 파일 생성, 배포 가용성 확보 및 정기 릴리즈 주기를 제어하기 위한 산출물과 자산 배포 관리 체계입니다.
 
-### 2.2.1. Compute Offloading
+### 3.2.1. Compute Offloading
 * **Actions Runner 컴파일 오프로딩**<br>
   - 512MB RAM 극단 사양을 지닌 운영 서버의 컴파일 부하 고갈을 예방하기 위해 빌드 및 패키징 연산을 GitHub Actions 클라우드 환경으로 완전 오프로딩 (상세 완화 구조는 [1.2. Cost Optimization](#12-cost-optimization) 내 Compute 최적화 단락 참고)
 
-### 2.2.2. Static Asset Delivery
+### 3.2.2. Static Asset Delivery
 * **Vite 정적 자산 다이렉트 동기화**<br>
   - 프론트엔드 빌드 시 무거운 도커 이미지 캡슐화 배포 대신, 컴파일 완료된 정적 파일 번들(index.html, JS/CSS)을 AWS S3 버킷으로 다이렉트 동기화(`aws s3 sync`)하고 CloudFront Edge Invalidation을 트리거하여 초경량 CDN 에지 딜리버리 수립
 
-### 2.2.3. Release Versioning Automation
+### 3.2.3. Release Versioning Automation
 * **자동화된 SemVer 및 Release 작성**<br>
   - 커밋 메시지 헤더 토큰(`feat:`, `fix:`) 규격을 기계적으로 파싱하여 Semantic Versioning 버전을 자동 갱신
   - 변경 이력(Changelog) 작성 및 릴리즈 발행 과정을 100% 자동화하여 배포 신뢰성과 변경 추적 가독성 획득
 
 ---
 
-## 2.3. Continuous Validation
+## 3.3. Continuous Validation
 코드 통합 시점부터 프로덕션 배포 완료 시점까지 시스템의 안전성과 정합성을 실시간 입증하는 품질 검증 및 승인 게이트 통제 체계입니다.
 
-### 2.3.1. Verification Gates
+### 3.3.1. Verification Gates
 * **다단계 코드 정합성 검증**<br>
   - **컴파일 & 단위 테스트**: 로컬 PR 생성 시점 및 Actions 파이프라인에서 Spring Boot 단위 테스트(Gradle) 및 Vue 단위 테스트(Vitest)를 자동 검증
   - **Ansible Lint 정적 검사**: 인프라 변경 시 플레이북의 문법 규격 어긋남을 컴파일 전에 자동 진단해 설정 결함 사전 차단
@@ -531,7 +533,7 @@ stateDiagram-v2
 * **Playwright E2E 브라우저 테스트**<br>
   - Staging 서버 배포 완료 즉시 실제 헤드리스 브라우저(`frontend/e2e/staging.spec.ts`)를 가동하여 홈 화면 로딩, 노노그램 캔버스 클릭/색칠 및 익명 가입 로직을 유저 관점에서 자동 점검하여 품질 결함 유입 예방
 
-### 2.3.2. Delivery Gates
+### 3.3.2. Delivery Gates
 * **수동 승인 배포 통제 (Manual Gate)**<br>
   - Staging 환경에서 유닛/E2E 테스트가 100% 합격하면 배포 워크플로우를 일시 정지시키고, 관리자가 직접 GitHub Environment 승인 콘솔에서 릴리즈 안정성을 검토/승인해야만 Production 환경으로 승격 배포되도록 설계하여 오배포 리스크 차단
 * **원클릭 재해 복원 파이프라인 (Automated DR Gate)**<br>
@@ -541,9 +543,9 @@ stateDiagram-v2
 
 ---
 
-## 2.4. Troubleshooting
+## 4.4. Troubleshooting
 
-### 2.4.1. Deployment Pipeline Conflict
+### 3.4.1. Deployment Pipeline Conflict
 * **배경**<br>
   - Staging과 Production 인프라 설정이 동일 Terraform 코드에 묶여 일괄 반영되던 중, 운영 환경 S3 버킷에 정적 자산이 시딩되지 않은 상태에서 DNS A 레코드가 CloudFront/S3로 먼저 스위칭되어 운영 전체 접속 차단(`AccessDenied`) 장애 발생 ([Access Failure Report](./docs/incidents/20260630_production_access_failure.md)).
   - 핫픽스 도중 GitHub Actions의 `cancel-in-progress: true` 설정으로 인해 Nginx 인증서 발급 프로세스 도중 후속 커밋이 이전 빌드를 강제 취소하면서 실서버 SSL 인증서 유실로 인한 HTTPS API 통신 불능 장애 발생 ([Handshake Failure Report](./docs/incidents/20260630_production_api_handshake_failure.md)).
@@ -560,9 +562,9 @@ stateDiagram-v2
 
 ---
 
-# 3. AI Engineering
+# 4. AI Engineering
 
-## 3.1. LLM Generation Pipeline
+## 4.1. LLM Generation Pipeline
 사용자가 언제나 신선한 스테이지를 플레이할 수 있도록 초경량 생성형 LLM 및 비동기 배치 스케줄러를 유기적으로 구성했습니다.
 
 * **Gemini 비동기 생성 스케줄러**<br>
@@ -574,7 +576,7 @@ stateDiagram-v2
 
 ---
 
-## 3.2. Automated Quality Guardrails
+## 4.2. Automated Quality Guardrails
 LLM이 창조한 무작위 패턴 중 논리적 무결성이 결여된 불량 문제를 기계적으로 자동 필터링하는 실시간 검증 시스템입니다.
 
 * **DFS 백트래킹 기반 논리 검증 엔진 (isLogicalOnly)**<br>
@@ -586,7 +588,7 @@ LLM이 창조한 무작위 패턴 중 논리적 무결성이 결여된 불량 �
 
 ---
 
-## 3.3. AI Governance & Human-in-the-Loop
+## 4.3. AI Governance & Human-in-the-Loop
 인간이 루프에 참여(HITL)하여 인공지능이 생성한 스테이지의 평판을 수집하고 지속 가능한 품질을 감독하는 통제 장치입니다.
 
 * **사용자 피드백 루프 (HITL Feedback)**<br>
@@ -615,9 +617,9 @@ LLM이 창조한 무작위 패턴 중 논리적 무결성이 결여된 불량 �
 
 ---
 
-## 3.4. Troubleshooting
+## 4.4. Troubleshooting
 
-### 3.4.1. AI Puzzle Generation Parsing Incident
+### 4.4.1. AI Puzzle Generation Parsing Incident
 * **배경**<br>
   - 초경량 LLM 모델이 30x30 대형 그리드 생성 시 응답 지연을 아끼기 위해 JSON 포맷 대신 `Array(30).fill(0)` 같은 JS 문법을 변형 반환하여 백엔드 Jackson 역직렬화 오류(`JsonParseException`) 및 배치 스케줄러 중단 장애 발생 ([Daily Puzzle Failure Report](./docs/incidents/20260701_daily_puzzle_generation_failure.md)).
 * **해결 방안**<br>
@@ -629,10 +631,10 @@ LLM이 창조한 무작위 패턴 중 논리적 무결성이 결여된 불량 �
 
 ---
 
-# 4. Performance & Cost Analysis
+# 5. Performance & Cost Analysis
 초경량 인프라 자원을 바탕으로 구축된 서비스의 재무적 비용 효율성과 시스템 신뢰성(Reliability) 및 이용자 지표 실측 결과를 대조 분석하여 기술 의사결정의 타당성을 검증합니다.
 
-## 4.1. Operational Cost Comparison
+## 5.1. Operational Cost Comparison
 * **인프라 월간 운영 비용 분석 (Monthly Billing Summary)**<br>
   자원 다중화 및 관리형 DB 배제 등으로 기존 예상 운영비 대비 약 80%의 비용 절감을 유지하고 있습니다.
 
@@ -647,7 +649,7 @@ LLM이 창조한 무작위 패턴 중 논리적 무결성이 결여된 불량 �
 
   *1: 기존 구성 단계에서 산출되지 않은 네트워크 유지 및 도메인 고정 비용입니다.
 
-## 4.2. SLO Targets vs Actual Performance
+## 5.2. SLO Targets vs Actual Performance
 * **서비스 수준 및 신뢰도 비교 분석 (Reliability Performance Dashboard)**<br>
   최근 7일(6월 25일 ~ 7월 2일)간 최적화 튜닝이 완전히 종결되어 안정 궤도에 진입한 시점의 Grafana Cloud 실측 데이터 기반 대조 분석입니다. 극단적인 512MB RAM 자원 제약을 극복하고 상용 가용성 목표를 완벽히 충족하고 있음을 증명합니다.
 
@@ -662,14 +664,14 @@ LLM이 창조한 무작위 패턴 중 논리적 무결성이 결여된 불량 �
 * **실측 지표에 대한 기술 회고 (Operational Metrics Retrospective)**<br>
   - **가용성 저하 요인 분석**: 프로젝트 초기 t3a.nano(512MB RAM)의 극단적인 자원 제약 하에서 Nginx/Spring/PostgreSQL을 동시 구동할 때의 OOM(Out of Memory) 현상과 Docker 레이어를 통한 디스크 고갈이 주 장애 요인으로 기록되었습니다.
   - **복구 시간(MTTR) 지연**: 초기 경보 채널(Slack/Email SNS) 및 SSM 세션 매니저를 통한 복구 자동화 인프라가 완전히 구축되기 전, 수동 SSH 접속 및 데몬 분석 처리에 많은 시간이 지연되었습니다.
-  - **안정화 성과**: 트러블슈팅([1.6.1. Host Memory Exhaustion Incident](#161-host-memory-exhaustion-incident)) 조치(Agentless Pull 스위칭, 30MB 이하 GraalVM Native Image 배포, swap 가상 메모리 구성, Docker GC 스크립트 및 SSM 터널링 고도화)를 완료한 최근 7일 가동 기준으로는 평균 가용성 **98.63%** 및 평균 MTTR **11.76분** 수준으로 안정 궤도에 안착하여 성능 개선 효과를 검증했습니다.
+  - **안정화 성과**: 트러블슈팅([1.5.1. Host Memory Exhaustion Incident](#151-host-memory-exhaustion-incident)) 조치(Agentless Pull 스위칭, 30MB 이하 GraalVM Native Image 배포, swap 가상 메모리 구성, Docker GC 스크립트 및 SSM 터널링 고도화)를 완료한 최근 7일 가동 기준으로는 평균 가용성 **98.63%** 및 평균 MTTR **11.76분** 수준으로 안정 궤도에 안착하여 성능 개선 효과를 검증했습니다.
 
 * **Grafana Live Service SLA Dashboard**<br>
   상세 가용성 메트릭, MTTR, MTBF 실시간 변동 추이를 증빙하는 [Grafana Live Service SLA Dashboard Snapshot](https://grandwalrus3189.grafana.net/dashboard/snapshot/NzCi2k1ikmMxMSvq3Y9Lgi6GyKQiuZ1O?orgId=1&from=2026-06-25T08:08:22.472Z&to=2026-07-02T08:08:22.472Z&timezone=browser&var-application=nemologic&var-instance=springboot-prod&var-env=prod&var-hikaricp=NemologicHikariCP&var-memory_pool_heap=$__all&var-memory_pool_nonheap=$__all&refresh=5s) 캡처본입니다.
 
   ![Grafana SLA Dashboard](./docs/assets/grafana_sla_snapshot.png)
 
-## 4.3. Security Vulnerability Metrics
+## 5.3. Security Vulnerability Metrics
 * **정량적 보안 취약점 관리 목표 및 실측 성과 (Security Vulnerability Targets)**<br>
   CI/CD 빌드 시점에 Trivy 스캔을 통해 탐지된 보안 취약점 수치와 관리 한계점 목표입니다. 배포 차단 임계값 설정을 통해 취약점을 선제적으로 제어합니다.
 
@@ -679,7 +681,7 @@ LLM이 창조한 무작위 패턴 중 논리적 무결성이 결여된 불량 �
   | **IaC (인프라 설정 구성)** | Terraform, Ansible, Dockerfile | CRITICAL / HIGH / MEDIUM | **0** / **0** / 최소화 | **0** / **0** / 0 (Clean) |
   | **Container (컨테이너 이미지)** | ghcr.io/devdoyen/nemologic-backend | CRITICAL / HIGH | **0** / **0** | **0** / **0** (Clean) |
 
-## 4.4. User & System Traffic Metrics
+## 5.4. User & System Traffic Metrics
 * **구축 이후 서비스 누적 실측 지표 (Google Analytics 4 / Actuator)**<br>
   - **활성 사용자 수 (Active Users)**: 39명 (최근 7일 Google Analytics 4 실측 기준)
   - **총 이벤트 수 (Total Events)**: 535회 (사용자 상호작용 및 게임 플레이 행위 로그)
@@ -691,10 +693,10 @@ LLM이 창조한 무작위 패턴 중 논리적 무결성이 결여된 불량 �
 
   ![Google Analytics 4 User Report](./docs/assets/ga4_report.png)
 
-## 5.1. Local Development Setup
+## 6.1. Local Development Setup
 To run `rogic.io` on your local workstation, select one of the options below:
 
-### 5.1.1. Docker Compose Stack Deployment
+### 6.1.1. Docker Compose Stack Deployment
 전체 애플리케이션 스택(Database, Backend, Frontend)을 한 번에 빌드하고 기동하려는 경우 아래 옵션을 선택합니다.
 
 ```bash
@@ -707,7 +709,7 @@ docker compose up --build
 
 ---
 
-### 5.1.2. Local and Container Hybrid Run
+### 6.1.2. Local and Container Hybrid Run
 코드 수정 시 즉각적인 라이브 반영 및 핫 리로딩(Vite dev server)을 원하는 경우 아래 단계별로 서비스를 기동합니다.
 
 * **Step 1: PostgreSQL 데이터베이스 기동**<br>
@@ -735,7 +737,7 @@ docker compose up --build
 
 ---
 
-### 5.1.3. AWS SSM Session Manager Setup
+### 6.1.3. AWS SSM Session Manager Setup
 보안 그룹 22번 포트 폐쇄 환경 하에서 원격 EC2 인스턴스 터미널에 접속하거나 Ansible 터널을 설정하는 방법입니다.
 
 * **AWS CLI 및 Session Manager Plugin 설치**<br>
@@ -764,7 +766,7 @@ nemologic-app-server ansible_host=<EC2_Instance_ID> ansible_user=ubuntu ansible_
 
 ---
 
-### 5.1.4. Cognito Authentication Configuration (Local .env)
+### 6.1.4. Cognito Authentication Configuration (Local .env)
 로컬 개발 환경에서 구글 소셜 로그인 기능 및 회원 프로필 저장을 정상 가동하기 위해 아래와 같이 환경변수 및 인증 연동 주소를 구성합니다.
 
 * **Frontend 로컬 환경 변수 설정 (`frontend/.env.local` 생성)**<br>
@@ -782,7 +784,7 @@ nemologic-app-server ansible_host=<EC2_Instance_ID> ansible_user=ubuntu ansible_
 
 ---
 
-## 5.2. PromQL Query Formulations (SLO Metrics)
+## 6.2. PromQL Query Formulations (SLO Metrics)
 > [!NOTE]
 > 수식 내 기호 정의: $P_t \in \{0, 1\}$는 특정 측정 시점 $t$의 API 헬스체크 가용 성공 여부(`probe_success`)를 의미합니다. 초기 수집 시점에 가용 상태가 0(장애)으로 시작하는 경우, 첫 번째 변화(0 → 1)가 장애 복구임에도 홀수 변화 횟수가 반환되어 나눗셈 결과에 소수점이 발생할 수 있으므로 쿼리에서는 정수 나눗셈(내림) 처리를 적용합니다.
 
