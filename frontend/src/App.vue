@@ -545,9 +545,9 @@
                 </div>
                 
                 <h2 style="margin: 0; font-size: 1.25rem; font-weight: 700; color: #f8fafc;">{{ selectedHistory?.stageName }}</h2>
-                <div style="font-size: 0.85rem; color: #64748b; margin-top: -0.25rem; display: flex; gap: 1rem;">
-                  <span>⏱️ Clear Time: {{ selectedHistory?.elapsedTime }}s</span>
-                  <span>📅 {{ selectedHistory?.clearedAt.split('T')[0] }}</span>
+                <div style="font-size: 0.75rem; font-weight: 600; margin-top: -0.5rem; display: flex; gap: 0.5rem;">
+                  <span style="padding: 0.2rem 0.5rem; background: rgba(56, 189, 248, 0.1); border: 1px solid rgba(56, 189, 248, 0.15); border-radius: 6px; color: #38bdf8;">{{ selectedHistory?.elapsedTime }}s</span>
+                  <span style="padding: 0.2rem 0.5rem; background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 6px; color: #94a3b8;">{{ selectedHistory?.clearedAt.split('T')[0] }}</span>
                 </div>
 
                 <div class="modal-canvas-wrapper" style="width: 250px; height: 250px; margin: 0.75rem auto 0; background-color: #0f172a; border-radius: 12px; overflow: hidden; border: 1px solid rgba(255, 255, 255, 0.08); display: flex; justify-content: center; align-items: center; position: relative;">
@@ -618,9 +618,9 @@
                         <div class="history-card-header" style="display: flex; justify-content: space-between; align-items: center;">
                           <span class="stage-name" style="font-weight: 600;">{{ item.stageName }}</span>
                         </div>
-                        <div class="history-card-body" style="display: flex; justify-content: space-between; margin-top: 0.25rem; font-size: 0.85rem; color: #64748b;">
-                          <span class="elapsed-time">⏱️ {{ item.elapsedTime }}s</span>
-                          <span class="cleared-at">{{ item.clearedAt.split('T')[0] }}</span>
+                        <div class="history-card-body" style="display: flex; gap: 0.5rem; margin-top: 0.5rem; font-size: 0.75rem; font-weight: 600;">
+                          <span class="elapsed-time-badge" style="padding: 0.2rem 0.5rem; background: rgba(56, 189, 248, 0.1); border: 1px solid rgba(56, 189, 248, 0.15); border-radius: 6px; color: #38bdf8;">{{ item.elapsedTime }}s</span>
+                          <span class="cleared-at-badge" style="padding: 0.2rem 0.5rem; background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 6px; color: #94a3b8;">{{ item.clearedAt.split('T')[0] }}</span>
                         </div>
                       </div>
                       <div v-if="histories.length === 0" class="empty-history" style="text-align: center; padding: 2rem; color: #64748b; font-size: 0.85rem;">
