@@ -354,6 +354,55 @@
         chdir: /opt/nemologic
       become: true
 
+    - name: Create backups directory
+      file:
+        path: /opt/nemologic/backups
+        state: directory
+        owner: ubuntu
+        group: ubuntu
+        mode: "0755"
+
+    - name: Deploy DB backup script
+      copy:
+        content: |
+          #!/bin/bash
+          # Hardcoded bucket name configured via Ansible variable
+          BUCKET_NAME="{{ backup_bucket_name }}"
+          if [ -z "$BUCKET_NAME" ]; then
+              echo "Error: S3 Backup Bucket not found"
+              exit 1
+          fi
+
+          BACKUP_NAME="db-backup-$(date +%Y%m%d-%H%M%S).sql.gz"
+
+          # Dump DB and compress
+          docker exec nemologic-db pg_dump -U postgres nemologic | gzip > /tmp/$BACKUP_NAME
+
+          # Upload to S3
+          aws s3 cp /tmp/$BACKUP_NAME s3://$BUCKET_NAME/postgres/$BACKUP_NAME
+
+          # Remove local temp backup file
+          rm /tmp/$BACKUP_NAME
+        dest: /opt/nemologic/backups/backup_db.sh
+        owner: ubuntu
+        group: ubuntu
+        mode: "0755"
+
+    - name: Deploy DB restore script
+      template:
+        src: "{{ playbook_dir }}/restore_db.sh.j2"
+        dest: /opt/nemologic/backups/restore_db.sh
+        owner: ubuntu
+        group: ubuntu
+        mode: "0755"
+
+    - name: Set up Daily Cron Job for DB Backups (Run every 6 hours)
+      cron:
+        name: "nemologic db daily backup"
+        minute: "0"
+        hour: "*/6"
+        job: "/bin/bash /opt/nemologic/backups/backup_db.sh > /dev/null 2>&1"
+
     - name: Log in to GitHub Container Registry
       shell:
         cmd: echo "{{ lookup('env', 'GHCR_PAT') }}" | docker login ghcr.io -u "{{ lookup('env', 'GHCR_USERNAME') }}" --password-stdin
@@ -458,54 +507,7 @@
       become: true
       when: stop_from != 'none'
 
-    - name: Create backups directory
-      file:
-        path: /opt/nemologic/backups
-        state: directory
-        owner: ubuntu
-        group: ubuntu
-        mode: "0755"
 
-    - name: Deploy DB backup script
-      copy:
-        content: |
-          #!/bin/bash
-          # Hardcoded bucket name configured via Ansible variable
-          BUCKET_NAME="{{ backup_bucket_name }}"
-          if [ -z "$BUCKET_NAME" ]; then
-              echo "Error: S3 Backup Bucket not found"
-              exit 1
-          fi
-
-          BACKUP_NAME="db-backup-$(date +%Y%m%d-%H%M%S).sql.gz"
-
-          # Dump DB and compress
-          docker exec nemologic-db pg_dump -U postgres nemologic | gzip > /tmp/$BACKUP_NAME
-
-          # Upload to S3
-          aws s3 cp /tmp/$BACKUP_NAME s3://$BUCKET_NAME/postgres/$BACKUP_NAME
-
-          # Remove local temp backup file
-          rm /tmp/$BACKUP_NAME
-        dest: /opt/nemologic/backups/backup_db.sh
-        owner: ubuntu
-        group: ubuntu
-        mode: "0755"
-
-    - name: Deploy DB restore script
-      template:
-        src: "{{ playbook_dir }}/restore_db.sh.j2"
-        dest: /opt/nemologic/backups/restore_db.sh
-        owner: ubuntu
-        group: ubuntu
-        mode: "0755"
-
-    - name: Set up Daily Cron Job for DB Backups (Run every 6 hours)
-      cron:
-        name: "nemologic db daily backup"
-        minute: "0"
-        hour: "*/6"
-        job: "/bin/bash /opt/nemologic/backups/backup_db.sh > /dev/null 2>&1"
 
     - name: Set up Daily Cron Job for Docker Garbage Collection (Run daily at 3 AM)
       cron:
