@@ -22,7 +22,7 @@ spring:
     oauth2:
       resourceserver:
         jwt:
-          jwk-set-uri: https://nemologic-test.auth.ap-northeast-2.amazoncognito.com/.well-known/jwks.json
+          jwk-set-uri: ${COGNITO_JWK_SET_URI:https://cognito-idp.ap-northeast-2.amazonaws.com/ap-northeast-2_0an1GkWFm/.well-known/jwks.json}
 
 
 admin:
