@@ -1162,9 +1162,6 @@ async function loadStagesList(page: number = 0) {
       playStagesCurrentPage.value = 0;
     }
     stages.value = list;
-    if (!isTestEnv) {
-      console.log('DEBUG: clearedStageIds:', Array.from(clearedStageIds.value), 'stages:', list.map(s => ({ id: s.id, name: s.name, isCleared: clearedStageIds.value.has(s.id), idType: typeof s.id })), 'caller stack:', new Error().stack);
-    }
 
     if (list.length > 0) {
       if (selectedStageId.value && list.some(s => s.id === selectedStageId.value)) {
@@ -1382,9 +1379,6 @@ async function loadUserHistory(page: number = 0) {
     const fullRes = await fetchUserHistory(userId);
     const fullList = fullRes && 'content' in fullRes ? fullRes.content : fullRes;
     clearedStageIds.value = new Set((fullList || []).map((h: any) => h.stageId));
-    if (!isTestEnv) {
-      console.log('DEBUG: loadUserHistory userId:', userId, 'fullRes:', fullRes, 'clearedStageIds:', Array.from(clearedStageIds.value));
-    }
   } catch (error) {
     console.error('Failed to load user history:', error);
   }
@@ -1979,11 +1973,11 @@ onMounted(async () => {
   }
 
   await initializeUserSession();
+  await loadUserHistory();
   await Promise.all([
     loadStagesList(),
     loadAiStagesList(),
-    loadRankingsList(),
-    loadUserHistory()
+    loadRankingsList()
   ]);
 
   if (isAdminMode.value && isAdminLogged.value) {
