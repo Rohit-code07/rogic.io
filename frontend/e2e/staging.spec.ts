@@ -36,7 +36,7 @@ test.describe('Staging Environment E2E Smoke Integration Test', () => {
     console.log('Verifying Login button is visible in the header for guest...');
     const miniLoginBtn = page.locator('.mini-login-btn');
     await expect(miniLoginBtn).toBeVisible();
-    await expect(miniLoginBtn).toContainText('Login');
+    await expect(miniLoginBtn).toContainText('Sign In');
 
     console.log('Staging E2E Smoke Integration Test completed successfully!');
   });

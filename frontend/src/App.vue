@@ -418,12 +418,11 @@
 
           <!-- All Puzzles Cleared State -->
           <div v-else-if="!hasUnclearedPuzzles" class="all-cleared-state-container">
-            <div class="all-cleared-card" style="padding: 2.5rem 3.5rem; max-width: 500px;">
-              <div class="trophy-icon" style="font-size: 4rem;">🏆</div>
-              <h2 class="all-cleared-title">All Puzzles Solved!</h2>
-              <p class="all-cleared-subtitle">You have successfully cleared every puzzle in the game. Check back tomorrow for the next batch of daily puzzles!</p>
+            <div class="all-cleared-card">
+              <div class="trophy-icon">🏆</div>
+              <h2 class="all-cleared-title">All Solved</h2>
               <div class="countdown-box">
-                <div class="countdown-label">Next daily puzzle in</div>
+                <div class="countdown-label">Next puzzle in</div>
                 <div class="countdown-time">{{ timeUntilMidnight }}</div>
               </div>
             </div>
@@ -3249,14 +3248,16 @@ body {
 }
 
 .all-cleared-card {
-  background: rgba(30, 41, 59, 0.85);
-  backdrop-filter: blur(16px);
-  border: 1px solid rgba(251, 191, 36, 0.3);
-  padding: 1.25rem 2.5rem;
+  background: linear-gradient(135deg, rgba(30, 41, 59, 0.75) 0%, rgba(15, 23, 42, 0.85) 100%);
+  backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  padding: 2.5rem 3.5rem;
   border-radius: 24px;
-  box-shadow: 0 20px 40px -10px rgba(251, 191, 36, 0.2);
+  box-shadow: 0 20px 50px -10px rgba(0, 0, 0, 0.5), 0 0 40px 0 rgba(56, 189, 248, 0.05);
   text-align: center;
-  animation: pop-in 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  animation: pop-in 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+  position: relative;
+  z-index: 1;
 }
 
 .trophy-icon {
@@ -4147,15 +4148,30 @@ body {
   justify-content: center;
   min-height: 480px;
   width: 100%;
+  position: relative;
   animation: modalFadeIn 0.4s ease-out;
 }
 
+.all-cleared-state-container::before {
+  content: '';
+  position: absolute;
+  width: 320px;
+  height: 320px;
+  background: radial-gradient(circle, rgba(56, 189, 248, 0.08) 0%, rgba(56, 189, 248, 0) 70%);
+  pointer-events: none;
+  z-index: 0;
+}
+
 .all-cleared-title {
-  font-size: 2rem;
-  font-weight: 700;
-  color: #f8fafc;
+  font-size: 2.2rem;
+  font-weight: 800;
+  background: linear-gradient(135deg, #ffffff 40%, #94a3b8 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
   margin-top: 1.5rem;
-  margin-bottom: 0.75rem;
+  margin-bottom: 1.5rem;
+  letter-spacing: -0.02em;
 }
 
 .all-cleared-subtitle {
@@ -4167,20 +4183,20 @@ body {
 }
 
 .countdown-box {
-  margin-top: 1.5rem;
-  background: rgba(255, 255, 255, 0.03);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  margin-top: 0.5rem;
+  background: rgba(15, 23, 42, 0.45);
+  border: 1px solid rgba(255, 255, 255, 0.04);
   padding: 1.25rem 2.5rem;
-  border-radius: 16px;
+  border-radius: 20px;
   display: inline-block;
-  backdrop-filter: blur(8px);
+  box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.3);
 }
 
 .countdown-label {
   font-size: 0.75rem;
   color: #64748b;
   text-transform: uppercase;
-  letter-spacing: 0.15rem;
+  letter-spacing: 0.12rem;
   margin-bottom: 0.5rem;
   font-weight: 600;
 }
@@ -4190,7 +4206,7 @@ body {
   font-size: 2.5rem;
   font-weight: 700;
   color: #38bdf8;
-  text-shadow: 0 0 20px rgba(56, 189, 248, 0.35);
+  text-shadow: 0 0 24px rgba(56, 189, 248, 0.4);
   letter-spacing: 0.05rem;
 }
 
