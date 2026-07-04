@@ -15,9 +15,15 @@
   - `infra: convert SLA dashboard metrics to dynamic global range picker`
   - `ci: add terraform path filter to prevent deployment pipeline skips`
 
-## 2. Commit & Push Lifecycle Governance
-- **자동 커밋 정책**:
-  - 각 기능 개발 또는 인프라 작업 완료 후, 변경된 파일들을 스테이징하고 정의된 컨벤션에 의거해 로컬 커밋(`git commit`)까지 자동으로 완료하여 변경 내역을 안전하게 보존합니다.
-- **원격 푸시(Push) 통제 규칙**:
-  - 기본적으로 에이전트는 원격 저장소로 직접 `git push`를 수행하지 않고 커밋까지만 완료하여 개발자에게 제어권을 위임합니다.
-  - 단, **개발자가 명시적으로 push를 요청한 경우(예: "push 해줘")**, 또는 **커밋 해시 꼬임 복구 등 특이사항으로 인해 명확하게 승인/합의를 거친 경우**에 한하여 에이전트가 예외적으로 `git push`를 수행할 수 있습니다.
+## 2. Issue & Pull Request Workflow Governance
+- **작업 브랜치(Branch) 생성 규칙**:
+  - 에이전트는 신규 작업 시작 시, `main` 브랜치에서 직접 개발하지 않고 항상 피처 브랜치를 생성하여 작업해야 합니다.
+  - 브랜치 네이밍 컨벤션:
+    - 이슈 기반 작업 시: `feat/#<issue_number>-<brief_description>` 또는 `fix/#<issue_number>-<brief_description>`
+    - 일반 작업 시: `feat/agent-<brief_description>` 또는 `fix/agent-<brief_description>`
+- **자동 커밋 및 푸시(Push) 정책**:
+  - 에이전트는 기능 개발 또는 인프라 작업 완료 후, 변경된 파일들을 스테이징하고 정의된 컨벤션에 의거해 로컬 커밋(`git commit`)을 수행합니다.
+  - 작업 브랜치(`feat/*` 또는 `fix/*`)에 한해서, 에이전트는 원격 저장소(`origin`)로 직접 `git push`를 자동으로 수행하여 변경 내역을 반영할 수 있습니다. (메인 브랜치 `main`으로의 직접 푸시는 엄격히 금지됩니다.)
+- **풀 리퀘스트(PR) 생성 및 제출**:
+  - 피처 브랜치에 코드를 푸시한 후, 에이전트는 해당 브랜치에서 `main` 브랜치로의 PR 초안(Draft) 또는 PR을 생성하거나, 사용자가 GitHub에서 바로 PR을 열 수 있도록 작성 명세(Title, Description, Checklist)를 제공해야 합니다.
+  - 생성된 PR은 사용자의 승인(Approve) 및 머지(Merge)를 거쳐 메인 브랜치와 Staging 환경에 최종 반영됩니다.

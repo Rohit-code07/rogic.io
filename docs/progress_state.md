@@ -559,11 +559,19 @@
   - **캐싱 및 상태 무효화 최적화**: 게임 판 해결(`handleCellClick`) 성공 시 즉시 `allStagesSummary.value = []` 상태를 무효화(invalidate)하여, 다음 로드 및 사이즈 감지 시 최신 상태를 백엔드에서 강제 페치하도록 캐시 정책을 안전하게 구성함.
   - **통합 검증**: `npm test` 및 `npm run build`를 재실행하여 프론트엔드 68개 테스트 전 라인의 컴파일 및 실시간 통과를 완료함.
 
+### Git/이슈/PR 개발 워크플로우 정식 도입 및 형상 관리 규칙 개정 (Step 112) - 완료
+- **해결 내역**:
+  - **작업 공간 에이전트 규칙 활성화 (`AGENTS.md`)**: 개별 규칙 폴더 하위에 산재해 있던 규칙들을 하나의 마스터 규칙 파일인 [AGENTS.md](../.agents/AGENTS.md)로 집대성하여 IDE 에이전트가 로드되도록 공식 등록함.
+  - **Git 규칙 개정**: [.agents/rules/git-and-commit-guidelines.md](../.agents/rules/git-and-commit-guidelines.md)를 수정하여 에이전트가 메인 브랜치에서 직접 작업하는 대신 피처 브랜치(`feat/#이슈번호-설명`)를 생성하고, 작업 완료 후 피처 브랜치에 자동 푸시 및 PR 생성을 하도록 라이프사이클 거버넌스를 개편함.
+  - **GitHub 이슈 및 PR 템플릿 신설**: 버그 리포트([bug_report.md](../.github/ISSUE_TEMPLATE/bug_report.md)), 기능 요청([feature_request.md](../.github/ISSUE_TEMPLATE/feature_request.md)) 및 풀 리퀘스트 템플릿([PULL_REQUEST_TEMPLATE.md](../.github/PULL_REQUEST_TEMPLATE.md))을 신설하여 외부 기여자 및 AI 에이전트의 작업 정합성 검증 체계를 표준화함.
+  - **전체 단위 테스트 및 빌드 안정성 교차 검증**: 백엔드 Gradle 테스트(32개) 및 프론트엔드 Vitest 테스트(68개)를 로컬에서 구동하여 100% 정상 통과함을 보장함.
+
 ---
 
 ## 2. 다음 목표 (Next Goals)
 - **Cognito 소셜 로그인 프로덕션 실환경 운영 관찰**: Cognito User Pool과 Google OAuth IdP 간의 프로덕션 유저 인입 흐름 및 세션 모니터링 수행.
 - **Nginx 웹 방화벽(WAF) 도입 검토**: 리소스 제약을 극복하고 Nginx 레벨의 보안 강화를 위한 방화벽 구성안 비교 및 적용 설계 수립.
+- **브랜치 기반 PR 작업 방식 실전 적용 검증**: 신규 작업 요구사항 발생 시, 지정된 피처 브랜치 분기 규칙 및 PR 템플릿 작성을 실제로 운용하여 정상 프로세스 여부 최종 점검.
 
 
 

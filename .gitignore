@@ -1,5 +1,8 @@
 # System / Agent directories
-.agents/
+.agents/*
+!.agents/AGENTS.md
+!.agents/rules/
+!.agents/workflows/
 
 # Dependency directories
 node_modules/
