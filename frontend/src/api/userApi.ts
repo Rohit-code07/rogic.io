@@ -71,4 +71,11 @@ export async function fetchMeFromServer(): Promise<User> {
   return response.data;
 }
 
+export async function syncGuestHistory(userId: number, guestClears: { stageId: number; elapsedTime: number }[]): Promise<User> {
+  const response = await axios.post<User>(`${API_BASE_URL}/${userId}/sync-history`, guestClears, {
+    headers: getAuthHeader(),
+  });
+  return response.data;
+}
+
 
