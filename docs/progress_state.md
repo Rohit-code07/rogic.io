@@ -566,12 +566,19 @@
   - **GitHub 이슈 및 PR 템플릿 신설**: 버그 리포트([bug_report.md](../.github/ISSUE_TEMPLATE/bug_report.md)), 기능 요청([feature_request.md](../.github/ISSUE_TEMPLATE/feature_request.md)) 및 풀 리퀘스트 템플릿([PULL_REQUEST_TEMPLATE.md](../.github/PULL_REQUEST_TEMPLATE.md))을 신설하여 외부 기여자 및 AI 에이전트의 작업 정합성 검증 체계를 표준화함.
   - **전체 단위 테스트 및 빌드 안정성 교차 검증**: 백엔드 Gradle 테스트(32개) 및 프론트엔드 Vitest 테스트(68개)를 로컬에서 구동하여 100% 정상 통과함을 보장함.
 
+### 게스트 모드 로컬 플레이 진행 상태 보존 및 히스토리 등록 결함 패치 (Step 113) - 완료
+- **해결 내역**:
+  - **게스트 모드 로컬 영속화**: 비로그인 게스트 모드로 노노그램 퍼즐을 풀었을 때 백엔드 API `/api/stages/{id}/clear` 호출을 건너뛰는 과정에서, 클리어 스테이지 ID가 로컬 세션의 `clearedStageIds` 및 `localStorage`(`guest_cleared_stages`)에 기록되지 않던 현상을 패치함.
+  - **마이페이지 로컬 히스토리 보존**: 퍼즐 클리어 시 획득 XP 및 소요 시간 메타정보를 포함한 `HistoryResponse` 규격의 객체를 `localStorage`(`guest_histories`)에 unshift(최신순 정렬)하여 저장하도록 구현함.
+  - **게스트 히스토리 페이지네이션 및 로딩 연동**: `loadUserHistory` 함수를 개편하여 게스트 모드일 때 localStorage에 저장된 히스토리 목록을 페이징 단위(페이지당 10개)로 슬라이싱하여 `histories.value` 및 `historyTotalPages` 등에 바인딩하고 `clearedStageIds`를 local Set으로 동적 복원하도록 연동함.
+  - **TDD 단위 테스트 보강 및 검증**: `frontend/src/App.test.ts`에 게스트 모드 해결 상태 로컬 보존 및 API 바이패스 검증용 단위 테스트 케이스(`should not call clearStage but save to localStorage...`)를 추가 수립하고 전체 69개 테스트를 100% 그린 상태로 성공 통과함.
+
 ---
 
 ## 2. 다음 목표 (Next Goals)
 - **Cognito 소셜 로그인 프로덕션 실환경 운영 관찰**: Cognito User Pool과 Google OAuth IdP 간의 프로덕션 유저 인입 흐름 및 세션 모니터링 수행.
 - **Nginx 웹 방화벽(WAF) 도입 검토**: 리소스 제약을 극복하고 Nginx 레벨의 보안 강화를 위한 방화벽 구성안 비교 및 적용 설계 수립.
-- **브랜치 기반 PR 작업 방식 실전 적용 검증**: 신규 작업 요구사항 발생 시, 지정된 피처 브랜치 분기 규칙 및 PR 템플릿 작성을 실제로 운용하여 정상 프로세스 여부 최종 점검.
+- **브랜치 기반 PR 작업 방식 실전 적용 검증 (완료)**: 이번 #1 버그 해결 이슈 작업을 통해 피처 브랜치 생성, 자동 푸시 및 PR 생성 워크플로우를 실제 구동하여 검증 완료.
 
 
 
