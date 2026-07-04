@@ -873,7 +873,8 @@ const availablePlaySizes = computed(() => {
   return Array.from(sizes).sort((a, b) => a - b);
 });
 
-watch(availablePlaySizes, (newSizes) => {
+watch([availablePlaySizes, solved], ([newSizes, isSolved]) => {
+  if (isSolved) return; // Wait until countdown finishes and solved becomes false
   if (newSizes.length > 0) {
     const currentVal = selectedPlaySizeFilter.value;
     if (currentVal === 'All' || !newSizes.includes(parseInt(currentVal))) {
