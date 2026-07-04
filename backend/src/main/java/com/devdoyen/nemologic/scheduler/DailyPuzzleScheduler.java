@@ -52,7 +52,7 @@ public class DailyPuzzleScheduler {
         }
     }
 
-    @Scheduled(cron = "0 0 0 * * ?")
+    @Scheduled(cron = "${app.daily-puzzle.cron}")
     public void releaseDailyPuzzle() {
         stageService.releaseDailyPuzzles();
     }
