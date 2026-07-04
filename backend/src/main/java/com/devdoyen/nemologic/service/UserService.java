@@ -1,5 +1,6 @@
 package com.devdoyen.nemologic.service;
 
+import com.devdoyen.nemologic.dto.GuestClearRequest;
 import com.devdoyen.nemologic.dto.HistoryResponse;
 import com.devdoyen.nemologic.model.History;
 import com.devdoyen.nemologic.model.Stage;
@@ -138,5 +139,55 @@ public class UserService {
                     User newUser = new User(null, username, 0, 1, oauthId, email, pictureUrl);
                     return userRepository.save(newUser);
                 });
+    }
+
+    @Transactional
+    public User syncGuestHistory(Long userId, List<GuestClearRequest> guestClears) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new IllegalArgumentException("User not found: " + userId));
+
+        Set<Long> clearedStageIds = historyRepository.findByUserId(userId).stream()
+                .map(h -> h.getStage().getId())
+                .collect(Collectors.toSet());
+
+        int totalXpReward = 0;
+
+        for (GuestClearRequest clearReq : guestClears) {
+            Long stageId = clearReq.getStageId();
+            if (stageId == null || clearedStageIds.contains(stageId)) {
+                continue;
+            }
+
+            Stage stage = stageRepository.findById(stageId).orElse(null);
+            if (stage == null) {
+                continue;
+            }
+
+            int xpReward;
+            int width = stage.getWidth();
+            int height = stage.getHeight();
+            if (width <= 5 && height <= 5) {
+                xpReward = 50;
+            } else if (width >= 10 || height >= 10) {
+                xpReward = 200;
+            } else {
+                xpReward = 100;
+            }
+
+            int time = Math.max(0, clearReq.getElapsedTime());
+            History history = new History(user, stage, java.time.LocalDateTime.now(), xpReward, time);
+            historyRepository.save(history);
+            stageService.recordClear(stageId, time);
+
+            totalXpReward += xpReward;
+            clearedStageIds.add(stageId);
+        }
+
+        if (totalXpReward > 0) {
+            user.addXp(totalXpReward);
+            return userRepository.save(user);
+        }
+
+        return user;
     }
 }

@@ -1,5 +1,6 @@
 package com.devdoyen.nemologic.controller;
 
+import com.devdoyen.nemologic.dto.GuestClearRequest;
 import com.devdoyen.nemologic.dto.HistoryResponse;
 import com.devdoyen.nemologic.model.User;
 import com.devdoyen.nemologic.service.UserService;
@@ -52,6 +53,22 @@ public class UserController {
                 throw new IllegalArgumentException("Unknown difficulty: " + difficulty);
         }
         return userService.clearStageWithHistory(id, stageId, xpReward, elapsedTime);
+    }
+
+    @PostMapping("/{id}/sync-history")
+    public User syncGuestHistory(
+            @PathVariable Long id,
+            @RequestBody List<GuestClearRequest> guestClears,
+            @org.springframework.security.core.annotation.AuthenticationPrincipal org.springframework.security.oauth2.jwt.Jwt jwt) {
+        if (jwt == null) {
+            throw new org.springframework.security.access.AccessDeniedException("Unauthorized");
+        }
+        User targetUser = userService.getUserById(id);
+        String sub = jwt.getClaimAsString("sub");
+        if (targetUser.getOauthId() == null || !targetUser.getOauthId().equals(sub)) {
+            throw new org.springframework.security.access.AccessDeniedException("Access denied: User ID does not match token identity");
+        }
+        return userService.syncGuestHistory(id, guestClears);
     }
 
     @GetMapping("/{id}/history")

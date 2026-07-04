@@ -7,6 +7,12 @@ import com.devdoyen.nemologic.repository.StageRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import com.devdoyen.nemologic.model.History;
+import com.devdoyen.nemologic.model.Stage;
+import com.devdoyen.nemologic.dto.GuestClearRequest;
+import java.util.List;
+import java.util.Collections;
+import java.util.ArrayList;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -94,5 +100,58 @@ public class UserServiceTest {
         when(userRepository.findByOauthId("google-uid-123")).thenReturn(Optional.of(user));
         User existingUser = userService.findOrCreateByOauthId("google-uid-123", "John Doe Changed", "john@example.com", "https://pic.url");
         assertEquals("John Doe Changed", existingUser.getUsername());
+    }
+
+    @Test
+    public void testSyncGuestHistorySuccessful() {
+        User user = new User(1L, "Alice", 0, 1);
+        when(userRepository.findById(1L)).thenReturn(Optional.of(user));
+        when(userRepository.save(any(User.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        Stage stage5 = new Stage(5L, "Easy Stage", 5, 5, new int[][]{{1}});
+        Stage stage10 = new Stage(10L, "Hard Stage", 10, 10, new int[][]{{1}});
+        when(stageRepository.findById(5L)).thenReturn(Optional.of(stage5));
+        when(stageRepository.findById(10L)).thenReturn(Optional.of(stage10));
+
+        when(historyRepository.findByUserId(1L)).thenReturn(Collections.emptyList());
+
+        List<GuestClearRequest> clears = new ArrayList<>();
+        clears.add(new GuestClearRequest(5L, 45));
+        clears.add(new GuestClearRequest(10L, 120));
+
+        User updatedUser = userService.syncGuestHistory(1L, clears);
+
+        // Verify total XP earned: EASY(50) + HARD(200) = 250 XP
+        assertEquals(250, updatedUser.getXp());
+        // Verify stage records updated
+        verify(stageService, times(1)).recordClear(5L, 45);
+        verify(stageService, times(1)).recordClear(10L, 120);
+        // Verify histories saved
+        verify(historyRepository, times(2)).save(any(History.class));
+    }
+
+    @Test
+    public void testSyncGuestHistoryIgnoresDuplicates() {
+        User user = new User(1L, "Alice", 0, 1);
+        when(userRepository.findById(1L)).thenReturn(Optional.of(user));
+        when(userRepository.save(any(User.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        Stage stage5 = new Stage(5L, "Easy Stage", 5, 5, new int[][]{{1}});
+        when(stageRepository.findById(5L)).thenReturn(Optional.of(stage5));
+
+        // User already cleared stage 5
+        History existingHistory = new History(user, stage5, java.time.LocalDateTime.now(), 50, 45);
+        when(historyRepository.findByUserId(1L)).thenReturn(Collections.singletonList(existingHistory));
+
+        List<GuestClearRequest> clears = new ArrayList<>();
+        clears.add(new GuestClearRequest(5L, 30)); // Duplicate clear of stage 5
+
+        User updatedUser = userService.syncGuestHistory(1L, clears);
+
+        // Verify no extra XP is awarded
+        assertEquals(0, updatedUser.getXp());
+        // Verify stage record and history are not saved
+        verify(stageService, never()).recordClear(anyLong(), anyInt());
+        verify(historyRepository, never()).save(any(History.class));
     }
 }
