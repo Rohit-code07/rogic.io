@@ -54,7 +54,8 @@ describe('userApi TDD Red Phase', () => {
 
     const result = await fetchUserHistory(1);
     expect(axios.get).toHaveBeenCalledWith('http://localhost:8080/api/users/1/history', {
-      headers: {}
+      headers: {},
+      params: { _t: expect.any(Number) }
     });
     expect(result).toEqual(mockHistory);
   });

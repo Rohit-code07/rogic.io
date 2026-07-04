@@ -1284,6 +1284,9 @@ async function handleCellClick() {
         if (currentUser.value) {
           const userId = currentUser.value.id;
           const stageId = selectedStageId.value !== null ? selectedStageId.value : (selectedAiStageId.value !== null ? selectedAiStageId.value : undefined);
+          if (stageId !== undefined) {
+            clearedStageIds.value.add(stageId);
+          }
           await clearStage(userId, difficulty, stageId, elapsedTime);
           allStagesSummary.value = [];
           await loadRankingsList();
