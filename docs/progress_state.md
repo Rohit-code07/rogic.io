@@ -573,6 +573,11 @@
   - **게스트 히스토리 페이지네이션 및 로딩 연동**: `loadUserHistory` 함수를 개편하여 게스트 모드일 때 localStorage에 저장된 히스토리 목록을 페이징 단위(페이지당 10개)로 슬라이싱하여 `histories.value` 및 `historyTotalPages` 등에 바인딩하고 `clearedStageIds`를 local Set으로 동적 복원하도록 연동함.
   - **TDD 단위 테스트 보강 및 검증**: `frontend/src/App.test.ts`에 게스트 모드 해결 상태 로컬 보존 및 API 바이패스 검증용 단위 테스트 케이스(`should not call clearStage but save to localStorage...`)를 추가 수립하고 전체 69개 테스트를 100% 그린 상태로 성공 통과함.
 
+### 운영 DB 유실 장애 복구 포스트모템 및 재해복구(DR) 사례 README.md 수록 (Step 114) - 완료
+- **해결 내역**:
+  - **트러블슈팅 사례 수록**: [README.md](../README.md)의 6절 `Troubleshooting & Incidents` 하위에 `6.4. Production Database Initialization` 세션을 신규 기술함.
+  - **재해 극복 및 예방책 명세**: 인스턴스 재생성 시의 EBS 볼륨 격리 및 absolute path 바인드 마운트 마이그레이션 정책, OIDC/SSM 기반 원클릭 재해 복구(DR) 파이프라인 수립 및 37초대 실전 Uptime 훈련 성과(DR Drill)를 개괄식 레이아웃으로 상세 명세함.
+
 ---
 
 ## 2. 다음 목표 (Next Goals)
