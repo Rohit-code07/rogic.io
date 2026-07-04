@@ -405,8 +405,21 @@
             </button>
           </div>
 
+          <!-- All Puzzles Cleared State -->
+          <div v-else-if="!hasUnclearedPuzzles" class="all-cleared-state-container">
+            <div class="all-cleared-card" style="padding: 2.5rem 3.5rem; max-width: 500px;">
+              <div class="trophy-icon" style="font-size: 4rem;">🏆</div>
+              <h2 class="all-cleared-title">All Puzzles Solved!</h2>
+              <p class="all-cleared-subtitle">You have successfully cleared every puzzle in the game. Check back tomorrow for the next batch of daily puzzles!</p>
+              <div class="countdown-box">
+                <div class="countdown-label">Next daily puzzle in</div>
+                <div class="countdown-time">{{ timeUntilMidnight }}</div>
+              </div>
+            </div>
+          </div>
+
           <!-- Canvas Area -->
-          <template v-else-if="board">
+          <template v-else-if="board && hasUnclearedPuzzles">
             <!-- Floating Stage Selector -->
             <div class="puzzle-selector-floating-container" v-if="currentActiveStage">
               <div class="active-stage-badge" @click="isStageListOpen = !isStageListOpen">
@@ -848,6 +861,35 @@ const allUnclearedStages = computed(() => {
   const combined = Array.from(stageMap.values());
   return combined.filter(s => !clearedStageIds.value.has(s.id));
 });
+
+const hasUnclearedPuzzles = computed(() => {
+  if (allStagesSummary.value.length === 0) return true;
+  const hasRegular = allStagesSummary.value.some(s => !clearedStageIds.value.has(s.id));
+  const hasAi = (aiStages.value || []).some(s => !clearedStageIds.value.has(s.id));
+  return hasRegular || hasAi;
+});
+
+const timeUntilMidnight = ref('');
+let dailyPuzzleTimerId: any = null;
+
+function updateDailyPuzzleCountdown() {
+  const now = new Date();
+  const midnight = new Date();
+  midnight.setHours(24, 0, 0, 0);
+  
+  const diffMs = midnight.getTime() - now.getTime();
+  if (diffMs <= 0) {
+    timeUntilMidnight.value = '00:00:00';
+    return;
+  }
+  
+  const hours = Math.floor(diffMs / (1000 * 60 * 60));
+  const minutes = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
+  const seconds = Math.floor((diffMs % (1000 * 60)) / 1000);
+  
+  const pad = (num: number) => String(num).padStart(2, '0');
+  timeUntilMidnight.value = `${pad(hours)}:${pad(minutes)}:${pad(seconds)}`;
+}
 
 const selectedPlaySizeFilter = ref<string>('5');
 const isSizeListOpen = ref<boolean>(false);
@@ -2029,10 +2071,15 @@ onMounted(async () => {
   document.addEventListener('touchstart', preventPinchZoom, { passive: false });
   if (!isTestEnv) {
     document.addEventListener('click', handleGlobalClick);
+    updateDailyPuzzleCountdown();
+    dailyPuzzleTimerId = setInterval(updateDailyPuzzleCountdown, 1000);
   }
 });
 
 onUnmounted(() => {
+  if (dailyPuzzleTimerId) {
+    clearInterval(dailyPuzzleTimerId);
+  }
   resetCountdown();
   window.removeEventListener('resize', handleConfettiResize);
   document.removeEventListener('touchstart', preventPinchZoom);
@@ -4004,6 +4051,59 @@ body {
     opacity: 1;
     transform: scale(1) translateY(0);
   }
+}
+
+.all-cleared-state-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 480px;
+  width: 100%;
+  animation: modalFadeIn 0.4s ease-out;
+}
+
+.all-cleared-title {
+  font-size: 2rem;
+  font-weight: 700;
+  color: #f8fafc;
+  margin-top: 1.5rem;
+  margin-bottom: 0.75rem;
+}
+
+.all-cleared-subtitle {
+  font-size: 1.05rem;
+  color: #94a3b8;
+  max-width: 440px;
+  margin: 0 auto 2rem auto;
+  line-height: 1.6;
+}
+
+.countdown-box {
+  margin-top: 1.5rem;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  padding: 1.25rem 2.5rem;
+  border-radius: 16px;
+  display: inline-block;
+  backdrop-filter: blur(8px);
+}
+
+.countdown-label {
+  font-size: 0.75rem;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.15rem;
+  margin-bottom: 0.5rem;
+  font-weight: 600;
+}
+
+.countdown-time {
+  font-family: 'Outfit', 'Inter', monospace;
+  font-size: 2.5rem;
+  font-weight: 700;
+  color: #38bdf8;
+  text-shadow: 0 0 20px rgba(56, 189, 248, 0.35);
+  letter-spacing: 0.05rem;
 }
 </style>
 
