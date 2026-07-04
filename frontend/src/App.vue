@@ -313,38 +313,44 @@
       <div class="header-controls" style="display: flex; align-items: center; gap: 0.75rem;">
         <!-- Mini Profile / Login Widget -->
         <div class="mini-profile-widget" style="display: flex; align-items: center; margin-left: 0.25rem;">
-          <div 
-            v-if="currentUser" 
-            @click="onTabChange('mypage')" 
-            class="mini-profile-card tab-btn-mypage"
-            :class="{ active: currentTab === 'mypage' }"
-            style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer; padding: 0.35rem 0.75rem; border-radius: 9999px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); transition: all 0.25s ease;"
-          >
-            <img 
-              v-if="currentUser.profileImageUrl" 
-              :src="currentUser.profileImageUrl" 
-              alt="Profile" 
-              style="width: 22px; height: 22px; border-radius: 50%; object-fit: cover; border: 1px solid #38bdf8;" 
-            />
-            <div v-else style="width: 22px; height: 22px; border-radius: 50%; background: #38bdf8; display: flex; align-items: center; justify-content: center; font-size: 0.7rem; color: white; font-weight: 700;">👤</div>
-            <span class="mini-username" style="font-size: 0.8rem; font-weight: 600; color: #f8fafc; max-width: 90px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">{{ currentUser.username }}</span>
+          <template v-if="!isSessionLoading">
+            <div 
+              v-if="currentUser" 
+              @click="onTabChange('mypage')" 
+              class="mini-profile-card tab-btn-mypage"
+              :class="{ active: currentTab === 'mypage' }"
+              style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer; padding: 0.35rem 0.75rem; border-radius: 9999px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); transition: all 0.25s ease;"
+            >
+              <img 
+                v-if="currentUser.profileImageUrl" 
+                :src="currentUser.profileImageUrl" 
+                alt="Profile" 
+                style="width: 22px; height: 22px; border-radius: 50%; object-fit: cover; border: 1px solid #38bdf8;" 
+              />
+              <div v-else style="width: 22px; height: 22px; border-radius: 50%; background: #38bdf8; display: flex; align-items: center; justify-content: center; font-size: 0.7rem; color: white; font-weight: 700;">👤</div>
+              <span class="mini-username" style="font-size: 0.8rem; font-weight: 600; color: #f8fafc; max-width: 90px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">{{ currentUser.username }}</span>
+            </div>
+            <button 
+              v-else 
+              @click="handleGoogleLogin" 
+              class="mini-login-btn"
+              style="display: flex; align-items: center; gap: 0.5rem; padding: 0.35rem 0.75rem; border-radius: 9999px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); cursor: pointer; transition: all 0.2s ease; font-family: inherit;"
+              onmouseover="this.style.background='rgba(255,255,255,0.06)'; this.style.borderColor='rgba(255,255,255,0.15)'"
+              onmouseout="this.style.background='rgba(255,255,255,0.03)'; this.style.borderColor='rgba(255,255,255,0.08)'"
+            >
+              <svg style="width: 14px; height: 14px; display: block;" viewBox="0 0 24 24">
+                <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
+                <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
+                <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z" fill="#FBBC05"/>
+                <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z" fill="#EA4335"/>
+              </svg>
+              <span style="font-size: 0.8rem; font-weight: 600; color: #f8fafc;">Sign In</span>
+            </button>
+          </template>
+          <!-- Show a subtle skeleton while the token validation is in progress -->
+          <div v-else class="mini-profile-skeleton" style="width: 86px; height: 28px; border-radius: 9999px; background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.05); display: flex; align-items: center; justify-content: center;">
+            <div class="skeleton-dot" style="width: 6px; height: 6px; border-radius: 50%; background: #38bdf8; opacity: 0.6; animation: subtle-pulse 1.2s infinite ease-in-out;"></div>
           </div>
-          <button 
-            v-else 
-            @click="handleGoogleLogin" 
-            class="mini-login-btn"
-            style="display: flex; align-items: center; gap: 0.5rem; padding: 0.35rem 0.75rem; border-radius: 9999px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); cursor: pointer; transition: all 0.2s ease; font-family: inherit;"
-            onmouseover="this.style.background='rgba(255,255,255,0.06)'; this.style.borderColor='rgba(255,255,255,0.15)'"
-            onmouseout="this.style.background='rgba(255,255,255,0.03)'; this.style.borderColor='rgba(255,255,255,0.08)'"
-          >
-            <svg style="width: 14px; height: 14px; display: block;" viewBox="0 0 24 24">
-              <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
-              <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
-              <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z" fill="#FBBC05"/>
-              <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z" fill="#EA4335"/>
-            </svg>
-            <span style="font-size: 0.8rem; font-weight: 600; color: #f8fafc;">Sign In</span>
-          </button>
         </div>
 
         <button 
@@ -800,6 +806,7 @@ const hasVoted = ref(false);
 const currentStageVotes = ref({ upvotes: 0, downvotes: 0 });
 const nextPuzzleSeconds = ref(3);
 const isLoading = ref(true);
+const isSessionLoading = ref(true);
 const loadError = ref<string | null>(null);
 let countdownTimer: any = null;
 
@@ -1939,69 +1946,74 @@ function handleGoogleLogout() {
 }
 
 async function initializeUserSession() {
-  // 1. Process Google OAuth code callback
-  if (!isTestEnv) {
-    const urlParams = new URLSearchParams(window.location.search);
-    const code = urlParams.get('code');
-    if (code) {
-      try {
-        isLoading.value = true;
-        const { handleCallback: cognitoHandleCallback } = await import('./api/cognito');
-        await cognitoHandleCallback(code);
-        // Clean parameters from browser URL
-        window.history.replaceState({}, document.title, window.location.pathname);
-        // Automatically redirect to play tab
-        await onTabChange('play');
-      } catch (err) {
-        console.error('Failed to exchange authorization code:', err);
-      } finally {
-        isLoading.value = false;
+  isSessionLoading.value = true;
+  try {
+    // 1. Process Google OAuth code callback
+    if (!isTestEnv) {
+      const urlParams = new URLSearchParams(window.location.search);
+      const code = urlParams.get('code');
+      if (code) {
+        try {
+          isLoading.value = true;
+          const { handleCallback: cognitoHandleCallback } = await import('./api/cognito');
+          await cognitoHandleCallback(code);
+          // Clean parameters from browser URL
+          window.history.replaceState({}, document.title, window.location.pathname);
+          // Automatically redirect to play tab
+          await onTabChange('play');
+        } catch (err) {
+          console.error('Failed to exchange authorization code:', err);
+        } finally {
+          isLoading.value = false;
+        }
       }
     }
-  }
 
-  // 2. Load profile if token is valid
-  const token = getStoredToken();
-  if (token === 'dummy-token') {
-    const debugSession = {
-      id: 999,
-      username: '조도연',
-      xp: 250,
-      level: 12,
-      email: 'ysndy1234@gmail.com',
-      profileImageUrl: '',
-      idToken: 'dummy-token'
-    };
-    setUserSession(debugSession);
-    currentUser.value = debugSession;
-    return;
-  }
-  if (token) {
-    try {
-      const user = await fetchMeFromServer();
-      const session: UserSession = {
-        id: user.id,
-        username: user.username,
-        xp: user.xp,
-        level: user.level,
-        email: user.email,
-        profileImageUrl: user.profileImageUrl,
-        idToken: token
+    // 2. Load profile if token is valid
+    const token = getStoredToken();
+    if (token === 'dummy-token') {
+      const debugSession = {
+        id: 999,
+        username: '조도연',
+        xp: 250,
+        level: 12,
+        email: 'ysndy1234@gmail.com',
+        profileImageUrl: '',
+        idToken: 'dummy-token'
       };
-      setUserSession(session);
-      currentUser.value = session;
-      
-      // Perform Guest History Migration on successful session initialization
-      await migrateGuestHistory(user.id);
-    } catch (error) {
-      console.error('Failed to validate user token with server:', error);
+      setUserSession(debugSession);
+      currentUser.value = debugSession;
+      return;
+    }
+    if (token) {
+      try {
+        const user = await fetchMeFromServer();
+        const session: UserSession = {
+          id: user.id,
+          username: user.username,
+          xp: user.xp,
+          level: user.level,
+          email: user.email,
+          profileImageUrl: user.profileImageUrl,
+          idToken: token
+        };
+        setUserSession(session);
+        currentUser.value = session;
+        
+        // Perform Guest History Migration on successful session initialization
+        await migrateGuestHistory(user.id);
+      } catch (error) {
+        console.error('Failed to validate user token with server:', error);
+        clearUserSession();
+        currentUser.value = null;
+      }
+    } else {
+      // Non-login Guest Mode
       clearUserSession();
       currentUser.value = null;
     }
-  } else {
-    // Non-login Guest Mode
-    clearUserSession();
-    currentUser.value = null;
+  } finally {
+    isSessionLoading.value = false;
   }
 }
 
@@ -4180,6 +4192,11 @@ body {
   color: #38bdf8;
   text-shadow: 0 0 20px rgba(56, 189, 248, 0.35);
   letter-spacing: 0.05rem;
+}
+
+@keyframes subtle-pulse {
+  0%, 100% { opacity: 0.3; transform: scale(0.9); }
+  50% { opacity: 0.8; transform: scale(1.1); }
 }
 </style>
 
