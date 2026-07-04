@@ -14,3 +14,7 @@ management:
 admin:
   username: ${ADMIN_USERNAME}
   password: ${ADMIN_PASSWORD}
+
+app:
+  daily-puzzle:
+    cron: "0 0 0 * * ?"

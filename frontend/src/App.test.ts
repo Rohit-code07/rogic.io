@@ -20,6 +20,7 @@ describe('App.vue Leaderboard Integration TDD', () => {
     vi.clearAllMocks();
     localStorage.clear();
     localStorage.setItem('nemologic_id_token', 'mockHeader.eyzleHAiOjk5OTk5OTk5OTl9.mockSignature');
+    vi.mocked(stageApi.fetchNextReleaseDelaySeconds).mockResolvedValue(3600);
     vi.mocked(userApi.fetchMeFromServer).mockResolvedValue({
       id: 1,
       username: 'Player1',

@@ -405,8 +405,21 @@
             </button>
           </div>
 
+          <!-- All Puzzles Cleared State -->
+          <div v-else-if="!hasUnclearedPuzzles" class="all-cleared-state-container">
+            <div class="all-cleared-card" style="padding: 2.5rem 3.5rem; max-width: 500px;">
+              <div class="trophy-icon" style="font-size: 4rem;">🏆</div>
+              <h2 class="all-cleared-title">All Puzzles Solved!</h2>
+              <p class="all-cleared-subtitle">You have successfully cleared every puzzle in the game. Check back tomorrow for the next batch of daily puzzles!</p>
+              <div class="countdown-box">
+                <div class="countdown-label">Next daily puzzle in</div>
+                <div class="countdown-time">{{ timeUntilMidnight }}</div>
+              </div>
+            </div>
+          </div>
+
           <!-- Canvas Area -->
-          <template v-else-if="board">
+          <template v-else-if="board && hasUnclearedPuzzles">
             <!-- Floating Stage Selector -->
             <div class="puzzle-selector-floating-container" v-if="currentActiveStage">
               <div class="active-stage-badge" @click="isStageListOpen = !isStageListOpen">
@@ -543,6 +556,15 @@
                 </button>
               </div>
             </div>
+            <!-- Footer with Privacy Policy and Terms of Service -->
+            <footer class="home-footer">
+              <div class="footer-links">
+                <a href="/privacy.html" target="_blank" rel="noopener noreferrer">Privacy Policy</a>
+                <span class="footer-divider">|</span>
+                <a href="/terms.html" target="_blank" rel="noopener noreferrer">Terms of Service</a>
+              </div>
+              <p class="footer-copyright">&copy; 2026 rogic.io. All rights reserved.</p>
+            </footer>
           </div>
         </template>
 
@@ -749,7 +771,7 @@ import { ref, onMounted, onUnmounted, computed, watch } from 'vue';
 import NonogramCanvas from './components/NonogramCanvas.vue';
 import { PuzzleBoard } from './engine/puzzleBoard';
 import { rotateGrid } from './engine/gridRotator';
-import { fetchStages, fetchStageById, fetchAiStages, startStage, likeStage, dislikeStage } from './api/stageApi';
+import { fetchStages, fetchStageById, fetchAiStages, startStage, likeStage, dislikeStage, fetchNextReleaseDelaySeconds } from './api/stageApi';
 import type { StageSummary } from './api/stageApi';
 import { fetchRanking, clearStage, fetchMeFromServer, fetchUserHistory, syncGuestHistory } from './api/userApi';
 import type { User, HistoryResponse } from './api/userApi';
@@ -848,6 +870,49 @@ const allUnclearedStages = computed(() => {
   const combined = Array.from(stageMap.values());
   return combined.filter(s => !clearedStageIds.value.has(s.id));
 });
+
+const hasUnclearedPuzzles = computed(() => {
+  if (allStagesSummary.value.length === 0) return true;
+  const hasRegular = allStagesSummary.value.some(s => !clearedStageIds.value.has(s.id));
+  const hasAi = (aiStages.value || []).some(s => !clearedStageIds.value.has(s.id));
+  return hasRegular || hasAi;
+});
+
+const delaySeconds = ref(0);
+const timeUntilMidnight = ref('');
+let dailyPuzzleTimerId: any = null;
+let syncTimerId: any = null;
+
+async function syncDailyPuzzleCountdown() {
+  try {
+    const delay = await fetchNextReleaseDelaySeconds();
+    delaySeconds.value = delay;
+    updateDailyPuzzleTimeText();
+  } catch (error) {
+    console.error('Failed to sync next puzzle delay with server:', error);
+  }
+}
+
+function updateDailyPuzzleTimeText() {
+  if (delaySeconds.value <= 0) {
+    timeUntilMidnight.value = '00:00:00';
+    return;
+  }
+  
+  const hours = Math.floor(delaySeconds.value / 3600);
+  const minutes = Math.floor((delaySeconds.value % 3600) / 60);
+  const seconds = delaySeconds.value % 60;
+  
+  const pad = (num: number) => String(num).padStart(2, '0');
+  timeUntilMidnight.value = `${pad(hours)}:${pad(minutes)}:${pad(seconds)}`;
+}
+
+function tickDailyPuzzleCountdown() {
+  if (delaySeconds.value > 0) {
+    delaySeconds.value--;
+    updateDailyPuzzleTimeText();
+  }
+}
 
 const selectedPlaySizeFilter = ref<string>('5');
 const isSizeListOpen = ref<boolean>(false);
@@ -2029,10 +2094,19 @@ onMounted(async () => {
   document.addEventListener('touchstart', preventPinchZoom, { passive: false });
   if (!isTestEnv) {
     document.addEventListener('click', handleGlobalClick);
+    syncDailyPuzzleCountdown();
+    dailyPuzzleTimerId = setInterval(tickDailyPuzzleCountdown, 1000);
+    syncTimerId = setInterval(syncDailyPuzzleCountdown, 30000);
   }
 });
 
 onUnmounted(() => {
+  if (dailyPuzzleTimerId) {
+    clearInterval(dailyPuzzleTimerId);
+  }
+  if (syncTimerId) {
+    clearInterval(syncTimerId);
+  }
   resetCountdown();
   window.removeEventListener('resize', handleConfettiResize);
   document.removeEventListener('touchstart', preventPinchZoom);
@@ -3405,6 +3479,45 @@ body {
   border-radius: 4px;
 }
 
+.home-footer {
+  margin-top: auto;
+  padding: 2.5rem 0 1rem 0;
+  text-align: center;
+  border-top: 1px solid rgba(255, 255, 255, 0.05);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.footer-links {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.footer-links a {
+  font-size: 0.8rem;
+  color: #64748b;
+  text-decoration: none;
+  transition: color 0.2s ease;
+}
+
+.footer-links a:hover {
+  color: #38bdf8;
+}
+
+.footer-divider {
+  font-size: 0.75rem;
+  color: #334155;
+}
+
+.footer-copyright {
+  font-size: 0.75rem;
+  color: #475569;
+  margin: 0;
+}
+
 .glass-card {
   background: rgba(30, 41, 59, 0.45);
   backdrop-filter: blur(12px);
@@ -4004,6 +4117,59 @@ body {
     opacity: 1;
     transform: scale(1) translateY(0);
   }
+}
+
+.all-cleared-state-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 480px;
+  width: 100%;
+  animation: modalFadeIn 0.4s ease-out;
+}
+
+.all-cleared-title {
+  font-size: 2rem;
+  font-weight: 700;
+  color: #f8fafc;
+  margin-top: 1.5rem;
+  margin-bottom: 0.75rem;
+}
+
+.all-cleared-subtitle {
+  font-size: 1.05rem;
+  color: #94a3b8;
+  max-width: 440px;
+  margin: 0 auto 2rem auto;
+  line-height: 1.6;
+}
+
+.countdown-box {
+  margin-top: 1.5rem;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  padding: 1.25rem 2.5rem;
+  border-radius: 16px;
+  display: inline-block;
+  backdrop-filter: blur(8px);
+}
+
+.countdown-label {
+  font-size: 0.75rem;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.15rem;
+  margin-bottom: 0.5rem;
+  font-weight: 600;
+}
+
+.countdown-time {
+  font-family: 'Outfit', 'Inter', monospace;
+  font-size: 2.5rem;
+  font-weight: 700;
+  color: #38bdf8;
+  text-shadow: 0 0 20px rgba(56, 189, 248, 0.35);
+  letter-spacing: 0.05rem;
 }
 </style>
 

@@ -44,6 +44,22 @@ public class StageController {
         return ResponseEntity.ok(stageService.getStagesPaged(pageVal, sizeVal, width));
     }
 
+    @org.springframework.beans.factory.annotation.Value("${app.daily-puzzle.cron}")
+    private String dailyPuzzleCron;
+
+    @GetMapping("/next-release-delay")
+    public ResponseEntity<Long> getNextReleaseDelaySeconds() {
+        org.springframework.scheduling.support.CronExpression cron = 
+            org.springframework.scheduling.support.CronExpression.parse(dailyPuzzleCron);
+        java.time.ZonedDateTime now = java.time.ZonedDateTime.now();
+        java.time.ZonedDateTime nextExecution = cron.next(now);
+        if (nextExecution == null) {
+            return ResponseEntity.ok(0L);
+        }
+        long delaySeconds = java.time.Duration.between(now, nextExecution).getSeconds();
+        return ResponseEntity.ok(delaySeconds);
+    }
+
     @GetMapping("/{id}")
     public ResponseEntity<Stage> getStageById(@PathVariable Long id) {
         return stageService.getStageById(id)
