@@ -1163,7 +1163,7 @@ async function loadStagesList(page: number = 0) {
     }
     stages.value = list;
     if (!isTestEnv) {
-      console.log('DEBUG: clearedStageIds:', Array.from(clearedStageIds.value), 'stages:', list.map(s => ({ id: s.id, name: s.name, isCleared: clearedStageIds.value.has(s.id), idType: typeof s.id })));
+      console.log('DEBUG: clearedStageIds:', Array.from(clearedStageIds.value), 'stages:', list.map(s => ({ id: s.id, name: s.name, isCleared: clearedStageIds.value.has(s.id), idType: typeof s.id })), 'caller stack:', new Error().stack);
     }
 
     if (list.length > 0) {
