@@ -2068,7 +2068,12 @@ onMounted(async () => {
     link.id = 'bootstrap-cdn';
     document.head.appendChild(link);
   } else if (!isTestEnv) {
-    currentTab.value = getTabFromHash();
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.has('code')) {
+      currentTab.value = 'play';
+    } else {
+      currentTab.value = getTabFromHash();
+    }
   }
 
   updateHashFromTab(currentTab.value);
