@@ -48,17 +48,14 @@ export async function clearStage(userId: number, difficulty: string, stageId?: n
 import type { PageResponse } from './stageApi';
 
 export async function fetchUserHistory(userId: number, page?: number, size?: number): Promise<HistoryResponse[] | PageResponse<HistoryResponse>> {
-  const params: any = {};
+  const params: any = { _t: Date.now() };
   if (page !== undefined) params.page = page;
   if (size !== undefined) params.size = size;
   
-  const hasParams = Object.keys(params).length > 0;
   const config: any = {
-    headers: getAuthHeader()
+    headers: getAuthHeader(),
+    params
   };
-  if (hasParams) {
-    config.params = params;
-  }
   
   const response = await axios.get<HistoryResponse[] | PageResponse<HistoryResponse>>(`${API_BASE_URL}/${userId}/history`, config);
   return response.data;
