@@ -163,6 +163,37 @@ describe('App.vue Leaderboard Integration TDD', () => {
     expect(clearStageSpy).toHaveBeenCalledWith(1, 'EASY', 7, expect.any(Number));
   });
 
+  it('should not call clearStage but save to localStorage and update guest history when solved in Guest Mode', async () => {
+    localStorage.clear(); // Ensure Guest Mode
+    const mockStages = [{ id: 7, name: 'Mini Stage', width: 1, height: 1 }];
+    const mockStageDetails = { id: 7, name: 'Mini Stage', width: 1, height: 1, solutionGrid: [[1]] };
+    const mockRankings = [{ id: 3, username: 'Player3', xp: 1000, level: 5 }];
+
+    vi.spyOn(stageApi, 'fetchStages').mockResolvedValue(mockStages);
+    vi.spyOn(stageApi, 'fetchStageById').mockResolvedValue(mockStageDetails);
+    vi.spyOn(userApi, 'fetchRanking').mockResolvedValue(mockRankings);
+    const clearStageSpy = vi.spyOn(userApi, 'clearStage');
+
+    const wrapper = mount(App);
+    await new Promise((resolve) => setTimeout(resolve, 50));
+
+    // Force solve the board
+    (wrapper.vm as any).board.toggleFill(0, 0);
+    await (wrapper.vm as any).handleCellClick();
+
+    // In Guest Mode, clearStage API should NOT be called
+    expect(clearStageSpy).not.toHaveBeenCalled();
+
+    // But localStorage should save the cleared stage and the history item
+    const guestCleared = JSON.parse(localStorage.getItem('guest_cleared_stages') || '[]');
+    expect(guestCleared).toContain(7);
+
+    const guestHistories = JSON.parse(localStorage.getItem('guest_histories') || '[]');
+    expect(guestHistories.length).toBe(1);
+    expect(guestHistories[0].stageId).toBe(7);
+    expect(guestHistories[0].stageName).toBe('Mini Stage');
+  });
+
   it('should open history review modal when a history item is clicked, and close it when close button is clicked', async () => {
     const mockStages = [{ id: 1, name: 'Heart Shape', width: 5, height: 5 }];
     const mockStageDetails = { id: 1, name: 'Heart Shape', width: 5, height: 5, solutionGrid: [[0, 1, 0], [1, 1, 1], [0, 1, 0]] };

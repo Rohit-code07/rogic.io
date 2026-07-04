@@ -1289,8 +1289,35 @@ async function handleCellClick() {
           await loadRankingsList();
           await loadUserHistory();
         } else {
+          const stageId = selectedStageId.value !== null ? selectedStageId.value : (selectedAiStageId.value !== null ? selectedAiStageId.value : undefined);
+          if (stageId !== undefined) {
+            clearedStageIds.value.add(stageId);
+            const savedCleared = localStorage.getItem('guest_cleared_stages');
+            const clearedIds = savedCleared ? JSON.parse(savedCleared) : [];
+            if (!clearedIds.includes(stageId)) {
+              clearedIds.push(stageId);
+              localStorage.setItem('guest_cleared_stages', JSON.stringify(clearedIds));
+            }
+
+            const savedHistories = localStorage.getItem('guest_histories');
+            const localHistories = savedHistories ? JSON.parse(savedHistories) : [];
+            const currentStage = currentActiveStage.value;
+            const stageName = currentStage ? currentStage.name : `Puzzle #${stageId}`;
+            const newHistory: HistoryResponse = {
+              id: Date.now(),
+              userId: 0,
+              stageId: stageId,
+              stageName: stageName,
+              clearedAt: new Date().toISOString(),
+              xpEarned: difficulty === 'EASY' ? 100 : (difficulty === 'HARD' ? 250 : 150),
+              elapsedTime: elapsedTime
+            };
+            localHistories.unshift(newHistory);
+            localStorage.setItem('guest_histories', JSON.stringify(localHistories));
+          }
           allStagesSummary.value = [];
           await loadRankingsList();
+          await loadUserHistory();
         }
       } catch (error) {
         console.error('Failed to submit stage clear:', error);
@@ -1303,10 +1330,18 @@ async function handleCellClick() {
 
 async function loadUserHistory(page: number = 0) {
   if (!currentUser.value) {
-    histories.value = [];
-    historyTotalPages.value = 1;
-    historyCurrentPage.value = 0;
-    clearedStageIds.value = new Set();
+    const savedCleared = localStorage.getItem('guest_cleared_stages');
+    const clearedIds = savedCleared ? JSON.parse(savedCleared) : [];
+    clearedStageIds.value = new Set(clearedIds);
+
+    const savedHistories = localStorage.getItem('guest_histories');
+    const localHistories = savedHistories ? JSON.parse(savedHistories) : [];
+    const pageSize = 10;
+    const startIdx = page * pageSize;
+    const endIdx = startIdx + pageSize;
+    histories.value = localHistories.slice(startIdx, endIdx);
+    historyTotalPages.value = Math.max(1, Math.ceil(localHistories.length / pageSize));
+    historyCurrentPage.value = page;
     return;
   }
   try {

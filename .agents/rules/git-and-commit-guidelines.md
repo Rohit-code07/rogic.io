@@ -27,3 +27,5 @@
 - **풀 리퀘스트(PR) 생성 및 제출**:
   - 피처 브랜치에 코드를 푸시한 후, 에이전트는 해당 브랜치에서 `main` 브랜치로의 PR 초안(Draft) 또는 PR을 생성하거나, 사용자가 GitHub에서 바로 PR을 열 수 있도록 작성 명세(Title, Description, Checklist)를 제공해야 합니다.
   - 생성된 PR은 사용자의 승인(Approve) 및 머지(Merge)를 거쳐 메인 브랜치와 Staging 환경에 최종 반영됩니다.
+- **GitHub CLI를 통한 이슈/PR 등록 자동화**:
+  - 사용자 환경에 GitHub CLI(`gh` CLI)가 설치되어 있고 인증 자격 증명이 활성화되어 있는 경우, 에이전트는 이슈 생성 요구 시 로컬 파일 작성에 그치지 않고 `gh issue create` 명령을 통해 실제 GitHub 원격 리포지토리에 이슈를 자동으로 등록해야 합니다. PR의 경우에도 동일하게 `gh pr create` 명령을 적극적으로 활용하여 초안(Draft) 또는 일반 PR을 자동 생성해야 합니다.
