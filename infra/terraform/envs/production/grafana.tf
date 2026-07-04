@@ -18,7 +18,7 @@ resource "grafana_synthetic_monitoring_check" "nemologic_http" {
   job       = "nemologic-api-health"
   target    = "https://rogic.io/actuator/health"
   enabled   = true
-  frequency = 60000
+  frequency = 300000
   timeout   = 5000
 
   # Enable checks in Tokyo, Singapore, and Sydney Probes
