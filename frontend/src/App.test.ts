@@ -611,6 +611,43 @@ describe('App.vue Leaderboard Integration TDD', () => {
     expect((wrapper.vm as any).currentTab).toBe('play');
     expect(wrapper.find('.home-dashboard').exists()).toBe(false);
   });
+
+  it('should migrate guest history when user logs in', async () => {
+    localStorage.clear();
+    // Setup stored token and guest history
+    localStorage.setItem('nemologic_id_token', 'mockHeader.eyzleHAiOjk5OTk5OTk5OTl9.mockSignature');
+    localStorage.setItem('guest_cleared_stages', JSON.stringify([5]));
+    localStorage.setItem('guest_histories', JSON.stringify([
+      { id: 111, userId: 0, stageId: 5, stageName: 'Easy Stage', clearedAt: '2026-06-08T22:40:40', xpEarned: 100, elapsedTime: 45 }
+    ]));
+
+    const mockStages = [{ id: 1, name: 'Heart Shape', width: 5, height: 5 }];
+    const mockStageDetails = { id: 1, name: 'Heart Shape', width: 5, height: 5, solutionGrid: [[0, 1, 0], [1, 1, 1], [0, 1, 0]] };
+    const mockRankings = [{ id: 3, username: 'Player3', xp: 1000, level: 5 }];
+    const mockServerUser = { id: 42, username: 'GoogleUser', xp: 100, level: 2, email: 'user@example.com' };
+    const mockUpdatedUser = { id: 42, username: 'GoogleUser', xp: 150, level: 2, email: 'user@example.com' };
+
+    vi.spyOn(stageApi, 'fetchStages').mockResolvedValue(mockStages);
+    vi.spyOn(stageApi, 'fetchStageById').mockResolvedValue(mockStageDetails);
+    vi.spyOn(userApi, 'fetchRanking').mockResolvedValue(mockRankings);
+    vi.spyOn(userApi, 'fetchMeFromServer').mockResolvedValue(mockServerUser);
+    const syncSpy = vi.spyOn(userApi, 'syncGuestHistory').mockResolvedValue(mockUpdatedUser);
+
+    const wrapper = mount(App);
+    await new Promise((resolve) => setTimeout(resolve, 50));
+
+    // Verify syncGuestHistory was called
+    expect(syncSpy).toHaveBeenCalledWith(42, [
+      { stageId: 5, elapsedTime: 45 }
+    ]);
+
+    // Verify localStorage has been cleared
+    expect(localStorage.getItem('guest_cleared_stages')).toBeNull();
+    expect(localStorage.getItem('guest_histories')).toBeNull();
+
+    // Verify current user XP was updated
+    expect((wrapper.vm as any).currentUser.xp).toBe(150);
+  });
 });
 
 

@@ -751,7 +751,7 @@ import { PuzzleBoard } from './engine/puzzleBoard';
 import { rotateGrid } from './engine/gridRotator';
 import { fetchStages, fetchStageById, fetchAiStages, startStage, likeStage, dislikeStage } from './api/stageApi';
 import type { StageSummary } from './api/stageApi';
-import { fetchRanking, clearStage, fetchMeFromServer, fetchUserHistory } from './api/userApi';
+import { fetchRanking, clearStage, fetchMeFromServer, fetchUserHistory, syncGuestHistory } from './api/userApi';
 import type { User, HistoryResponse } from './api/userApi';
 import { setUserSession, clearUserSession } from './api/auth';
 import type { UserSession } from './api/auth';
@@ -1920,6 +1920,9 @@ async function initializeUserSession() {
       };
       setUserSession(session);
       currentUser.value = session;
+      
+      // Perform Guest History Migration on successful session initialization
+      await migrateGuestHistory(user.id);
     } catch (error) {
       console.error('Failed to validate user token with server:', error);
       clearUserSession();
@@ -1929,6 +1932,40 @@ async function initializeUserSession() {
     // Non-login Guest Mode
     clearUserSession();
     currentUser.value = null;
+  }
+}
+
+async function migrateGuestHistory(userId: number) {
+  try {
+    const savedCleared = localStorage.getItem('guest_cleared_stages');
+    const savedHistories = localStorage.getItem('guest_histories');
+    if (!savedCleared && !savedHistories) return;
+
+    const localHistories: HistoryResponse[] = savedHistories ? JSON.parse(savedHistories) : [];
+
+    if (localHistories.length > 0) {
+      const guestClears = localHistories.map(h => ({
+        stageId: h.stageId,
+        elapsedTime: h.elapsedTime
+      }));
+
+      // Call bulk sync API
+      const updatedUser = await syncGuestHistory(userId, guestClears);
+      
+      // Update local reactive user session XP and level
+      if (currentUser.value) {
+        currentUser.value.xp = updatedUser.xp;
+        currentUser.value.level = updatedUser.level;
+        // Resave updated session
+        setUserSession(currentUser.value);
+      }
+    }
+
+    // Clear guest storage on success
+    localStorage.removeItem('guest_cleared_stages');
+    localStorage.removeItem('guest_histories');
+  } catch (error) {
+    console.error('Failed to migrate guest history to server:', error);
   }
 }
 
