@@ -1382,6 +1382,9 @@ async function loadUserHistory(page: number = 0) {
     const fullRes = await fetchUserHistory(userId);
     const fullList = fullRes && 'content' in fullRes ? fullRes.content : fullRes;
     clearedStageIds.value = new Set((fullList || []).map((h: any) => h.stageId));
+    if (!isTestEnv) {
+      console.log('DEBUG: loadUserHistory userId:', userId, 'fullRes:', fullRes, 'clearedStageIds:', Array.from(clearedStageIds.value));
+    }
   } catch (error) {
     console.error('Failed to load user history:', error);
   }
