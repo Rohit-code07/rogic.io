@@ -573,6 +573,11 @@
   - **게스트 히스토리 페이지네이션 및 로딩 연동**: `loadUserHistory` 함수를 개편하여 게스트 모드일 때 localStorage에 저장된 히스토리 목록을 페이징 단위(페이지당 10개)로 슬라이싱하여 `histories.value` 및 `historyTotalPages` 등에 바인딩하고 `clearedStageIds`를 local Set으로 동적 복원하도록 연동함.
   - **TDD 단위 테스트 보강 및 검증**: `frontend/src/App.test.ts`에 게스트 모드 해결 상태 로컬 보존 및 API 바이패스 검증용 단위 테스트 케이스(`should not call clearStage but save to localStorage...`)를 추가 수립하고 전체 69개 테스트를 100% 그린 상태로 성공 통과함.
 
+### 운영 DB 유실 장애 복구 포스트모템 및 재해복구(DR) 사례 README.md 수록 (Step 114) - 완료
+- **해결 내역**:
+  - **트러블슈팅 사례 수록**: [README.md](../README.md)의 6절 `Troubleshooting & Incidents` 하위에 `6.4. Production Database Initialization` 세션을 신규 기술함.
+  - **재해 극복 및 예방책 명세**: 인스턴스 재생성 시의 EBS 볼륨 격리 및 absolute path 바인드 마운트 마이그레이션 정책, OIDC/SSM 기반 원클릭 재해 복구(DR) 파이프라인 수립 및 37초대 실전 Uptime 훈련 성과(DR Drill)를 개괄식 레이아웃으로 상세 명세함.
+
 ### 이슈 및 PR 템플릿 글로벌 영문화 규격 개편 (Step 114) - 완료
 - **해결 내역**:
   - **이슈 템플릿 영문화**: 버그 리포트([bug_report.md](../.github/ISSUE_TEMPLATE/bug_report.md)) 및 기능 요청([feature_request.md](../.github/ISSUE_TEMPLATE/feature_request.md)) 템플릿 문서를 오픈소스 표준 영문 구성(Description, Steps to Reproduce, Expected/Actual Behavior, Solution 등)으로 개편함.
@@ -582,7 +587,11 @@
 - **해결 내역**:
   - **직렬화 장애 분석**: 프로덕션 서버에서 유저 플레이 히스토리 조회 API(`/api/users/{id}/history`) 호출 시 `HttpMessageConversionException` (500 Internal Server Error)이 발생하는 원인을 추적함. 원인은 GraalVM Native Image 환경에서 Jackson 직렬화 시 사용되는 DTO 클래스인 `HistoryResponse`가 AOT 빌드 단계에서 리플렉션(Reflection) 대상에서 제외되었기 때문임.
   - **AOT 힌트(Runtime Hints) 추가**: [NemologicRuntimeHints.java](../backend/src/main/java/com/devdoyen/nemologic/config/NemologicRuntimeHints.java) 내에 `HistoryResponse` 클래스를 리플렉션 타입(`INVOKE_PUBLIC_CONSTRUCTORS`, `INVOKE_PUBLIC_METHODS`, `DECLARED_FIELDS`)으로 등록하여 Jackson 라이브러리가 Native Image 환경에서도 정상적으로 직렬화를 수행할 수 있도록 조치함.
-  - **TDD 단위 테스트 수립**: [NemologicRuntimeHintsTest.java](../backend/src/test/java/com/devdoyen/nemologic/config/NemologicRuntimeHintsTest.java)를 신규 수립하여 `NemologicRuntimeHints`가 `HistoryResponse` 클래스에 대한 리플렉션 설정을 올바르게 빌드 및 등록하는지 검증하는 TDD 테스트 케이스를 구축하고 전체 백엔드 테스트를 통과함.
+
+### 구현 계획서(Implementation Plan) 원격 GitHub 이슈 연동 규칙 수립 (Step 115) - 완료
+- **해결 내역**:
+  - **이슈 연동 자동화 개정**: 기획 단계(Planning Mode)에서 수립한 로컬 구현 계획서(`implementation_plan.md`)를 파일로만 보존하는 대신 `gh issue create`를 통해 원격 저장소에 선제 이슈 등록 처리하도록 형상 거버넌스 규칙([git-and-commit-guidelines.md](../.agents/rules/git-and-commit-guidelines.md) 및 [AGENTS.md](../.agents/AGENTS.md))을 개정함.
+
 
 ---
 
