@@ -578,6 +578,10 @@
   - **트러블슈팅 사례 수록**: [README.md](../README.md)의 6절 `Troubleshooting & Incidents` 하위에 `6.4. Production Database Initialization` 세션을 신규 기술함.
   - **재해 극복 및 예방책 명세**: 인스턴스 재생성 시의 EBS 볼륨 격리 및 absolute path 바인드 마운트 마이그레이션 정책, OIDC/SSM 기반 원클릭 재해 복구(DR) 파이프라인 수립 및 37초대 실전 Uptime 훈련 성과(DR Drill)를 개괄식 레이아웃으로 상세 명세함.
 
+### 구현 계획서(Implementation Plan) 원격 GitHub 이슈 연동 규칙 수립 (Step 115) - 완료
+- **해결 내역**:
+  - **이슈 연동 자동화 개정**: 기획 단계(Planning Mode)에서 수립한 로컬 구현 계획서(`implementation_plan.md`)를 파일로만 보존하는 대신 `gh issue create`를 통해 원격 저장소에 선제 이슈 등록 처리하도록 형상 거버넌스 규칙([git-and-commit-guidelines.md](../.agents/rules/git-and-commit-guidelines.md) 및 [AGENTS.md](../.agents/AGENTS.md))을 개정함.
+
 ---
 
 ## 2. 다음 목표 (Next Goals)
