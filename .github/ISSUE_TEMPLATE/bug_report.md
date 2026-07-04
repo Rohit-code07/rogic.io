@@ -6,23 +6,29 @@ labels: bug
 assignees: ''
 ---
 
-**버그 설명 (Description)**
-발생한 버그에 대한 간결하고 명확한 설명을 작성해주세요.
+## Description
+A clear and concise description of what the bug is.
 
-**재현 방법 (Steps to Reproduce)**
-버그를 재현하기 위한 단계를 명시해주세요:
-1. '...' 페이지로 이동합니다.
-2. '...' 버튼을 클릭합니다.
-3. '...' 에러가 발생합니다.
+## Steps to Reproduce
+Steps to reproduce the behavior:
+1. Go to '...'
+2. Click on '....'
+3. Scroll down to '....'
+4. See error
 
-**실제 동작 및 기대 동작 (Actual vs Expected Behavior)**
-- **실제 동작**: 실제 발생한 동작/에러 메시지 등을 작성해주세요.
-- **기대 동작**: 정상적으로 작동했을 때 기대하는 동작을 작성해주세요.
+## Expected Behavior
+A clear and concise description of what you expected to happen.
 
-**스크린샷 또는 로그 (Screenshots or Logs)**
-가능하다면 스크린샷이나 관련 로그 스니펫을 첨부해주세요.
+## Actual Behavior
+A clear and concise description of what actually happened, including error logs or stack traces if available.
 
-**개발 환경 정보 (Environment Info)**
-- OS: (Windows / macOS / Linux)
-- Browser / Client: (Chrome / Safari / API Client)
-- Version:
+## Screenshots / Screen Recordings
+If applicable, add screenshots or recordings to help explain your problem.
+
+## Environment Information
+- **OS**: [e.g. Windows 11, macOS Sequoia]
+- **Browser / Client**: [e.g. Chrome 125, Postman]
+- **Version**: [e.g. v1.2.0]
+
+## Additional Context
+Add any other context about the problem here.

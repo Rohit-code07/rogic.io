@@ -573,6 +573,11 @@
   - **게스트 히스토리 페이지네이션 및 로딩 연동**: `loadUserHistory` 함수를 개편하여 게스트 모드일 때 localStorage에 저장된 히스토리 목록을 페이징 단위(페이지당 10개)로 슬라이싱하여 `histories.value` 및 `historyTotalPages` 등에 바인딩하고 `clearedStageIds`를 local Set으로 동적 복원하도록 연동함.
   - **TDD 단위 테스트 보강 및 검증**: `frontend/src/App.test.ts`에 게스트 모드 해결 상태 로컬 보존 및 API 바이패스 검증용 단위 테스트 케이스(`should not call clearStage but save to localStorage...`)를 추가 수립하고 전체 69개 테스트를 100% 그린 상태로 성공 통과함.
 
+### 이슈 및 PR 템플릿 글로벌 영문화 규격 개편 (Step 114) - 완료
+- **해결 내역**:
+  - **이슈 템플릿 영문화**: 버그 리포트([bug_report.md](../.github/ISSUE_TEMPLATE/bug_report.md)) 및 기능 요청([feature_request.md](../.github/ISSUE_TEMPLATE/feature_request.md)) 템플릿 문서를 오픈소스 표준 영문 구성(Description, Steps to Reproduce, Expected/Actual Behavior, Solution 등)으로 개편함.
+  - **PR 템플릿 영문화**: 풀 리퀘스트([PULL_REQUEST_TEMPLATE.md](../.github/PULL_REQUEST_TEMPLATE.md)) 문서를 글로벌 표준 레이아웃(Description, Type of Change, How Has This Been Tested, Checklist)으로 개편 완료함.
+
 ---
 
 ## 2. 다음 목표 (Next Goals)
