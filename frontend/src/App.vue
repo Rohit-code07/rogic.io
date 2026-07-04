@@ -586,7 +586,7 @@
                 <!-- 3. Bottom Row: Date, Stage name, Time badge (Perfect width mapping) -->
                 <div style="display: flex; align-items: center; justify-content: space-between; width: 100%; border-top: 1px solid rgba(255, 255, 255, 0.05); padding-top: 0.85rem; margin-top: 0.25rem; margin-bottom: -0.65rem; text-align: left;">
                   <div style="display: flex; align-items: center; gap: 0.5rem;">
-                    <span style="font-size: 0.75rem; font-weight: 500; color: #64748b;">{{ selectedHistory?.clearedAt.split('T')[0] }}</span>
+                    <span style="font-size: 0.75rem; font-weight: 500; color: #64748b;">{{ formatClearedAt(selectedHistory?.clearedAt) }}</span>
                     <span style="font-weight: 700; color: #f8fafc; font-size: 1.05rem;">{{ selectedHistory?.stageName }}</span>
                   </div>
                   <span style="font-size: 0.7rem; font-weight: 600; padding: 0.18rem 0.45rem; background: rgba(56, 189, 248, 0.1); border: 1px solid rgba(56, 189, 248, 0.15); border-radius: 5px; color: #38bdf8;">{{ selectedHistory?.elapsedTime }}s</span>
@@ -661,7 +661,7 @@
                         onmouseout="this.style.background='rgba(255, 255, 255, 0.02)'; this.style.borderColor='rgba(255, 255, 255, 0.05)';"
                       >
                         <div style="display: flex; align-items: center; gap: 0.5rem;">
-                          <span class="cleared-at-text" style="font-size: 0.75rem; font-weight: 500; color: #64748b;">{{ item.clearedAt.split('T')[0] }}</span>
+                          <span class="cleared-at-text" style="font-size: 0.75rem; font-weight: 500; color: #64748b;">{{ formatClearedAt(item.clearedAt) }}</span>
                           <span class="stage-name" style="font-weight: 600; color: #f8fafc; font-size: 0.9rem;">{{ item.stageName }}</span>
                         </div>
                         <span class="elapsed-time-badge" style="font-size: 0.7rem; font-weight: 600; padding: 0.18rem 0.45rem; background: rgba(56, 189, 248, 0.1); border: 1px solid rgba(56, 189, 248, 0.15); border-radius: 5px; color: #38bdf8;">{{ item.elapsedTime }}s</span>
@@ -1107,6 +1107,20 @@ const isModalOpen = ref(false);
 const selectedHistory = ref<any>(null);
 const modalBoard = ref<PuzzleBoard | null>(null);
 
+
+function formatClearedAt(clearedAt: any): string {
+  if (!clearedAt) return '';
+  if (typeof clearedAt === 'string') {
+    return clearedAt.split('T')[0];
+  }
+  if (Array.isArray(clearedAt)) {
+    const yyyy = clearedAt[0];
+    const mm = String(clearedAt[1]).padStart(2, '0');
+    const dd = String(clearedAt[2]).padStart(2, '0');
+    return `${yyyy}-${mm}-${dd}`;
+  }
+  return String(clearedAt);
+}
 
 function getErrorMessage(error: any, fallbackMessage: string): string {
   if (error && error.response) {
