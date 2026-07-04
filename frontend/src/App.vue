@@ -1162,6 +1162,9 @@ async function loadStagesList(page: number = 0) {
       playStagesCurrentPage.value = 0;
     }
     stages.value = list;
+    if (!isTestEnv) {
+      console.log('DEBUG: clearedStageIds:', Array.from(clearedStageIds.value), 'stages:', list.map(s => ({ id: s.id, name: s.name, isCleared: clearedStageIds.value.has(s.id), idType: typeof s.id })));
+    }
 
     if (list.length > 0) {
       if (selectedStageId.value && list.some(s => s.id === selectedStageId.value)) {
