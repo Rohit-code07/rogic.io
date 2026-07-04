@@ -1492,7 +1492,7 @@ const lastCreatorCol = ref(-1);
 
 async function loadAdminStagesList(page: number = 0) {
   try {
-    const res = await fetchAdminStages(page, 10);
+    const res = await fetchAdminStages(page, 100);
     let list: AdminStageInfo[];
     if (res && 'content' in res) {
       list = res.content;
