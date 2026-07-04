@@ -4208,6 +4208,7 @@ body {
   color: #38bdf8;
   text-shadow: 0 0 24px rgba(56, 189, 248, 0.4);
   letter-spacing: 0.05rem;
+  font-variant-numeric: tabular-nums;
 }
 
 @keyframes subtle-pulse {
