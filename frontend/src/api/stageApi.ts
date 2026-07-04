@@ -54,6 +54,11 @@ export async function fetchAiStages(): Promise<StageSummary[]> {
   return response.data;
 }
 
+export async function fetchNextReleaseDelaySeconds(): Promise<number> {
+  const response = await axios.get<number>(`${API_BASE_URL}/next-release-delay`);
+  return response.data;
+}
+
 export async function startStage(id: number): Promise<void> {
   await axios.post(`${API_BASE_URL}/${id}/start`);
 }

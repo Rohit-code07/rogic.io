@@ -762,7 +762,7 @@ import { ref, onMounted, onUnmounted, computed, watch } from 'vue';
 import NonogramCanvas from './components/NonogramCanvas.vue';
 import { PuzzleBoard } from './engine/puzzleBoard';
 import { rotateGrid } from './engine/gridRotator';
-import { fetchStages, fetchStageById, fetchAiStages, startStage, likeStage, dislikeStage } from './api/stageApi';
+import { fetchStages, fetchStageById, fetchAiStages, startStage, likeStage, dislikeStage, fetchNextReleaseDelaySeconds } from './api/stageApi';
 import type { StageSummary } from './api/stageApi';
 import { fetchRanking, clearStage, fetchMeFromServer, fetchUserHistory, syncGuestHistory } from './api/userApi';
 import type { User, HistoryResponse } from './api/userApi';
@@ -869,26 +869,40 @@ const hasUnclearedPuzzles = computed(() => {
   return hasRegular || hasAi;
 });
 
+const delaySeconds = ref(0);
 const timeUntilMidnight = ref('');
 let dailyPuzzleTimerId: any = null;
+let syncTimerId: any = null;
 
-function updateDailyPuzzleCountdown() {
-  const now = new Date();
-  const midnight = new Date();
-  midnight.setHours(24, 0, 0, 0);
-  
-  const diffMs = midnight.getTime() - now.getTime();
-  if (diffMs <= 0) {
+async function syncDailyPuzzleCountdown() {
+  try {
+    const delay = await fetchNextReleaseDelaySeconds();
+    delaySeconds.value = delay;
+    updateDailyPuzzleTimeText();
+  } catch (error) {
+    console.error('Failed to sync next puzzle delay with server:', error);
+  }
+}
+
+function updateDailyPuzzleTimeText() {
+  if (delaySeconds.value <= 0) {
     timeUntilMidnight.value = '00:00:00';
     return;
   }
   
-  const hours = Math.floor(diffMs / (1000 * 60 * 60));
-  const minutes = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
-  const seconds = Math.floor((diffMs % (1000 * 60)) / 1000);
+  const hours = Math.floor(delaySeconds.value / 3600);
+  const minutes = Math.floor((delaySeconds.value % 3600) / 60);
+  const seconds = delaySeconds.value % 60;
   
   const pad = (num: number) => String(num).padStart(2, '0');
   timeUntilMidnight.value = `${pad(hours)}:${pad(minutes)}:${pad(seconds)}`;
+}
+
+function tickDailyPuzzleCountdown() {
+  if (delaySeconds.value > 0) {
+    delaySeconds.value--;
+    updateDailyPuzzleTimeText();
+  }
 }
 
 const selectedPlaySizeFilter = ref<string>('5');
@@ -2071,14 +2085,18 @@ onMounted(async () => {
   document.addEventListener('touchstart', preventPinchZoom, { passive: false });
   if (!isTestEnv) {
     document.addEventListener('click', handleGlobalClick);
-    updateDailyPuzzleCountdown();
-    dailyPuzzleTimerId = setInterval(updateDailyPuzzleCountdown, 1000);
+    syncDailyPuzzleCountdown();
+    dailyPuzzleTimerId = setInterval(tickDailyPuzzleCountdown, 1000);
+    syncTimerId = setInterval(syncDailyPuzzleCountdown, 30000);
   }
 });
 
 onUnmounted(() => {
   if (dailyPuzzleTimerId) {
     clearInterval(dailyPuzzleTimerId);
+  }
+  if (syncTimerId) {
+    clearInterval(syncTimerId);
   }
   resetCountdown();
   window.removeEventListener('resize', handleConfettiResize);

@@ -44,6 +44,14 @@ public class StageController {
         return ResponseEntity.ok(stageService.getStagesPaged(pageVal, sizeVal, width));
     }
 
+    @GetMapping("/next-release-delay")
+    public ResponseEntity<Long> getNextReleaseDelaySeconds() {
+        java.time.ZonedDateTime now = java.time.ZonedDateTime.now();
+        java.time.ZonedDateTime nextMidnight = now.toLocalDate().plusDays(1).atStartOfDay(now.getZone());
+        long delaySeconds = java.time.Duration.between(now, nextMidnight).getSeconds();
+        return ResponseEntity.ok(delaySeconds);
+    }
+
     @GetMapping("/{id}")
     public ResponseEntity<Stage> getStageById(@PathVariable Long id) {
         return stageService.getStageById(id)
