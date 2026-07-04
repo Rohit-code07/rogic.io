@@ -825,6 +825,8 @@ const currentActiveStage = computed(() => {
   if (isAiStageActive.value) {
     return (aiStages.value || []).find(s => s.id === selectedAiStageId.value) || null;
   } else {
+    const found = (allStagesSummary.value || []).find(s => s.id === selectedStageId.value);
+    if (found) return found;
     return (stages.value || []).find(s => s.id === selectedStageId.value) || null;
   }
 });
@@ -871,7 +873,8 @@ const availablePlaySizes = computed(() => {
   return Array.from(sizes).sort((a, b) => a - b);
 });
 
-watch(availablePlaySizes, (newSizes) => {
+watch([availablePlaySizes, solved], ([newSizes, isSolved]) => {
+  if (isSolved) return; // Wait until countdown finishes and solved becomes false
   if (newSizes.length > 0) {
     const currentVal = selectedPlaySizeFilter.value;
     if (currentVal === 'All' || !newSizes.includes(parseInt(currentVal))) {
