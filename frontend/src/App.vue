@@ -559,9 +559,9 @@
             <!-- Footer with Privacy Policy and Terms of Service -->
             <footer class="home-footer">
               <div class="footer-links">
-                <a href="/privacy.html" target="_blank" rel="noopener noreferrer">개인정보처리방침 (Privacy Policy)</a>
+                <a href="/privacy.html" target="_blank" rel="noopener noreferrer">Privacy Policy</a>
                 <span class="footer-divider">|</span>
-                <a href="/terms.html" target="_blank" rel="noopener noreferrer">서비스 이용약관 (Terms of Service)</a>
+                <a href="/terms.html" target="_blank" rel="noopener noreferrer">Terms of Service</a>
               </div>
               <p class="footer-copyright">&copy; 2026 rogic.io. All rights reserved.</p>
             </footer>
