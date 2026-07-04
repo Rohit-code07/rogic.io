@@ -661,5 +661,31 @@ AI 데일리 퍼즐 자동 생성 스케줄러 배치 중, 백엔드 역직렬�
 #### Retrospective
 비결정적인 LLM의 추론 출력을 실시간 배치 서비스에 바인딩할 때는, 스키마 가드레일(Schema Guardrails)을 강제 규칙으로 명시하고 토큰 제한을 타이트하게 제어하여 시스템 입력 정합성을 유지해야 함을 규명함
 
+---
+
+## 6.4. Production Database Initialization
+
+#### Symptom
+테라폼 IAM 권한 수정 배포 중 단일 EC2 인스턴스가 재구축(Destroy and Recreate)되면서, 도커 Named Volume에 적재되어 있던 운영계 PostgreSQL 데이터베이스(사용자 전적 및 커스텀 퍼즐)가 영구적으로 유실되는 전면 장애 발생
+
+#### Root Cause
+* **인스턴스 커플링**<br>
+  DB 컨테이너의 영속 스토리지 볼륨이 독립적인 외부 EBS로 분리되지 않고 인스턴스 소멸과 생명주기를 같이하는 Named Volume 구조로 설계되어 인스턴스 파괴 시 물리 데이터 소멸 유발
+* **백업 파이프라인 무음 실패 (Silent Failure)**<br>
+  최소 권한 원칙(Least Privilege)에 따라 AWS S3 백업 IAM 정책에 `s3:ListAllMyBuckets` 권한이 배제되어 백업 스크립트가 Access Denied로 에러 처리됨. 그러나 크론탭 표준 에러 누락 설정(`> /dev/null 2>&1`)으로 인해 수개월 동안 실패 상태가 관제되지 못하고 방치됨
+
+#### Mitigation
+* **EC2 강제 파괴 수명주기 보호 (prevent_destroy)**<br>
+  Staging 및 Production 인프라 테라폼 구성 파일([main.tf](./infra/terraform/envs/production/main.tf))의 EC2 리소스에 `prevent_destroy = true` 선언을 의무화하여 형상 변경 시의 인스턴스 파괴를 방지함
+* **EBS 볼륨 물리 격리 및 바인드 마운트 마이그레이션**<br>
+  독립형 AWS EBS gp3 볼륨(10GB)을 신설 프로비저닝하고, Docker PostgreSQL 볼륨 구조를 호스트 절대 경로 바인드 마운트(`/opt/nemologic/db_data`) 구조로 리팩토링 및 격리하여 인스턴스 전소 시에도 데이터 유실을 완전 방어함
+* **S3 백업 무음 실패 결함 제거**<br>
+  백업 스크립트에서 S3 버킷 목록 조회 의존성을 걷어내고, Ansible 빌드 시점 변수(`backup_bucket_name`)로 직접 주입하여 Access Denied 장애를 근절함. 크론탭 에러 누락 설정을 제거하고 전용 로그 파일에 누적 기록되도록 변경함
+* **원클릭 재해 복구(DR) 파이프라인 구축 및 검증**<br>
+  S3 백업본 스냅샷 복원용 쉘 스크립트([restore_db.sh.j2](./infra/ansible/templates/restore_db.sh.j2))를 배포하고, OIDC 자격 증명 기반 원격 SSM 명령어를 기동하는 복구 파이프라인 워크플로우([db-restore.yml](./.github/workflows/db-restore.yml))를 구축함. Staging 및 Production에서 37~38초대 무결성 복구(RTO) 훈련(DR Drill) 실증을 완수함
+
+#### Retrospective
+인프라 핵심 자산(Database)을 컨테이너 내부에 배치할 때는 반드시 EBS 등 별도 스토리지 수명주기 격리가 선행되어야 하며, 백업 및 복구 파이프라인의 실효성을 담보하기 위해 정기적인 실전 모의 복구 훈련(DR Drill)을 통해 정기적으로 수치(RTO/RPO)를 실측하여 검증해야 완벽한 복구 탄력성(Resiliency)을 얻을 수 있음을 배움
+
 
 
