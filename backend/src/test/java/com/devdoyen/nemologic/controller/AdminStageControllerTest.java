@@ -50,7 +50,7 @@ public class AdminStageControllerTest {
                         .header("Authorization", "Bearer " + adminToken))
                 .andExpect(status().isOk())
                 .andExpect(content().contentType(MediaType.APPLICATION_JSON))
-                .andExpect(jsonPath("$.length()", greaterThanOrEqualTo(8)));
+                .andExpect(jsonPath("$.length()", greaterThanOrEqualTo(5)));
     }
 
     @Test

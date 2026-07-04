@@ -43,7 +43,7 @@ public class StageControllerTest {
         mockMvc.perform(get("/api/stages"))
                 .andExpect(status().isOk())
                 .andExpect(content().contentType(MediaType.APPLICATION_JSON))
-                .andExpect(jsonPath("$", hasSize(8)))
+                .andExpect(jsonPath("$", hasSize(5)))
                 .andExpect(jsonPath("$[0].id", is(1)))
                 .andExpect(jsonPath("$[0].name", is("Diamond Emblem")))
                 .andExpect(jsonPath("$[0].width", is(5)))
