@@ -825,6 +825,8 @@ const currentActiveStage = computed(() => {
   if (isAiStageActive.value) {
     return (aiStages.value || []).find(s => s.id === selectedAiStageId.value) || null;
   } else {
+    const found = (allStagesSummary.value || []).find(s => s.id === selectedStageId.value);
+    if (found) return found;
     return (stages.value || []).find(s => s.id === selectedStageId.value) || null;
   }
 });
