@@ -410,11 +410,10 @@
             <div class="all-cleared-card" style="padding: 2.5rem 3.5rem; max-width: 500px;">
               <div class="trophy-icon" style="font-size: 4rem;">🏆</div>
               <h2 class="all-cleared-title">All Puzzles Solved!</h2>
-              <p class="all-cleared-subtitle">You have successfully cleared every puzzle in the game. Check back later for new stages or view your ranking!</p>
-              <div class="all-cleared-actions">
-                <button class="cta-play-btn" @click="onTabChange('mypage')" style="width: auto; padding: 0.75rem 2.5rem; font-size: 1rem; border-radius: 12px;">
-                  View My Page
-                </button>
+              <p class="all-cleared-subtitle">You have successfully cleared every puzzle in the game. Check back tomorrow for the next batch of daily puzzles!</p>
+              <div class="countdown-box">
+                <div class="countdown-label">Next daily puzzle in</div>
+                <div class="countdown-time">{{ timeUntilMidnight }}</div>
               </div>
             </div>
           </div>
@@ -869,6 +868,28 @@ const hasUnclearedPuzzles = computed(() => {
   const hasAi = (aiStages.value || []).some(s => !clearedStageIds.value.has(s.id));
   return hasRegular || hasAi;
 });
+
+const timeUntilMidnight = ref('');
+let dailyPuzzleTimerId: any = null;
+
+function updateDailyPuzzleCountdown() {
+  const now = new Date();
+  const midnight = new Date();
+  midnight.setHours(24, 0, 0, 0);
+  
+  const diffMs = midnight.getTime() - now.getTime();
+  if (diffMs <= 0) {
+    timeUntilMidnight.value = '00:00:00';
+    return;
+  }
+  
+  const hours = Math.floor(diffMs / (1000 * 60 * 60));
+  const minutes = Math.floor((diffMs % (1000 * 60 * 60)) / (1000 * 60));
+  const seconds = Math.floor((diffMs % (1000 * 60)) / 1000);
+  
+  const pad = (num: number) => String(num).padStart(2, '0');
+  timeUntilMidnight.value = `${pad(hours)}:${pad(minutes)}:${pad(seconds)}`;
+}
 
 const selectedPlaySizeFilter = ref<string>('5');
 const isSizeListOpen = ref<boolean>(false);
@@ -2050,10 +2071,15 @@ onMounted(async () => {
   document.addEventListener('touchstart', preventPinchZoom, { passive: false });
   if (!isTestEnv) {
     document.addEventListener('click', handleGlobalClick);
+    updateDailyPuzzleCountdown();
+    dailyPuzzleTimerId = setInterval(updateDailyPuzzleCountdown, 1000);
   }
 });
 
 onUnmounted(() => {
+  if (dailyPuzzleTimerId) {
+    clearInterval(dailyPuzzleTimerId);
+  }
   resetCountdown();
   window.removeEventListener('resize', handleConfettiResize);
   document.removeEventListener('touchstart', preventPinchZoom);
@@ -4052,10 +4078,32 @@ body {
   line-height: 1.6;
 }
 
-.all-cleared-actions {
-  display: flex;
-  justify-content: center;
-  gap: 1rem;
+.countdown-box {
+  margin-top: 1.5rem;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  padding: 1.25rem 2.5rem;
+  border-radius: 16px;
+  display: inline-block;
+  backdrop-filter: blur(8px);
+}
+
+.countdown-label {
+  font-size: 0.75rem;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.15rem;
+  margin-bottom: 0.5rem;
+  font-weight: 600;
+}
+
+.countdown-time {
+  font-family: 'Outfit', 'Inter', monospace;
+  font-size: 2.5rem;
+  font-weight: 700;
+  color: #38bdf8;
+  text-shadow: 0 0 20px rgba(56, 189, 248, 0.35);
+  letter-spacing: 0.05rem;
 }
 </style>
 
