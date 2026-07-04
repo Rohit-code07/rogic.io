@@ -405,8 +405,22 @@
             </button>
           </div>
 
+          <!-- All Puzzles Cleared State -->
+          <div v-else-if="!hasUnclearedPuzzles" class="all-cleared-state-container">
+            <div class="all-cleared-card" style="padding: 2.5rem 3.5rem; max-width: 500px;">
+              <div class="trophy-icon" style="font-size: 4rem;">🏆</div>
+              <h2 class="all-cleared-title">All Puzzles Solved!</h2>
+              <p class="all-cleared-subtitle">You have successfully cleared every puzzle in the game. Check back later for new stages or view your ranking!</p>
+              <div class="all-cleared-actions">
+                <button class="cta-play-btn" @click="onTabChange('mypage')" style="width: auto; padding: 0.75rem 2.5rem; font-size: 1rem; border-radius: 12px;">
+                  View My Page
+                </button>
+              </div>
+            </div>
+          </div>
+
           <!-- Canvas Area -->
-          <template v-else-if="board">
+          <template v-else-if="board && hasUnclearedPuzzles">
             <!-- Floating Stage Selector -->
             <div class="puzzle-selector-floating-container" v-if="currentActiveStage">
               <div class="active-stage-badge" @click="isStageListOpen = !isStageListOpen">
@@ -847,6 +861,13 @@ const allUnclearedStages = computed(() => {
   (aiStages.value || []).forEach(s => stageMap.set(s.id, s));
   const combined = Array.from(stageMap.values());
   return combined.filter(s => !clearedStageIds.value.has(s.id));
+});
+
+const hasUnclearedPuzzles = computed(() => {
+  if (allStagesSummary.value.length === 0) return true;
+  const hasRegular = allStagesSummary.value.some(s => !clearedStageIds.value.has(s.id));
+  const hasAi = (aiStages.value || []).some(s => !clearedStageIds.value.has(s.id));
+  return hasRegular || hasAi;
 });
 
 const selectedPlaySizeFilter = ref<string>('5');
@@ -4004,6 +4025,37 @@ body {
     opacity: 1;
     transform: scale(1) translateY(0);
   }
+}
+
+.all-cleared-state-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 480px;
+  width: 100%;
+  animation: modalFadeIn 0.4s ease-out;
+}
+
+.all-cleared-title {
+  font-size: 2rem;
+  font-weight: 700;
+  color: #f8fafc;
+  margin-top: 1.5rem;
+  margin-bottom: 0.75rem;
+}
+
+.all-cleared-subtitle {
+  font-size: 1.05rem;
+  color: #94a3b8;
+  max-width: 440px;
+  margin: 0 auto 2rem auto;
+  line-height: 1.6;
+}
+
+.all-cleared-actions {
+  display: flex;
+  justify-content: center;
+  gap: 1rem;
 }
 </style>
 
