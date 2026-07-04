@@ -556,6 +556,15 @@
                 </button>
               </div>
             </div>
+            <!-- Footer with Privacy Policy and Terms of Service -->
+            <footer class="home-footer">
+              <div class="footer-links">
+                <a href="/privacy.html" target="_blank" rel="noopener noreferrer">개인정보처리방침 (Privacy Policy)</a>
+                <span class="footer-divider">|</span>
+                <a href="/terms.html" target="_blank" rel="noopener noreferrer">서비스 이용약관 (Terms of Service)</a>
+              </div>
+              <p class="footer-copyright">&copy; 2026 rogic.io. All rights reserved.</p>
+            </footer>
           </div>
         </template>
 
@@ -3468,6 +3477,45 @@ body {
 .home-dashboard::-webkit-scrollbar-thumb {
   background: #334155;
   border-radius: 4px;
+}
+
+.home-footer {
+  margin-top: auto;
+  padding: 2.5rem 0 1rem 0;
+  text-align: center;
+  border-top: 1px solid rgba(255, 255, 255, 0.05);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.footer-links {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.footer-links a {
+  font-size: 0.8rem;
+  color: #64748b;
+  text-decoration: none;
+  transition: color 0.2s ease;
+}
+
+.footer-links a:hover {
+  color: #38bdf8;
+}
+
+.footer-divider {
+  font-size: 0.75rem;
+  color: #334155;
+}
+
+.footer-copyright {
+  font-size: 0.75rem;
+  color: #475569;
+  margin: 0;
 }
 
 .glass-card {
