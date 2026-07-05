@@ -217,7 +217,7 @@
           DB_PASSWORD={{ lookup('env', 'DB_PASSWORD') }}
           IMAGE_TAG={{ image_tag }}
           COGNITO_JWK_SET_URI={{ lookup('env', 'COGNITO_JWK_SET_URI') }}
-          SOLVE_PROOF_SECRET={{ lookup('env', 'SOLVE_PROOF_SECRET') }}
+          SOLVE_PROOF_SECRET={{ lookup('env', 'SOLVE_PROOF_SECRET') | default('a-very-secret-key-that-is-at-least-256-bits-long-for-hmac-sha-256', true) }}
         dest: /opt/nemologic/.env
         owner: ubuntu
         group: ubuntu
