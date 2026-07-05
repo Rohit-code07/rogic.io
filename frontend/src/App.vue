@@ -850,6 +850,9 @@ let dailyPuzzleTimerId: any = null;
 let syncTimerId: any = null;
 
 async function syncDailyPuzzleCountdown() {
+  if (hasUnclearedPuzzles.value || currentTab.value !== 'play') {
+    return;
+  }
   try {
     const delay = await fetchNextReleaseDelaySeconds();
     delaySeconds.value = delay;
@@ -858,6 +861,12 @@ async function syncDailyPuzzleCountdown() {
     console.error('Failed to sync next puzzle delay with server:', error);
   }
 }
+
+watch([hasUnclearedPuzzles, currentTab], ([hasUncleared, tab]) => {
+  if (!hasUncleared && tab === 'play') {
+    syncDailyPuzzleCountdown();
+  }
+});
 
 function updateDailyPuzzleTimeText() {
   if (delaySeconds.value <= 0) {
@@ -2183,7 +2192,7 @@ onMounted(async () => {
     document.addEventListener('click', handleGlobalClick);
     syncDailyPuzzleCountdown();
     dailyPuzzleTimerId = setInterval(tickDailyPuzzleCountdown, 1000);
-    syncTimerId = setInterval(syncDailyPuzzleCountdown, 30000);
+    syncTimerId = setInterval(syncDailyPuzzleCountdown, 300000);
   }
 });
 
