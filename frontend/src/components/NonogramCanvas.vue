@@ -210,8 +210,12 @@ function drawBoard() {
 
   const { width, height, halfW, halfH } = getDimensions();
   const cellSizeVal = CELL_SIZE.value;
-  canvas.width = width;
-  canvas.height = height;
+  if (canvas.width !== width) {
+    canvas.width = width;
+  }
+  if (canvas.height !== height) {
+    canvas.height = height;
+  }
 
   const ctx = canvas.getContext('2d');
   if (!ctx) return;
