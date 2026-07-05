@@ -443,14 +443,11 @@ function getCoordinatesFromEvent(clientX: number, clientY: number) {
 
 const isHoveringGrid = ref(false);
 let cachedCanvasRect: DOMRect | null = null;
+let lastMouseX = 0;
+let lastMouseY = 0;
+let isMouseInsideFrame = false;
 
-function handleFrameMouseEnter() {
-  if (canvasRef.value) {
-    cachedCanvasRect = canvasRef.value.getBoundingClientRect();
-  }
-}
-
-function handleFrameMouseMove(event: MouseEvent) {
+function updateHoverState(clientX: number, clientY: number) {
   if (props.readOnly) return;
   if (isPanning.value) {
     isHoveringGrid.value = false;
@@ -464,15 +461,32 @@ function handleFrameMouseMove(event: MouseEvent) {
 
   const rect = cachedCanvasRect;
   const currentScale = isTestEnv ? 1.0 : (rect.width / canvasRef.value.width);
-  const clickX = (event.clientX - rect.left) / currentScale;
-  const clickY = (event.clientY - rect.top) / currentScale;
+  const clickX = (clientX - rect.left) / currentScale;
+  const clickY = (clientY - rect.top) / currentScale;
   
   const coords = getGridCoordinates(clickX, clickY, config);
   isHoveringGrid.value = !!coords;
 }
 
+function handleFrameMouseEnter(event: MouseEvent) {
+  isMouseInsideFrame = true;
+  if (canvasRef.value) {
+    cachedCanvasRect = canvasRef.value.getBoundingClientRect();
+  }
+  lastMouseX = event.clientX;
+  lastMouseY = event.clientY;
+  updateHoverState(lastMouseX, lastMouseY);
+}
+
+function handleFrameMouseMove(event: MouseEvent) {
+  lastMouseX = event.clientX;
+  lastMouseY = event.clientY;
+  updateHoverState(lastMouseX, lastMouseY);
+}
+
 function handleFrameMouseLeave() {
   isHoveringGrid.value = false;
+  isMouseInsideFrame = false;
   cachedCanvasRect = null;
 }
 
@@ -487,6 +501,15 @@ const activeCursor = computed(() => {
     }
   }
   return 'grab';
+});
+
+watch([scale, offsetX, offsetY, currentAngle], () => {
+  if (canvasRef.value) {
+    cachedCanvasRect = canvasRef.value.getBoundingClientRect();
+    if (isMouseInsideFrame) {
+      updateHoverState(lastMouseX, lastMouseY);
+    }
+  }
 });
 
 const canUndo = ref(false);
@@ -850,6 +873,7 @@ onMounted(() => {
     if (typeof ResizeObserver !== 'undefined') {
       resizeObserver = new ResizeObserver(() => {
         updateFrameSize();
+        cachedCanvasRect = null;
       });
       resizeObserver.observe(frameRef.value);
     }
@@ -901,6 +925,14 @@ watch(() => props.board, (newBoard) => {
   config.angle = currentAngle.value;
   drawBoard();
 }, { deep: false, immediate: true });
+
+// Invalidate cached canvas bounding rect whenever zoom, pan, or rotation changes
+watch([scale, offsetX, offsetY, currentAngle], () => {
+  cachedCanvasRect = null;
+  if (isMouseInsideFrame) {
+    updateHoverState(lastMouseX, lastMouseY);
+  }
+});
 
 // Watch for solved state to rotate to target
 watch(() => props.board.isSolved(), (solved) => {
