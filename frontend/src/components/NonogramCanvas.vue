@@ -210,11 +210,17 @@ function drawBoard() {
 
   const { width, height, halfW, halfH } = getDimensions();
   const cellSizeVal = CELL_SIZE.value;
-  canvas.width = width;
-  canvas.height = height;
+  if (canvas.width !== width) {
+    canvas.width = width;
+  }
+  if (canvas.height !== height) {
+    canvas.height = height;
+  }
 
   const ctx = canvas.getContext('2d');
   if (!ctx) return;
+
+  const isSolved = props.board.isSolved();
 
   config.centerX = width / 2;
   config.centerY = height / 2;
@@ -232,7 +238,7 @@ function drawBoard() {
   ctx.rotate(config.angle);
 
   // Draw background for overall active board area
-  if (props.board.isSolved() && glowIntensity.value > 0) {
+  if (isSolved && glowIntensity.value > 0) {
     ctx.save();
     ctx.shadowColor = `rgba(56, 189, 248, ${glowIntensity.value})`;
     ctx.shadowBlur = glowBlur.value;
@@ -250,7 +256,7 @@ function drawBoard() {
       const x = -halfW + c * cellSizeVal;
       const y = -halfH + r * cellSizeVal;
 
-      if (!props.board.isSolved()) {
+      if (!isSolved) {
         ctx.strokeStyle = '#334155'; // slate-700
         ctx.lineWidth = 1;
         ctx.strokeRect(x, y, cellSizeVal, cellSizeVal);
@@ -264,7 +270,7 @@ function drawBoard() {
         grad.addColorStop(1, '#818cf8'); // indigo-400
         ctx.fillStyle = grad;
 
-        if (props.board.isSolved()) {
+        if (isSolved) {
           // Seamless full cell fill for clean pixel art when solved
           ctx.fillRect(x, y, cellSizeVal, cellSizeVal);
         } else {
@@ -274,7 +280,7 @@ function drawBoard() {
           ctx.lineWidth = 1.5;
           ctx.strokeRect(x + 1.5, y + 1.5, cellSizeVal - 3, cellSizeVal - 3);
         }
-      } else if (cellState === 2 && !props.board.isSolved()) {
+      } else if (cellState === 2 && !isSolved) {
         // Marked (X) - Translucent slate grey
         ctx.strokeStyle = 'rgba(148, 163, 184, 0.45)';
         ctx.lineWidth = 2.0;
@@ -289,7 +295,7 @@ function drawBoard() {
   }
 
   // Draw bold line markers every 5 lines only when active (not solved)
-  if (!props.board.isSolved()) {
+  if (!isSolved) {
     ctx.strokeStyle = '#64748b'; // slate-500
     ctx.lineWidth = 2.5;
     for (let r = 0; r <= props.board.rowCount; r += 5) {
@@ -313,7 +319,7 @@ function drawBoard() {
   }
 
   // Draw hints ONLY if not solved
-  if (!props.board.isSolved()) {
+  if (!isSolved) {
     const { fontSize, spacing, offset } = getHintParams(cellSizeVal);
 
     // Draw row hints (on the left side)
