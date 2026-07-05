@@ -1,15 +1,18 @@
 <template>
   <div class="nonogram-canvas-container">
     <div class="canvas-frame" ref="frameRef">
-      <canvas 
-        ref="canvasRef" 
-        data-testid="nonogram-canvas" 
-        :style="canvasStyle"
-        @mousedown="handleMouseDown"
-        @touchstart="handleTouchStart"
-        @wheel="handleWheel"
-        @contextmenu.prevent
-      ></canvas>
+      <div class="canvas-anim-wrapper" :class="{ 'solve-impact-bounce': showSolveImpact }">
+        <canvas 
+          ref="canvasRef" 
+          data-testid="nonogram-canvas" 
+          :style="canvasStyle"
+          @mousedown="handleMouseDown"
+          @touchstart="handleTouchStart"
+          @wheel="handleWheel"
+          @contextmenu.prevent
+        ></canvas>
+        <div v-if="showSolveImpact" class="solve-flash-overlay"></div>
+      </div>
     </div>
 
     <!-- Floating Draw Mode Toggle -->
@@ -142,6 +145,7 @@ const getDimensions = () => {
 
 const scale = ref(1.0);
 const isDragging = ref(false);
+const showSolveImpact = ref(false);
 
 const frameRef = ref<HTMLElement | null>(null);
 const frameWidth = ref(600);
@@ -500,6 +504,7 @@ function animateRotationToTarget() {
   if (isTestEnv) {
     currentAngle.value = targetAngle;
     drawBoard();
+    showSolveImpact.value = true;
     emit('solve-animation-complete');
     return;
   }
@@ -523,6 +528,7 @@ function animateRotationToTarget() {
     if (progress < 1) {
       requestAnimationFrame(tick);
     } else {
+      showSolveImpact.value = true;
       emit('solve-animation-complete');
     }
   }
@@ -563,6 +569,7 @@ watch(fitScale, (newFitScale) => {
 
 // Redraw if board changes
 watch(() => props.board, () => {
+  showSolveImpact.value = false;
   currentAngle.value = getStartingAngle();
   scale.value = fitScale.value;
   const dims = getDimensions();
@@ -780,6 +787,67 @@ canvas {
   .zoom-level {
     min-width: 36px;
     font-size: 0.72rem;
+  }
+}
+
+.canvas-anim-wrapper {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+@keyframes boardBounce {
+  0% {
+    transform: scale(1);
+  }
+  14% {
+    transform: scale(1.035);
+  }
+  28% {
+    transform: scale(0.98);
+  }
+  45% {
+    transform: scale(1.01);
+  }
+  70% {
+    transform: scale(0.995);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+.solve-impact-bounce {
+  animation: boardBounce 0.65s cubic-bezier(0.25, 0.8, 0.25, 1) forwards;
+}
+
+.solve-flash-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.95) 0%, rgba(129, 140, 248, 0.3) 45%, rgba(129, 140, 248, 0) 70%);
+  mix-blend-mode: screen;
+  border-radius: 8px;
+  animation: flashOverlayAnim 0.65s cubic-bezier(0.1, 0.8, 0.15, 1) forwards;
+  z-index: 5;
+}
+
+@keyframes flashOverlayAnim {
+  0% {
+    transform: scale(0.2);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1.5);
+    opacity: 0;
   }
 }
 </style>
