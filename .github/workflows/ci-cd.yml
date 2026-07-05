@@ -504,6 +504,7 @@ jobs:
           DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
           GHCR_USERNAME: ${{ secrets.GHCR_USERNAME }}
           GHCR_PAT: ${{ secrets.GHCR_PAT }}
+          SOLVE_PROOF_SECRET: ${{ secrets.SOLVE_PROOF_SECRET }}
           IMAGE_TAG: ${{ env.IMAGE_TAG }}
         run: |
           # Dynamically resolve Staging Cognito JWK Set URI from AWS CLI
@@ -657,6 +658,7 @@ jobs:
           DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
           GHCR_USERNAME: ${{ secrets.GHCR_USERNAME }}
           GHCR_PAT: ${{ secrets.GHCR_PAT }}
+          SOLVE_PROOF_SECRET: ${{ secrets.SOLVE_PROOF_SECRET }}
           IMAGE_TAG: ${{ env.IMAGE_TAG }}
         run: |
           # Dynamically resolve Production Cognito JWK Set URI from AWS CLI
