@@ -1,15 +1,18 @@
 <template>
   <div class="nonogram-canvas-container">
-    <div class="canvas-frame" ref="frameRef">
+    <div 
+      class="canvas-frame" 
+      ref="frameRef"
+      @mousedown="handleMouseDown"
+      @touchstart="handleTouchStart"
+      @wheel="handleWheel"
+      @contextmenu.prevent
+    >
       <div class="canvas-anim-wrapper">
         <canvas 
           ref="canvasRef" 
           data-testid="nonogram-canvas" 
           :style="canvasStyle"
-          @mousedown="handleMouseDown"
-          @touchstart="handleTouchStart"
-          @wheel="handleWheel"
-          @contextmenu.prevent
         ></canvas>
       </div>
     </div>
@@ -870,6 +873,7 @@ watch(() => props.board.isSolved(), (solved) => {
   border: 1px solid rgba(255, 255, 255, 0.05);
   border-top: none;
   position: relative;
+  cursor: pointer;
 }
 
 canvas {
