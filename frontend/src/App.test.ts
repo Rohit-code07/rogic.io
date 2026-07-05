@@ -718,6 +718,43 @@ describe('App.vue Leaderboard Integration TDD', () => {
     expect(vm.solveAnimationComplete).toBe(true);
     expect(clearStageSpy).toHaveBeenCalled();
   });
+
+  it('should save progress to localStorage when cell changes, and restore it upon stage load', async () => {
+    localStorage.clear();
+    const mockStages = [{ id: 1, name: 'Heart Shape', width: 5, height: 5 }];
+    const mockStageDetails = { id: 1, name: 'Heart Shape', width: 5, height: 5, solutionGrid: [[1, 0], [0, 1]] };
+
+    vi.spyOn(stageApi, 'fetchStages').mockResolvedValue(mockStages);
+    vi.spyOn(stageApi, 'fetchStageById').mockResolvedValue(mockStageDetails);
+
+    const wrapper = mount(App);
+    await new Promise((resolve) => setTimeout(resolve, 50));
+
+    const vm = wrapper.vm as any;
+    // Load stage
+    vm.selectedStageId = 1;
+    await vm.loadStageDetails(1);
+    await wrapper.vm.$nextTick();
+
+    // Verify initially empty/empty progress key
+    const progressKey = 'rogic_progress_stage_1';
+    expect(localStorage.getItem(progressKey)).toBeNull();
+
+    // Modify a cell to trigger progress save
+    vm.board.setCell(0, 0, 1);
+    await vm.handleCellClick();
+
+    // Verify progress key is saved in localStorage
+    const saved = JSON.parse(localStorage.getItem(progressKey) || '{}');
+    expect(saved.stageId).toBe(1);
+    expect(saved.currentGrid[0][0]).toBe(1);
+
+    // Now reload the stage and verify it restores cell state
+    await vm.loadStageDetails(1);
+    await wrapper.vm.$nextTick();
+
+    expect(vm.board.currentGrid[0][0]).toBe(1);
+  });
 });
 
 
