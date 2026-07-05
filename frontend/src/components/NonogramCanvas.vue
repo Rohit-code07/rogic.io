@@ -431,7 +431,7 @@ function getCoordinatesFromEvent(clientX: number, clientY: number) {
   const canvas = canvasRef.value;
   if (!canvas) return null;
   const rect = canvas.getBoundingClientRect();
-  const currentScale = isTestEnv ? 1.0 : scale.value;
+  const currentScale = isTestEnv ? 1.0 : (rect.width / canvas.width);
   const clickX = (clientX - rect.left) / currentScale;
   const clickY = (clientY - rect.top) / currentScale;
   return getGridCoordinates(clickX, clickY, config);
@@ -456,7 +456,7 @@ function updateHoverState(clientX: number, clientY: number) {
   if (!cachedCanvasRect || !canvasRef.value) return;
 
   const rect = cachedCanvasRect;
-  const currentScale = isTestEnv ? 1.0 : scale.value;
+  const currentScale = isTestEnv ? 1.0 : (rect.width / canvasRef.value.width);
   const clickX = (clientX - rect.left) / currentScale;
   const clickY = (clientY - rect.top) / currentScale;
   
