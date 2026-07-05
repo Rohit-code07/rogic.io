@@ -6,6 +6,10 @@
       @mousedown="handleMouseDown"
       @touchstart="handleTouchStart"
       @wheel="handleWheel"
+      @mouseenter="handleFrameMouseEnter"
+      @mousemove="handleFrameMouseMove"
+      @mouseleave="handleFrameMouseLeave"
+      :style="{ cursor: activeCursor }"
       @contextmenu.prevent
     >
       <div class="canvas-anim-wrapper">
@@ -436,6 +440,54 @@ function getCoordinatesFromEvent(clientX: number, clientY: number) {
   const clickY = (clientY - rect.top) / currentScale;
   return getGridCoordinates(clickX, clickY, config);
 }
+
+const isHoveringGrid = ref(false);
+let cachedCanvasRect: DOMRect | null = null;
+
+function handleFrameMouseEnter() {
+  if (canvasRef.value) {
+    cachedCanvasRect = canvasRef.value.getBoundingClientRect();
+  }
+}
+
+function handleFrameMouseMove(event: MouseEvent) {
+  if (props.readOnly) return;
+  if (isPanning.value) {
+    isHoveringGrid.value = false;
+    return;
+  }
+
+  if (!cachedCanvasRect && canvasRef.value) {
+    cachedCanvasRect = canvasRef.value.getBoundingClientRect();
+  }
+  if (!cachedCanvasRect || !canvasRef.value) return;
+
+  const rect = cachedCanvasRect;
+  const currentScale = isTestEnv ? 1.0 : (rect.width / canvasRef.value.width);
+  const clickX = (event.clientX - rect.left) / currentScale;
+  const clickY = (event.clientY - rect.top) / currentScale;
+  
+  const coords = getGridCoordinates(clickX, clickY, config);
+  isHoveringGrid.value = !!coords;
+}
+
+function handleFrameMouseLeave() {
+  isHoveringGrid.value = false;
+  cachedCanvasRect = null;
+}
+
+const activeCursor = computed(() => {
+  if (props.readOnly) return 'default';
+  if (isPanning.value) return 'grabbing';
+  if (isHoveringGrid.value) {
+    if (drawMode.value === 'fill') {
+      return `url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24'><rect x='2' y='2' width='20' height='20' rx='4' fill='%2338bdf8' stroke='%236366f1' stroke-width='2.5'/></svg>") 12 12, auto`;
+    } else {
+      return `url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24'><line x1='4' y1='4' x2='20' y2='20' stroke='%23f43f5e' stroke-width='3.5' stroke-linecap='round'/><line x1='20' y1='4' x2='4' y2='20' stroke='%23f43f5e' stroke-width='3.5' stroke-linecap='round'/></svg>") 12 12, auto`;
+    }
+  }
+  return 'grab';
+});
 
 const canUndo = ref(false);
 const canRedo = ref(false);
@@ -883,12 +935,12 @@ watch(() => props.board.isSolved(), (solved) => {
   border: 1px solid rgba(255, 255, 255, 0.05);
   border-top: none;
   position: relative;
-  cursor: pointer;
+  cursor: grab;
 }
 
 canvas {
   display: block;
-  cursor: pointer;
+  cursor: inherit;
   position: absolute;
   -webkit-tap-highlight-color: transparent;
   -webkit-touch-callout: none;
