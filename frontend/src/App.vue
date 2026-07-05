@@ -1165,8 +1165,9 @@ async function loadStagesList(page: number = 0) {
   if (isTestEnv) console.log('CALLING loadStagesList, stack:', new Error().stack);
   isLoading.value = true;
   loadError.value = null;
+  const targetSizeStr = selectedPlaySizeFilter.value;
   try {
-    const targetSize = parseInt(selectedPlaySizeFilter.value);
+    const targetSize = parseInt(targetSizeStr);
     let allRes: any;
     let res: any;
     if (isTestEnv) {
@@ -1178,6 +1179,11 @@ async function loadStagesList(page: number = 0) {
         fetchStages(page, 20, targetSize)
       ]);
     }
+
+    if (selectedPlaySizeFilter.value !== targetSizeStr) {
+      return;
+    }
+
     allStagesSummary.value = allRes && 'content' in allRes ? allRes.content : allRes;
     
     let list: StageSummary[];
@@ -1203,6 +1209,10 @@ async function loadStagesList(page: number = 0) {
         initialStage = list[0];
       }
       
+      if (selectedPlaySizeFilter.value !== targetSizeStr) {
+        return;
+      }
+
       selectedStageId.value = initialStage.id;
       await loadStageDetails(initialStage.id);
     } else {
@@ -1213,12 +1223,18 @@ async function loadStagesList(page: number = 0) {
         if (!fallbackStage) {
           fallbackStage = allList[0];
         }
+        if (selectedPlaySizeFilter.value !== targetSizeStr) {
+          return;
+        }
         selectedPlaySizeFilter.value = String(fallbackStage.width);
       } else {
         isLoading.value = false;
       }
     }
   } catch (error) {
+    if (selectedPlaySizeFilter.value !== targetSizeStr) {
+      return;
+    }
     console.error('Failed to load stages:', error);
     loadError.value = getErrorMessage(error, 'Failed to load puzzles. Please check your connection and try again.');
     isLoading.value = false;
@@ -1238,8 +1254,15 @@ async function loadStageDetails(id: number) {
     console.warn(`Failed to log stage start for ID ${id}:`, error);
   }
 
+  if (selectedStageId.value !== id && selectedAiStageId.value !== id) {
+    return;
+  }
+
   try {
     const details = await fetchStageById(id);
+    if (selectedStageId.value !== id && selectedAiStageId.value !== id) {
+      return;
+    }
     const k = Math.floor(Math.random() * 3) + 1;
     currentRotationSteps.value = k;
     const rotated = rotateGrid(details.solutionGrid, k);
@@ -1253,6 +1276,9 @@ async function loadStageDetails(id: number) {
     startTime.value = Date.now();
     isLoading.value = false;
   } catch (error) {
+    if (selectedStageId.value !== id && selectedAiStageId.value !== id) {
+      return;
+    }
     console.error(`Failed to load stage details for ID ${id}:`, error);
     loadError.value = getErrorMessage(error, 'Failed to load puzzle details. Please try again.');
     isLoading.value = false;
