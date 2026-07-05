@@ -733,7 +733,7 @@ import { ref, onMounted, onUnmounted, computed, watch } from 'vue';
 import NonogramCanvas from './components/NonogramCanvas.vue';
 import { PuzzleBoard } from './engine/puzzleBoard';
 import { rotateGrid } from './engine/gridRotator';
-import { fetchStages, fetchStageById, fetchAiStages, startStage, likeStage, dislikeStage, fetchNextReleaseDelaySeconds } from './api/stageApi';
+import { fetchStages, fetchStageById, fetchAiStages, startStage, likeStage, dislikeStage, fetchNextReleaseDelaySeconds, verifyStageSolve } from './api/stageApi';
 import type { StageSummary } from './api/stageApi';
 import { fetchRanking, clearStage, fetchMeFromServer, fetchUserHistory, syncGuestHistory } from './api/userApi';
 import type { User, HistoryResponse } from './api/userApi';
@@ -1440,6 +1440,21 @@ async function handleSolveAnimationComplete() {
           localStorage.setItem('guest_cleared_stages', JSON.stringify(clearedIds));
         }
 
+        let token = '';
+        if (board.value) {
+          try {
+            const verification = await verifyStageSolve(
+              stageId,
+              board.value.currentGrid,
+              elapsedTime,
+              currentRotationSteps.value
+            );
+            token = verification.token;
+          } catch (err) {
+            console.error('Failed to verify stage solve on backend:', err);
+          }
+        }
+
         const savedHistories = localStorage.getItem('guest_histories');
         const localHistories = savedHistories ? JSON.parse(savedHistories) : [];
         const currentStage = currentActiveStage.value;
@@ -1451,7 +1466,8 @@ async function handleSolveAnimationComplete() {
           stageName: stageName,
           clearedAt: new Date().toISOString(),
           xpEarned: difficulty === 'EASY' ? 100 : (difficulty === 'HARD' ? 250 : 150),
-          elapsedTime: elapsedTime
+          elapsedTime: elapsedTime,
+          proofToken: token
         };
         localHistories.unshift(newHistory);
         localStorage.setItem('guest_histories', JSON.stringify(localHistories));
@@ -2075,7 +2091,8 @@ async function migrateGuestHistory(userId: number) {
     if (localHistories.length > 0) {
       const guestClears = localHistories.map(h => ({
         stageId: h.stageId,
-        elapsedTime: h.elapsedTime
+        elapsedTime: h.elapsedTime,
+        proofToken: h.proofToken
       }));
 
       // Call bulk sync API

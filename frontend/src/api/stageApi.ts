@@ -72,3 +72,21 @@ export async function dislikeStage(id: number): Promise<StageDetails> {
   const response = await axios.post<StageDetails>(`${API_BASE_URL}/${id}/dislike`);
   return response.data;
 }
+
+export interface SolveVerificationResponse {
+  token: string;
+}
+
+export async function verifyStageSolve(
+  id: number,
+  gridState: number[][],
+  elapsedTime: number,
+  rotationSteps: number
+): Promise<SolveVerificationResponse> {
+  const response = await axios.post<SolveVerificationResponse>(`${API_BASE_URL}/${id}/verify`, {
+    gridState,
+    elapsedTime,
+    rotationSteps
+  });
+  return response.data;
+}

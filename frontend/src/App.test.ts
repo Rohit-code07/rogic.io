@@ -33,6 +33,7 @@ describe('App.vue Leaderboard Integration TDD', () => {
       { id: 1, name: 'Seeded Stage 1', width: 5, height: 5, active: true, approved: true, solutionGrid: [[1]] },
       { id: 9, name: 'AI Pending Stage', width: 5, height: 5, active: false, approved: false, solutionGrid: [[1]] }
     ]);
+    vi.mocked(stageApi.verifyStageSolve).mockResolvedValue({ token: 'mock-verify-token' });
   });
 
   it('should call fetchStages and fetchRanking on mount, and render rankings list', async () => {
@@ -181,6 +182,7 @@ describe('App.vue Leaderboard Integration TDD', () => {
     // Force solve the board
     (wrapper.vm as any).board.toggleFill(0, 0);
     await (wrapper.vm as any).handleCellClick();
+    await new Promise((resolve) => setTimeout(resolve, 50));
 
     // In Guest Mode, clearStage API should NOT be called
     expect(clearStageSpy).not.toHaveBeenCalled();
@@ -619,7 +621,7 @@ describe('App.vue Leaderboard Integration TDD', () => {
     localStorage.setItem('nemologic_id_token', 'mockHeader.eyzleHAiOjk5OTk5OTk5OTl9.mockSignature');
     localStorage.setItem('guest_cleared_stages', JSON.stringify([5]));
     localStorage.setItem('guest_histories', JSON.stringify([
-      { id: 111, userId: 0, stageId: 5, stageName: 'Easy Stage', clearedAt: '2026-06-08T22:40:40', xpEarned: 100, elapsedTime: 45 }
+      { id: 111, userId: 0, stageId: 5, stageName: 'Easy Stage', clearedAt: '2026-06-08T22:40:40', xpEarned: 100, elapsedTime: 45, proofToken: 'mock-verify-token-5' }
     ]));
 
     const mockStages = [{ id: 1, name: 'Heart Shape', width: 5, height: 5 }];
@@ -639,7 +641,7 @@ describe('App.vue Leaderboard Integration TDD', () => {
 
     // Verify syncGuestHistory was called
     expect(syncSpy).toHaveBeenCalledWith(42, [
-      { stageId: 5, elapsedTime: 45 }
+      { stageId: 5, elapsedTime: 45, proofToken: 'mock-verify-token-5' }
     ]);
 
     // Verify localStorage has been cleared
