@@ -205,10 +205,26 @@ const canvasStyle = computed(() => {
   };
 });
 
+function clampOffsets() {
+  const { width: canvasWidth, height: canvasHeight } = getDimensions();
+  const scaledWidth = canvasWidth * scale.value;
+  const scaledHeight = canvasHeight * scale.value;
+  
+  // Keep at least 80 pixels overlap with the frame
+  const minOverlap = 80;
+  
+  const maxOffsetX = Math.max(0, frameWidth.value / 2 + scaledWidth / 2 - minOverlap);
+  const maxOffsetY = Math.max(0, frameHeight.value / 2 + scaledHeight / 2 - minOverlap);
+  
+  offsetX.value = Math.max(-maxOffsetX, Math.min(maxOffsetX, offsetX.value));
+  offsetY.value = Math.max(-maxOffsetY, Math.min(maxOffsetY, offsetY.value));
+}
+
 function handleWheel(event: WheelEvent) {
   event.preventDefault();
   const zoomFactor = event.deltaY < 0 ? 1.05 : 0.95;
   scale.value = Math.max(0.2, Math.min(4.0, scale.value * zoomFactor));
+  clampOffsets();
 }
 
 const initialDims = getDimensions();
@@ -464,6 +480,7 @@ function handlePanMouseMove(event: MouseEvent) {
   if (!isPanning.value) return;
   offsetX.value = event.clientX - panStartX;
   offsetY.value = event.clientY - panStartY;
+  clampOffsets();
 }
 
 function handlePanMouseUp() {
@@ -490,6 +507,7 @@ function handlePanTouchMove(event: TouchEvent) {
     offsetX.value = midX - panStartX;
     offsetY.value = midY - panStartY;
   }
+  clampOffsets();
 }
 
 function handlePanTouchEnd() {
