@@ -18,6 +18,9 @@ Ref: [architecture-and-tech-stack.md](./rules/architecture-and-tech-stack.md)
 
 ### Backend
 - Build the REST API server using Java / Spring Boot.
+- **GraalVM Native Image RuntimeHints Registration**:
+  - Since the backend runs in a GraalVM Native Image environment on Staging and Production, all dynamic serialization/deserialization DTOs (e.g. Request/Response models used in REST controller `@RequestBody` or `@ResponseBody`), customized exception payloads, or classes accessed dynamically via reflection/introspection MUST be registered inside `NemologicRuntimeHints.java` (implementing `RuntimeHintsRegistrar`).
+  - Failure to register new DTOs will lead to runtime serialization errors such as `HttpMediaTypeNotAcceptableException` (`406 Not Acceptable`) in the GraalVM native image execution.
 
 ### Infrastructure & IaC
 - Target environment is AWS. Enforce strict division of responsibilities:
