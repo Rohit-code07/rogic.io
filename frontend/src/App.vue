@@ -1,299 +1,9 @@
 <template>
-  <!-- Admin View (Bootstrap-based back-office) -->
-  <div v-if="isAdminMode" class="container-fluid py-4 min-vh-100 bg-light text-dark admin-backoffice-view" style="font-family: 'Outfit', sans-serif;">
-    <!-- Show login screen if not logged in -->
-    <div v-if="!isAdminLogged" class="d-flex justify-content-center align-items-center" style="min-height: 80vh;">
-      <div class="card shadow-lg border-0 p-4 admin-login-card" style="max-width: 400px; width: 100%; border-radius: 12px; background: rgba(255, 255, 255, 0.95);">
-        <div class="text-center mb-4">
-          <span class="fs-1">🔑</span>
-          <h3 class="fw-bold mt-2 text-dark">Admin Console</h3>
-          <p class="text-muted">Please log in to continue</p>
-        </div>
-        <form @submit.prevent="handleAdminLogin" class="admin-login-form">
-          <div class="mb-3">
-            <label class="form-label fw-bold text-dark">Username</label>
-            <input type="text" v-model="adminUsernameInput" class="form-control admin-username-input" placeholder="Enter username" required />
-          </div>
-          <div class="mb-3">
-            <label class="form-label fw-bold text-dark">Password</label>
-            <input type="password" v-model="adminPasswordInput" class="form-control admin-password-input" placeholder="Enter password" required />
-          </div>
-          <div v-if="loginError" class="alert alert-danger text-center py-2 admin-login-error" role="alert">
-            {{ loginError }}
-          </div>
-          <button type="submit" class="btn btn-dark w-100 py-2 fw-bold mt-2 admin-login-submit-btn">Login</button>
-        </form>
-      </div>
-    </div>
-
-    <!-- If logged in, show the admin console -->
-    <div v-else class="admin-console-content">
-      <!-- Bootstrap Navbar -->
-      <nav class="navbar navbar-dark bg-dark rounded shadow-sm mb-4 px-4 py-3 d-flex justify-content-between align-items-center">
-        <span class="navbar-brand mb-0 h1 d-flex align-items-center gap-2">
-          <span class="fs-4">🔑</span> rogic.io Admin Console
-        </span>
-        <div class="d-flex align-items-center gap-3 text-light">
-          <span class="badge bg-secondary p-2">Back Office</span>
-          <div class="d-flex align-items-center gap-1 admin-ai-size-selectors">
-            <span class="small text-light" style="font-size: 0.8rem;">AI Size:</span>
-            <select v-model.number="adminAiWidth" class="form-select form-select-sm text-dark admin-ai-width-select" style="width: 65px; padding: 2px 5px; font-size: 0.8rem;">
-              <option value="5">5</option>
-              <option value="10">10</option>
-              <option value="15">15</option>
-              <option value="20">20</option>
-              <option value="30">30</option>
-            </select>
-            <span class="small text-light" style="font-size: 0.8rem;">x</span>
-            <select v-model.number="adminAiHeight" class="form-select form-select-sm text-dark admin-ai-height-select" style="width: 65px; padding: 2px 5px; font-size: 0.8rem;">
-              <option value="5">5</option>
-              <option value="10">10</option>
-              <option value="15">15</option>
-              <option value="20">20</option>
-              <option value="30">30</option>
-            </select>
-          </div>
-          <button class="btn btn-outline-light btn-sm admin-ai-gen-btn" @click="handleAdminAiGenerate">
-            ✨ Auto-Generate Stage
-          </button>
-          <button class="btn btn-danger btn-sm admin-logout-btn" @click="handleAdminLogout">
-            🚪 Logout
-          </button>
-        </div>
-      </nav>
-
-      <!-- Main Back-office Layout Grid -->
-      <div class="row g-4">
-        <!-- Left Column: Manage Puzzles -->
-        <div class="col-lg-7">
-          <div class="card shadow-sm border-0 h-100">
-            <div class="card-header bg-dark text-white py-3">
-              <h5 class="card-title mb-0 d-flex justify-content-between align-items-center">
-                <span>📋 Manage Puzzles</span>
-                <span class="badge bg-primary">{{ filteredAndSortedAdminStages.length }} / {{ adminStages.length }}</span>
-              </h5>
-            </div>
-            <div class="card-body p-0">
-              <!-- Filtering Controls -->
-              <div class="p-3 bg-light border-bottom d-flex flex-wrap gap-3 align-items-center">
-                <div class="flex-grow-1" style="min-width: 200px;">
-                  <input 
-                    type="text" 
-                    v-model="adminSearchQuery" 
-                    class="form-control form-control-sm admin-search-input" 
-                    placeholder="🔍 Search by name..." 
-                  />
-                </div>
-                <div style="width: 130px;">
-                  <select v-model="adminSizeFilter" class="form-select form-select-sm admin-size-filter">
-                    <option value="All">All Sizes</option>
-                    <option value="5">5 x 5</option>
-                    <option value="10">10 x 10</option>
-                    <option value="15">15 x 15</option>
-                    <option value="20">20 x 20</option>
-                    <option value="30">30 x 30</option>
-                  </select>
-                </div>
-                <div style="width: 150px;">
-                  <select v-model="adminStatusFilter" class="form-select form-select-sm admin-status-filter">
-                    <option value="All">All Statuses</option>
-                    <option value="Active">Active</option>
-                    <option value="Pending">Pending Approval</option>
-                    <option value="Inactive">Inactive</option>
-                  </select>
-                </div>
-              </div>
-
-              <div class="table-responsive" style="max-height: 600px; overflow-y: auto;">
-                <table class="table table-striped table-hover align-middle mb-0">
-                  <thead class="table-dark position-sticky top-0" style="z-index: 10;">
-                    <tr>
-                      <th scope="col" class="ps-3 admin-th-id" @click="toggleAdminSort('id')" style="cursor: pointer; user-select: none;">
-                        ID <span v-if="adminSortKey === 'id'">{{ adminSortOrder === 'asc' ? '▲' : '▼' }}</span>
-                      </th>
-                      <th scope="col" class="admin-th-name" @click="toggleAdminSort('name')" style="cursor: pointer; user-select: none;">
-                        Name <span v-if="adminSortKey === 'name'">{{ adminSortOrder === 'asc' ? '▲' : '▼' }}</span>
-                      </th>
-                      <th scope="col" class="admin-th-size" @click="toggleAdminSort('size')" style="cursor: pointer; user-select: none;">
-                        Size <span v-if="adminSortKey === 'size'">{{ adminSortOrder === 'asc' ? '▲' : '▼' }}</span>
-                      </th>
-                      <th scope="col" class="admin-th-status" @click="toggleAdminSort('status')" style="cursor: pointer; user-select: none;">
-                        Status <span v-if="adminSortKey === 'status'">{{ adminSortOrder === 'asc' ? '▲' : '▼' }}</span>
-                      </th>
-                      <th scope="col" class="admin-th-feedback">Feedback</th>
-                      <th scope="col" class="text-end pe-3">Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    <tr v-for="s in filteredAndSortedAdminStages" :key="s.id" class="admin-stage-item">
-                      <td class="ps-3 font-monospace text-muted">{{ s.id }}</td>
-                      <td>
-                        <span class="fw-bold text-dark">{{ s.name }}</span>
-                      </td>
-                      <td>
-                        <span class="badge bg-light text-dark border">{{ s.width }} x {{ s.height }}</span>
-                      </td>
-                      <td>
-                        <span v-if="s.approved && s.active" class="badge bg-success badge-active">Active</span>
-                        <span v-else-if="!s.approved" class="badge bg-warning text-dark badge-pending">Pending Approval</span>
-                        <span v-else class="badge bg-danger badge-inactive">Inactive</span>
-                      </td>
-                      <td style="white-space: nowrap; vertical-align: middle;">
-                        <div style="display: inline-flex; align-items: center; gap: 0.5rem; justify-content: center; width: 100%;">
-                          <span style="display: inline-flex; align-items: center; gap: 0.25rem; color: #10b981; font-weight: 600;" title="Upvotes">
-                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="width: 14px; height: 14px;">
-                              <path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3zM7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3" />
-                            </svg>
-                            {{ s.upvotes || 0 }}
-                          </span>
-                          <span style="color: #64748b;">/</span>
-                          <span style="display: inline-flex; align-items: center; gap: 0.25rem; color: #ef4444; font-weight: 600;" title="Downvotes">
-                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="width: 14px; height: 14px;">
-                              <path d="M10 15v4a3 3 0 0 0 3 3l4-9V2H5.72a2 2 0 0 0-2 1.7l-1.38 9a2 2 0 0 0 2 2.3zm7-13h3a2 2 0 0 1 2 2v7a2 2 0 0 1-2 2h-3" />
-                            </svg>
-                            {{ s.downvotes || 0 }}
-                          </span>
-                        </div>
-                      </td>
-                      <td class="text-end pe-3">
-                        <div class="btn-group btn-group-sm" role="group">
-                          <button class="btn btn-outline-dark btn-preview" @click="openHistoryModal({ stageId: s.id, stageName: s.name })">
-                            👁️ Preview
-                          </button>
-                          <button v-if="!s.approved" class="btn btn-success btn-approve" @click="handleApproveStage(s.id)">
-                            ✓ Approve
-                          </button>
-                          <button class="btn btn-danger btn-delete" @click="handleDeleteStage(s.id)">
-                            🗑️ Delete
-                          </button>
-                          <button v-if="!s.active && s.approved" class="btn btn-primary btn-restore" @click="handleRestoreStage(s.id)">
-                            ↺ Restore
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                    <tr v-if="adminStages.length === 0">
-                      <td colspan="6" class="text-center py-5 text-muted">
-                        No stages found in database.
-                      </td>
-                    </tr>
-                  </tbody>
-                </table>
-                <!-- Admin Stages Pagination -->
-                <div class="d-flex justify-content-between align-items-center mt-3 px-3" v-if="adminStagesTotalPages > 1">
-                  <button 
-                    class="btn btn-sm btn-outline-dark" 
-                    :disabled="adminStagesCurrentPage === 0"
-                    @click="loadAdminStagesList(adminStagesCurrentPage - 1)"
-                  >
-                    ◀ Previous
-                  </button>
-                  <span class="text-muted small">
-                    Page {{ adminStagesCurrentPage + 1 }} of {{ adminStagesTotalPages }}
-                  </span>
-                  <button 
-                    class="btn btn-sm btn-outline-dark" 
-                    :disabled="adminStagesCurrentPage >= adminStagesTotalPages - 1"
-                    @click="loadAdminStagesList(adminStagesCurrentPage + 1)"
-                  >
-                    Next ▶
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- Right Column: Add Custom Puzzle -->
-        <div class="col-lg-5">
-          <div class="card shadow-sm border-0">
-            <div class="card-header bg-dark text-white py-3">
-              <h5 class="card-title mb-0">✍️ Add Custom Puzzle</h5>
-            </div>
-            <div class="card-body">
-              <div class="mb-3">
-                <label class="form-label fw-bold text-dark">Puzzle Name</label>
-                <input 
-                  type="text" 
-                  v-model="creatorName" 
-                  class="form-control admin-input" 
-                  placeholder="e.g. Tree, Anchor, Diamond" 
-                />
-              </div>
-              
-              <div class="row g-3 mb-4">
-                <div class="col-6">
-                  <label class="form-label fw-bold text-dark">Width</label>
-                  <select v-model="creatorWidth" @change="initCreatorGrid" class="form-select">
-                    <option :value="5">5</option>
-                    <option :value="10">10</option>
-                    <option :value="15">15</option>
-                    <option :value="20">20</option>
-                    <option :value="30">30</option>
-                  </select>
-                </div>
-                <div class="col-6">
-                  <label class="form-label fw-bold text-dark">Height</label>
-                  <select v-model="creatorHeight" @change="initCreatorGrid" class="form-select">
-                    <option :value="5">5</option>
-                    <option :value="10">10</option>
-                    <option :value="15">15</option>
-                    <option :value="20">20</option>
-                    <option :value="30">30</option>
-                  </select>
-                </div>
-              </div>
-
-              <!-- HTML5 Canvas Creator Grid Wrapper -->
-              <div class="mb-4">
-                <label class="form-label fw-bold d-block text-center mb-2 text-dark">Draw Puzzle Solution</label>
-                <div class="d-flex justify-content-center align-items-center p-3 bg-dark rounded border" style="min-height: 260px;">
-                  <canvas 
-                    ref="creatorCanvasRef" 
-                    @mousedown="handleCreatorMouseDown" 
-                    @touchstart="handleCreatorTouchStart"
-                    @contextmenu.prevent
-                    style="display: block; cursor: pointer; border: 1px solid rgba(255, 255, 255, 0.2);"
-                  ></canvas>
-                </div>
-                <div class="form-text text-center mt-2 text-muted">
-                  Left-click / drag to fill cells. Right-click or drag again to clear.
-                </div>
-              </div>
-
-              <button 
-                class="btn btn-dark w-100 py-2 fw-bold admin-save-btn" 
-                @click="handleSaveCustomStage"
-              >
-                💾 Save Custom Stage
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Reused Modal for History Review / Preview inside Back Office -->
-      <div v-if="isModalOpen && modalBoard" class="modal show d-block" tabindex="-1" style="background: rgba(0, 0, 0, 0.7); backdrop-filter: blur(4px); z-index: 1050;">
-        <div class="modal-dialog modal-dialog-centered">
-          <div class="modal-content border-0 shadow-lg bg-light text-dark">
-            <div class="modal-header bg-dark text-white border-0">
-              <h5 class="modal-title">👁️ Stage Solution Preview</h5>
-              <button type="button" class="btn-close btn-close-white" @click="closeModal" aria-label="Close"></button>
-            </div>
-            <div class="modal-body text-center bg-light">
-              <p class="text-muted mb-3">Stage: <strong class="text-dark">{{ selectedHistory?.stageName }}</strong></p>
-              <div class="modal-canvas-wrapper mx-auto" style="width: 320px; max-width: 100%; aspect-ratio: 1; background-color: #0f172a; border-radius: 12px; overflow: hidden; border: 1px solid rgba(255, 255, 255, 0.1); display: flex; justify-content: center; align-items: center; position: relative;">
-                <NonogramCanvas :board="modalBoard" :readOnly="true" :initialAngle="0" />
-              </div>
-            </div>
-            <div class="modal-footer border-0 bg-light">
-              <button type="button" class="btn btn-secondary modal-close-btn" @click="closeModal">Close</button>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
+  <AdminConsoleSection 
+    v-if="isAdminMode" 
+    v-model:logged="isAdminLogged" 
+    @stage-updated="handleStageUpdated"
+  />
 
   <div v-else class="app-container" :class="{ 'home-mode': currentTab === 'home' }">
     <!-- Slim Header (Visible only outside home page) -->
@@ -530,181 +240,26 @@
           </div>
         </template>
 
-        <template v-else-if="currentTab === 'mypage'">
-          <!-- Mypage Popup Overlay (Clicking outside the modal card closes it and returns to 'play') -->
-          <div class="mypage-popup-overlay" @click.self="onTabChange('play')" style="position: fixed; top: 0; left: 0; right: 0; bottom: 0; display: flex; justify-content: center; align-items: center; background: rgba(15, 23, 42, 0.75); backdrop-filter: blur(8px); z-index: 9999;">
-            <div class="mypage-popup-content" style="position: relative; width: 480px; max-width: 95vw; height: 500px; background: #1e293b; border: 1px solid rgba(255,255,255,0.08); border-radius: 20px; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5), 0 10px 10px -5px rgba(0, 0, 0, 0.4); padding: 2rem; display: flex; flex-direction: column; justify-content: flex-start; box-sizing: border-box; animation: modalFadeIn 0.25s cubic-bezier(0.16, 1, 0.3, 1);">
-              
-              <!-- Close Button (X) at Top Right (Always present to escape back to play) -->
-              <button 
-                @click="onTabChange('play')" 
-                class="mypage-popup-close-btn"
-                style="position: absolute; top: 1.25rem; right: 1.25rem; width: 32px; height: 32px; border-radius: 50%; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); color: #94a3b8; font-size: 1.25rem; line-height: 1; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.2s;"
-                onmouseover="this.style.background='rgba(255,255,255,0.08)'; this.style.color='#f8fafc';"
-                onmouseout="this.style.background='rgba(255,255,255,0.03)'; this.style.color='#94a3b8';"
-              >
-                &times;
-              </button>
-
-              <!-- VIEW 1: Review Mode (Displaying the selected completed puzzle board) -->
-              <div v-if="isReviewMode && modalBoard" class="mypage-review-view" style="display: flex; flex-direction: column; width: 100%; height: 100%; box-sizing: border-box; padding-top: 1.25rem; justify-content: flex-start; align-items: center; animation: modalFadeIn 0.2s ease-out;">
-                <!-- Absolute Position Back Button (Perfect symmetry with X button at top 1.25rem) -->
-                <button 
-                  @click="isReviewMode = false" 
-                  class="mypage-popup-back-btn"
-                  style="position: absolute; top: 1.25rem; left: 1.25rem; width: 32px; height: 32px; border-radius: 50%; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); color: #38bdf8; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.2s;"
-                  onmouseover="this.style.background='rgba(255,255,255,0.08)'; this.style.color='#f8fafc';"
-                  onmouseout="this.style.background='rgba(255,255,255,0.03)'; this.style.color='#38bdf8';"
-                >
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                    <line x1="19" y1="12" x2="5" y2="12"></line>
-                    <polyline points="12 19 5 12 12 5"></polyline>
-                  </svg>
-                </button>
-                
-                <!-- 2. Middle Row: Completed Puzzle Canvas (Naturally centered) -->
-                <div class="modal-canvas-wrapper" style="width: 300px; height: 300px; margin-top: auto; margin-bottom: auto; background-color: #0f172a; border-radius: 12px; overflow: hidden; border: 1px solid rgba(255, 255, 255, 0.08); display: flex; justify-content: center; align-items: center; position: relative; box-shadow: 0 4px 12px rgba(0,0,0,0.25);">
-                  <NonogramCanvas :board="modalBoard" :readOnly="true" :initialAngle="0" />
-                </div>
-
-                <!-- 3. Bottom Row: Date, Stage name, Time badge (Perfect width mapping) -->
-                <div style="display: flex; align-items: center; justify-content: space-between; width: 100%; border-top: 1px solid rgba(255, 255, 255, 0.05); padding-top: 0.85rem; margin-top: 0.25rem; margin-bottom: -0.65rem; text-align: left;">
-                  <div style="display: flex; align-items: center; gap: 0.5rem;">
-                    <span style="font-size: 0.75rem; font-weight: 500; color: #64748b;">{{ formatClearedAt(selectedHistory?.clearedAt) }}</span>
-                    <span style="font-weight: 700; color: #f8fafc; font-size: 1.05rem;">{{ selectedHistory?.stageName }}</span>
-                  </div>
-                  <span style="font-size: 0.7rem; font-weight: 600; padding: 0.18rem 0.45rem; background: rgba(56, 189, 248, 0.1); border: 1px solid rgba(56, 189, 248, 0.15); border-radius: 5px; color: #38bdf8;">{{ selectedHistory?.elapsedTime }}s</span>
-                </div>
-              </div>
-
-              <!-- VIEW 2: Default Profile & History List View -->
-              <div v-else class="mypage-default-view" style="display: flex; flex-direction: column; gap: 1.25rem; width: 100%; height: 100%; justify-content: flex-start;">
-                <!-- Non-login Guest Welcome Section -->
-                <div v-if="!currentUser" class="mypage-guest-view" style="display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; padding: 1.5rem 1rem; background: rgba(30, 41, 59, 0.3); border: 1px solid rgba(255,255,255,0.05); border-radius: 12px;">
-                  <div class="guest-icon" style="font-size: 2.5rem; margin-bottom: 0.75rem;">🎮</div>
-                  <h3 style="font-weight: 700; color: #f8fafc; margin-bottom: 0.5rem; font-size: 1.25rem; margin-top: 0;">Guest Mode Active</h3>
-                  <p style="color: #94a3b8; max-width: 320px; font-size: 0.85rem; line-height: 1.5; margin-bottom: 1.25rem; margin-top: 0;">
-                    You are playing as a guest. Clear records and history won't be saved on the server. Sign in to capture your achievements permanently!
-                  </p>
-                  <button 
-                    @click="handleGoogleLogin" 
-                    class="google-login-btn"
-                    style="display: flex; align-items: center; justify-content: center; gap: 0.75rem; padding: 0.75rem 1.5rem; background: #ffffff; color: #0f172a; font-weight: 600; border: none; border-radius: 10px; cursor: pointer; transition: all 0.2s; box-shadow: 0 4px 12px rgba(0,0,0,0.15);"
-                  >
-                    <svg width="18" height="18" viewBox="0 0 18 18">
-                      <path fill="#4285F4" d="M17.64 9.2c0-.63-.06-1.25-.16-1.84H9v3.47h4.84c-.21 1.12-.84 2.07-1.79 2.7v2.24h2.9c1.7-1.57 2.69-3.88 2.69-6.57z"/>
-                      <path fill="#34A853" d="M9 18c2.43 0 4.47-.8 5.96-2.23l-2.9-2.24c-.8.54-1.84.87-3.06.87-2.35 0-4.34-1.59-5.05-3.73H.95v2.3C2.43 15.89(5.5 18 9 18z"/>
-                      <path fill="#FBBC05" d="M3.95 10.66A5.4 5.4 0 0 1 3.6 9c0-.58.1-1.15.27-1.66V5.04H.95A9.02 9.02 0 0 0 0 9c0 1.45.35 2.82.95 4.04l3-2.38z"/>
-                      <path fill="#EA4335" d="M9 3.58c1.32 0 2.5.45 3.44 1.35L15 2.4C13.46.96 11.43 0 9 0 5.5 0 2.43 2.11.95 5.04l3 2.38C4.66 5.17 6.65 3.58 9 3.58z"/>
-                    </svg>
-                    Sign in with Google
-                  </button>
-                </div>
-
-                <!-- Logged-in User Dashboard -->
-                <div v-else class="mypage-dashboard-content" style="display: flex; flex-direction: column; gap: 1.25rem; width: 100%;">
-                  <!-- Profile Info Card -->
-                  <div class="mypage-user-profile" style="display: flex; align-items: center; gap: 1.25rem; padding: 1.25rem; background: rgba(30, 41, 59, 0.25); border: 1px solid rgba(255,255,255,0.05); border-radius: 14px;">
-                    <img 
-                      v-if="currentUser.profileImageUrl" 
-                      :src="currentUser.profileImageUrl" 
-                      alt="Profile" 
-                      style="width: 54px; height: 54px; border-radius: 50%; border: 2px solid #38bdf8; object-fit: cover;" 
-                  />
-                    <div v-else class="profile-avatar" style="width: 54px; height: 54px; border-radius: 50%; background: #38bdf8; display: flex; align-items: center; justify-content: center; font-size: 1.35rem; color: #ffffff;">👤</div>
-                    <div class="profile-details" style="flex-grow: 1; text-align: left; display: flex; flex-direction: column; justify-content: center;">
-                      <h2 class="profile-username" style="margin: 0; font-size: 1.2rem; font-weight: 700; color: #f8fafc; line-height: 1.25;">{{ currentUser.username }}</h2>
-                      <p v-if="currentUser.email" class="profile-email" style="margin: 0.25rem 0 0; font-size: 0.8rem; color: #64748b; line-height: 1.2;">{{ currentUser.email }}</p>
-                    </div>
-                    <button 
-                      @click="handleGoogleLogout" 
-                      class="logout-outline-btn"
-                      title="Logout"
-                      style="width: 34px; height: 34px; border-radius: 8px; background: rgba(239, 68, 68, 0.08); border: 1px solid rgba(239, 68, 68, 0.3); color: #ef4444; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.2s; flex-shrink: 0;"
-                      onmouseover="this.style.background='rgba(239, 68, 68, 0.18)'"
-                      onmouseout="this.style.background='rgba(239, 68, 68, 0.08)'"
-                    >
-                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
-                        <polyline points="16 17 21 12 16 7"></polyline>
-                        <line x1="21" y1="12" x2="9" y2="12"></line>
-                      </svg>
-                    </button>
-                  </div>
-
-                  <!-- History List Section -->
-                  <div class="mypage-history-section" style="text-align: left; margin-top: 0.25rem;">
-                    <div class="stage-card-list" style="display: flex; flex-direction: column; gap: 0.65rem; max-height: 210px; overflow-y: auto; padding: 4px 0.25rem 4px 4px;">
-                      <div 
-                        v-for="item in histories" 
-                        :key="item.id" 
-                        class="history-item" 
-                        @click="openHistoryModal(item)"
-                        style="cursor: pointer; display: flex; justify-content: space-between; align-items: center; padding: 0.45rem 0.95rem; background: rgba(255, 255, 255, 0.02); border: 1px solid rgba(255, 255, 255, 0.05); border-radius: 10px; transition: all 0.2s;"
-                        onmouseover="this.style.background='rgba(255, 255, 255, 0.04)'; this.style.borderColor='rgba(56, 189, 248, 0.2)';"
-                        onmouseout="this.style.background='rgba(255, 255, 255, 0.02)'; this.style.borderColor='rgba(255, 255, 255, 0.05)';"
-                      >
-                        <div style="display: flex; align-items: center; gap: 0.5rem;">
-                          <span class="cleared-at-text" style="font-size: 0.75rem; font-weight: 500; color: #64748b;">{{ formatClearedAt(item.clearedAt) }}</span>
-                          <span class="stage-name" style="font-weight: 600; color: #f8fafc; font-size: 0.9rem;">{{ item.stageName }}</span>
-                        </div>
-                        <span class="elapsed-time-badge" style="font-size: 0.7rem; font-weight: 600; padding: 0.18rem 0.45rem; background: rgba(56, 189, 248, 0.1); border: 1px solid rgba(56, 189, 248, 0.15); border-radius: 5px; color: #38bdf8;">{{ item.elapsedTime }}s</span>
-                      </div>
-                      <div v-if="histories.length === 0" class="empty-history" style="text-align: center; padding: 2rem; color: #64748b; font-size: 0.85rem;">
-                        No history found. Complete puzzles to populate!
-                      </div>
-                    </div>
-
-                    <!-- History Pagination Controls -->
-                    <div class="dropdown-pagination-bar" v-if="historyTotalPages > 1" style="margin-top: 0.75rem; display: flex; align-items: center; justify-content: space-between; border-top: 1px solid rgba(255, 255, 255, 0.1); padding-top: 0.75rem;">
-                      <button 
-                        class="btn btn-sm btn-outline-light" 
-                        :disabled="historyCurrentPage === 0"
-                        @click.stop="loadUserHistory(historyCurrentPage - 1)"
-                      >
-                        ◀
-                      </button>
-                      <span class="page-info" style="color: #94a3b8; font-size: 0.85rem; font-weight: 500;">
-                        {{ historyCurrentPage + 1 }} / {{ historyTotalPages }}
-                      </span>
-                      <button 
-                        class="btn btn-sm btn-outline-light" 
-                        :disabled="historyCurrentPage >= historyTotalPages - 1"
-                        @click.stop="loadUserHistory(historyCurrentPage + 1)"
-                      >
-                        ▶
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </template>
+        <MyPageSection
+          v-else-if="currentTab === 'mypage'"
+          v-model:is-review-mode="isReviewMode"
+          v-model:modal-board="modalBoard"
+          :current-user="currentUser"
+          :histories="histories"
+          :history-current-page="historyCurrentPage"
+          :history-total-pages="historyTotalPages"
+          @close="onTabChange('play')"
+          @login="handleGoogleLogin"
+          @logout="handleGoogleLogout"
+          @page-change="loadUserHistory"
+        />
 
 
       </main>
     </div>
 
-    <!-- Popup for Leaderboard (Semi-transparent absolute modal) -->
-    <div v-show="isLeaderboardOpen" class="leaderboard-popup-overlay" @click.self="isLeaderboardOpen = false">
-      <div class="leaderboard-popup-content">
-        <div class="leaderboard-popup-header">
-          <h3 class="leaderboard-popup-title">🏆 Global Leaderboard</h3>
-          <button class="leaderboard-popup-close" @click="isLeaderboardOpen = false">&times;</button>
-        </div>
-        <div class="leaderboard-scrollable">
-          <ul class="leaderboard-list">
-            <li v-for="(user, index) in rankings" :key="user.id" class="leaderboard-item">
-              <span class="rank">{{ index + 1 }}</span>
-              <span class="username">{{ user.username }}</span>
-              <span class="level">Lv.{{ user.level }}</span>
-              <span class="xp">{{ user.xp }} XP</span>
-            </li>
-          </ul>
-        </div>
-      </div>
-    </div>
+    <!-- Popup for Leaderboard -->
+    <LeaderboardPopup v-model:open="isLeaderboardOpen" :rankings="rankings" />
 
 
 
@@ -731,6 +286,16 @@
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted, computed, watch } from 'vue';
 import NonogramCanvas from './components/NonogramCanvas.vue';
+import AdminConsoleSection from './components/AdminConsoleSection.vue';
+import MyPageSection from './components/MyPageSection.vue';
+import LeaderboardPopup from './components/LeaderboardPopup.vue';
+
+async function handleStageUpdated() {
+  await Promise.all([
+    loadStagesList(),
+    loadAiStagesList()
+  ]);
+}
 import { PuzzleBoard } from './engine/puzzleBoard';
 import { rotateGrid } from './engine/gridRotator';
 import { fetchStages, fetchStageById, fetchAiStages, startStage, likeStage, dislikeStage, fetchNextReleaseDelaySeconds, verifyStageSolve } from './api/stageApi';
@@ -740,14 +305,10 @@ import type { User, HistoryResponse } from './api/userApi';
 import { setUserSession, clearUserSession } from './api/auth';
 import type { UserSession } from './api/auth';
 import { loginWithGoogle, logout as googleLogout, getStoredToken } from './api/cognito';
-import { fetchAdminStages, createStage, approveStage, deleteStage, restoreStage, generateAiStage, loginAdmin, logoutAdmin, isAdminAuthenticated } from './api/adminApi';
-import type { AdminStageInfo } from './api/adminApi';
+import { isAdminAuthenticated } from './api/adminApi';
 
 const isAdminMode = ref(false);
 const isAdminLogged = ref(isAdminAuthenticated());
-const adminUsernameInput = ref('');
-const adminPasswordInput = ref('');
-const loginError = ref('');
 const stages = ref<StageSummary[]>([]);
 
 const selectedStageId = ref<number | null>(null);
@@ -803,6 +364,7 @@ const isAiStageActive = ref(false);
 const selectedCategory = ref<'normal' | 'ai'>('normal');
 const isMypageTipOpen = ref(false);
 const isReviewMode = ref(false);
+const modalBoard = ref<PuzzleBoard | null>(null);
 
 const isStageListOpen = ref(false);
 const isLeaderboardOpen = ref(false);
@@ -824,8 +386,6 @@ const playStagesCurrentPage = ref(0);
 const playStagesTotalPages = ref(1);
 const historyCurrentPage = ref(0);
 const historyTotalPages = ref(1);
-const adminStagesCurrentPage = ref(0);
-const adminStagesTotalPages = ref(1);
 
 const allUnclearedStages = computed(() => {
   const stageMap = new Map<number, StageSummary>();
@@ -1141,24 +701,7 @@ function selectStageCard(id: number, isAi: boolean) {
 
 const currentRotationSteps = ref(0);
 
-const isModalOpen = ref(false);
-const selectedHistory = ref<any>(null);
-const modalBoard = ref<PuzzleBoard | null>(null);
 
-
-function formatClearedAt(clearedAt: any): string {
-  if (!clearedAt) return '';
-  if (typeof clearedAt === 'string') {
-    return clearedAt.split('T')[0];
-  }
-  if (Array.isArray(clearedAt)) {
-    const yyyy = clearedAt[0];
-    const mm = String(clearedAt[1]).padStart(2, '0');
-    const dd = String(clearedAt[2]).padStart(2, '0');
-    return `${yyyy}-${mm}-${dd}`;
-  }
-  return String(clearedAt);
-}
 
 function getErrorMessage(error: any, fallbackMessage: string): string {
   if (error && error.response) {
@@ -1557,369 +1100,25 @@ async function handleHashChange() {
 async function onTabChange(tab: 'home' | 'play' | 'mypage' | 'admin') {
   currentTab.value = tab;
   updateHashFromTab(tab);
-  if (tab !== 'mypage') {
-    isReviewMode.value = false;
-  }
   if (tab === 'mypage') {
     await loadUserHistory();
     const tipShown = localStorage.getItem('rogic_mypage_tip_shown');
     if (!tipShown) {
       isMypageTipOpen.value = true;
     }
-  } else if (tab === 'admin') {
-    if (isAdminLogged.value) {
-      await loadAdminStagesList();
-      initCreatorGrid();
-    }
   }
 }
 
-const adminStages = ref<AdminStageInfo[]>([]);
-const adminSearchQuery = ref('');
-const adminSizeFilter = ref('All');
-const adminStatusFilter = ref('All');
-const adminSortKey = ref<'id' | 'name' | 'size' | 'status'>('id');
-const adminSortOrder = ref<'asc' | 'desc'>('asc');
-
-const filteredAndSortedAdminStages = computed(() => {
-  let list = [...adminStages.value];
-
-  // 1. Filter by search query (Name case-insensitive)
-  if (adminSearchQuery.value.trim() !== '') {
-    const q = adminSearchQuery.value.toLowerCase();
-    list = list.filter(s => s.name.toLowerCase().includes(q));
-  }
-
-  // 2. Filter by size (width x height)
-  if (adminSizeFilter.value !== 'All') {
-    const size = parseInt(adminSizeFilter.value);
-    list = list.filter(s => s.width === size || s.height === size);
-  }
-
-  // 3. Filter by status
-  if (adminStatusFilter.value !== 'All') {
-    if (adminStatusFilter.value === 'Active') {
-      list = list.filter(s => s.approved && s.active);
-    } else if (adminStatusFilter.value === 'Pending') {
-      list = list.filter(s => !s.approved);
-    } else if (adminStatusFilter.value === 'Inactive') {
-      list = list.filter(s => s.approved && !s.active);
-    }
-  }
-
-  // 4. Sort
-  list.sort((a, b) => {
-    let valA: any;
-    let valB: any;
-
-    if (adminSortKey.value === 'id') {
-      valA = a.id;
-      valB = b.id;
-    } else if (adminSortKey.value === 'name') {
-      valA = a.name.toLowerCase();
-      valB = b.name.toLowerCase();
-    } else if (adminSortKey.value === 'size') {
-      valA = a.width * a.height;
-      valB = b.width * b.height;
-    } else if (adminSortKey.value === 'status') {
-      valA = a.approved && a.active ? 3 : (!a.approved ? 2 : 1);
-      valB = b.approved && b.active ? 3 : (!b.approved ? 2 : 1);
-    }
-
-    if (valA < valB) return adminSortOrder.value === 'asc' ? -1 : 1;
-    if (valA > valB) return adminSortOrder.value === 'asc' ? 1 : -1;
-    return 0;
-  });
-
-  return list;
-});
-
-function toggleAdminSort(key: 'id' | 'name' | 'size' | 'status') {
-  if (adminSortKey.value === key) {
-    adminSortOrder.value = adminSortOrder.value === 'asc' ? 'desc' : 'asc';
-  } else {
-    adminSortKey.value = key;
-    adminSortOrder.value = 'asc';
-  }
-}
-const creatorName = ref('');
-const creatorWidth = ref(5);
-const creatorHeight = ref(5);
-const adminAiWidth = ref(5);
-const adminAiHeight = ref(5);
-const creatorGrid = ref<number[][]>([]);
-const creatorCanvasRef = ref<HTMLCanvasElement | null>(null);
-const isCreatorDragging = ref(false);
-const creatorDragVal = ref(0);
-const lastCreatorRow = ref(-1);
-const lastCreatorCol = ref(-1);
-
-async function loadAdminStagesList(page: number = 0) {
-  try {
-    const res = await fetchAdminStages(page, 100);
-    let list: AdminStageInfo[];
-    if (res && 'content' in res) {
-      list = res.content;
-      adminStagesTotalPages.value = res.totalPages;
-      adminStagesCurrentPage.value = res.number;
-    } else {
-      list = res;
-      adminStagesTotalPages.value = 1;
-      adminStagesCurrentPage.value = 0;
-    }
-    adminStages.value = list;
-  } catch (error) {
-    console.error('Failed to load admin stages:', error);
-  }
+function handleGoogleLogin() {
+  loginWithGoogle();
 }
 
-function initCreatorGrid() {
-  creatorGrid.value = Array.from({ length: creatorHeight.value }, () =>
-    Array(creatorWidth.value).fill(0)
-  );
-  setTimeout(drawCreatorGrid, 20);
-}
-
-function drawCreatorGrid() {
-  const canvas = creatorCanvasRef.value;
-  if (!canvas) return;
-  const ctx = canvas.getContext('2d');
-  if (!ctx) return;
-
-  const maxCells = Math.max(creatorWidth.value, creatorHeight.value);
-  const cellPixelSize = maxCells <= 5 ? 30 : (maxCells <= 10 ? 20 : (maxCells <= 15 ? 15 : (maxCells <= 20 ? 12 : 8)));
-  
-  canvas.width = creatorWidth.value * cellPixelSize;
-  canvas.height = creatorHeight.value * cellPixelSize;
-
-  // Background
-  ctx.fillStyle = '#0f172a';
-  ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-  for (let r = 0; r < creatorHeight.value; r++) {
-    for (let c = 0; c < creatorWidth.value; c++) {
-      const x = c * cellPixelSize;
-      const y = r * cellPixelSize;
-
-      ctx.strokeStyle = '#334155';
-      ctx.lineWidth = 1;
-      ctx.strokeRect(x, y, cellPixelSize, cellPixelSize);
-
-      const val = creatorGrid.value[r]?.[c] || 0;
-      if (val === 1) {
-        const grad = ctx.createLinearGradient(x, y, x + cellPixelSize, y + cellPixelSize);
-        grad.addColorStop(0, '#38bdf8');
-        grad.addColorStop(1, '#818cf8');
-        ctx.fillStyle = grad;
-        ctx.fillRect(x + 1, y + 1, cellPixelSize - 2, cellPixelSize - 2);
-      } else {
-        ctx.fillStyle = '#1e293b';
-        ctx.fillRect(x + 1, y + 1, cellPixelSize - 2, cellPixelSize - 2);
-      }
-    }
-  }
-
-  // Draw grid helper lines every 5 cells
-  ctx.strokeStyle = '#64748b';
-  ctx.lineWidth = 2;
-  for (let r = 0; r <= creatorHeight.value; r += 5) {
-    if (r > 0 && r < creatorHeight.value) {
-      ctx.beginPath();
-      ctx.moveTo(0, r * cellPixelSize);
-      ctx.lineTo(canvas.width, r * cellPixelSize);
-      ctx.stroke();
-    }
-  }
-  for (let c = 0; c <= creatorWidth.value; c += 5) {
-    if (c > 0 && c < creatorWidth.value) {
-      ctx.beginPath();
-      ctx.moveTo(c * cellPixelSize, 0);
-      ctx.lineTo(c * cellPixelSize, canvas.height);
-      ctx.stroke();
-    }
-  }
-}
-
-function getCreatorCoords(clientX: number, clientY: number) {
-  const canvas = creatorCanvasRef.value;
-  if (!canvas) return null;
-  const rect = canvas.getBoundingClientRect();
-  const scaleX = canvas.width / rect.width;
-  const scaleY = canvas.height / rect.height;
-  const clickX = (clientX - rect.left) * scaleX;
-  const clickY = (clientY - rect.top) * scaleY;
-
-  const maxCells = Math.max(creatorWidth.value, creatorHeight.value);
-  const cellPixelSize = maxCells <= 5 ? 30 : (maxCells <= 10 ? 20 : (maxCells <= 15 ? 15 : (maxCells <= 20 ? 12 : 8)));
-  
-  const col = Math.floor(clickX / cellPixelSize);
-  const row = Math.floor(clickY / cellPixelSize);
-
-  if (row < 0 || row >= creatorHeight.value || col < 0 || col >= creatorWidth.value) {
-    return null;
-  }
-  return { row, col };
-}
-
-function handleCreatorMouseDown(event: MouseEvent) {
-  if (event.button !== 0) return; // Only left click
-  const coords = getCreatorCoords(event.clientX, event.clientY);
-  if (!coords) return;
-
-  const { row, col } = coords;
-  creatorDragVal.value = creatorGrid.value[row][col] === 1 ? 0 : 1;
-  creatorGrid.value[row][col] = creatorDragVal.value;
-  isCreatorDragging.value = true;
-  lastCreatorRow.value = row;
-  lastCreatorCol.value = col;
-  drawCreatorGrid();
-
-  window.addEventListener('mousemove', handleCreatorWindowMouseMove);
-  window.addEventListener('mouseup', handleCreatorWindowMouseUp);
-}
-
-function handleCreatorWindowMouseMove(event: MouseEvent) {
-  if (!isCreatorDragging.value) return;
-  const coords = getCreatorCoords(event.clientX, event.clientY);
-  if (!coords) return;
-
-  const { row, col } = coords;
-  if (row !== lastCreatorRow.value || col !== lastCreatorCol.value) {
-    creatorGrid.value[row][col] = creatorDragVal.value;
-    lastCreatorRow.value = row;
-    lastCreatorCol.value = col;
-    drawCreatorGrid();
-  }
-}
-
-function handleCreatorWindowMouseUp() {
-  if (isCreatorDragging.value) {
-    isCreatorDragging.value = false;
-    window.removeEventListener('mousemove', handleCreatorWindowMouseMove);
-    window.removeEventListener('mouseup', handleCreatorWindowMouseUp);
-  }
-}
-
-function handleCreatorTouchStart(event: TouchEvent) {
-  if (event.touches.length !== 1) return;
-  event.preventDefault();
-  const touch = event.touches[0];
-  const coords = getCreatorCoords(touch.clientX, touch.clientY);
-  if (!coords) return;
-
-  const { row, col } = coords;
-  creatorDragVal.value = creatorGrid.value[row][col] === 1 ? 0 : 1;
-  creatorGrid.value[row][col] = creatorDragVal.value;
-  isCreatorDragging.value = true;
-  lastCreatorRow.value = row;
-  lastCreatorCol.value = col;
-  drawCreatorGrid();
-
-  window.addEventListener('touchmove', handleCreatorWindowTouchMove, { passive: false });
-  window.addEventListener('touchend', handleCreatorWindowTouchEnd);
-  window.addEventListener('touchcancel', handleCreatorWindowTouchEnd);
-}
-
-function handleCreatorWindowTouchMove(event: TouchEvent) {
-  if (!isCreatorDragging.value || event.touches.length !== 1) return;
-  event.preventDefault();
-  const touch = event.touches[0];
-  const coords = getCreatorCoords(touch.clientX, touch.clientY);
-  if (!coords) return;
-
-  const { row, col } = coords;
-  if (row !== lastCreatorRow.value || col !== lastCreatorCol.value) {
-    creatorGrid.value[row][col] = creatorDragVal.value;
-    lastCreatorRow.value = row;
-    lastCreatorCol.value = col;
-    drawCreatorGrid();
-  }
-}
-
-function handleCreatorWindowTouchEnd() {
-  if (isCreatorDragging.value) {
-    isCreatorDragging.value = false;
-    window.removeEventListener('touchmove', handleCreatorWindowTouchMove);
-    window.removeEventListener('touchend', handleCreatorWindowTouchEnd);
-    window.removeEventListener('touchcancel', handleCreatorWindowTouchEnd);
-  }
-}
-
-async function handleSaveCustomStage() {
-  if (!creatorName.value || creatorName.value.trim() === '') {
-    alert('Please enter a stage name.');
-    return;
-  }
-
-  // Verify at least one filled cell
-  let hasFilled = false;
-  for (let r = 0; r < creatorHeight.value; r++) {
-    for (let c = 0; c < creatorWidth.value; c++) {
-      if (creatorGrid.value[r][c] === 1) {
-        hasFilled = true;
-        break;
-      }
-    }
-  }
-
-  if (!hasFilled) {
-    alert('Please draw at least one filled cell.');
-    return;
-  }
-
-  try {
-    const newStage = {
-      name: creatorName.value,
-      width: creatorWidth.value,
-      height: creatorHeight.value,
-      solutionGrid: creatorGrid.value
-    };
-
-    await createStage(newStage as any);
-    alert('Stage saved successfully!');
-    
-    // Clear and reload
-    creatorName.value = '';
-    initCreatorGrid();
-    await loadAdminStagesList();
-    await loadStagesList();
-  } catch (error: any) {
-    console.error('Failed to save stage:', error);
-    alert(error.response?.data || 'Failed to save stage. Ensure it has a unique solution.');
-  }
-}
-
-async function handleApproveStage(id: number) {
-  try {
-    await approveStage(id);
-    await loadAdminStagesList();
-    await loadStagesList();
-    await loadAiStagesList();
-  } catch (error) {
-    console.error('Failed to approve stage:', error);
-  }
-}
-
-async function handleDeleteStage(id: number) {
-  if (!confirm('Are you sure you want to delete this stage?')) return;
-  try {
-    await deleteStage(id);
-    await loadAdminStagesList();
-    await loadStagesList();
-    await loadAiStagesList();
-  } catch (error) {
-    console.error('Failed to delete stage:', error);
-  }
-}
-
-async function handleRestoreStage(id: number) {
-  try {
-    await restoreStage(id);
-    await loadAdminStagesList();
-    await loadStagesList();
-    await loadAiStagesList();
-  } catch (error) {
-    console.error('Failed to restore stage:', error);
+function handleGoogleLogout() {
+  googleLogout();
+  const stageId = selectedStageId.value !== null ? selectedStageId.value : selectedAiStageId.value;
+  if (stageId !== null) {
+    const key = `rogic_progress_stage_${isAiStageActive.value ? 'ai_' : ''}${stageId}`;
+    localStorage.removeItem(key);
   }
 }
 
@@ -1943,78 +1142,9 @@ async function handleVote(isLike: boolean) {
   }
 }
 
-async function handleAdminAiGenerate() {
-  try {
-    const w = Number(adminAiWidth.value) || 5;
-    const h = Number(adminAiHeight.value) || 5;
-    await generateAiStage(w, h);
-    alert('Stage generated as Pending Approval!');
-    await loadAdminStagesList();
-  } catch (error) {
-    console.error('Failed to generate stage:', error);
-    alert('Failed to generate stage.');
-  }
-}
-
-async function handleAdminLogin() {
-  try {
-    loginError.value = '';
-    await loginAdmin(adminUsernameInput.value, adminPasswordInput.value);
-    isAdminLogged.value = true;
-    adminUsernameInput.value = '';
-    adminPasswordInput.value = '';
-    await loadAdminStagesList();
-    initCreatorGrid();
-  } catch (error: any) {
-    console.error('Admin login failed:', error);
-    loginError.value = 'Invalid username or password';
-  }
-}
-
-async function handleAdminLogout() {
-  await logoutAdmin();
-  isAdminLogged.value = false;
-}
-
 function closeMypageTip() {
   isMypageTipOpen.value = false;
   localStorage.setItem('rogic_mypage_tip_shown', 'true');
-}
-
-async function openHistoryModal(item: any) {
-  selectedHistory.value = item;
-  try {
-    const details = await fetchStageById(item.stageId);
-    const board = new PuzzleBoard(details.solutionGrid);
-    for (let r = 0; r < board.rowCount; r++) {
-      for (let c = 0; c < board.colCount; c++) {
-        board.setCell(r, c, details.solutionGrid[r][c]);
-      }
-    }
-    modalBoard.value = board;
-    isReviewMode.value = true;
-  } catch (error) {
-    console.error('Failed to load stage details for review:', error);
-  }
-}
-
-function closeModal() {
-  isReviewMode.value = false;
-  modalBoard.value = null;
-  selectedHistory.value = null;
-}
-
-function handleGoogleLogin() {
-  loginWithGoogle();
-}
-
-function handleGoogleLogout() {
-  googleLogout();
-  const stageId = selectedStageId.value !== null ? selectedStageId.value : selectedAiStageId.value;
-  if (stageId !== null) {
-    const key = `rogic_progress_stage_${isAiStageActive.value ? 'ai_' : ''}${stageId}`;
-    localStorage.removeItem(key);
-  }
 }
 
 async function initializeUserSession() {
@@ -2180,10 +1310,7 @@ onMounted(async () => {
     loadRankingsList()
   ]);
 
-  if (isAdminMode.value && isAdminLogged.value) {
-    await loadAdminStagesList();
-    initCreatorGrid();
-  }
+
 
   window.addEventListener('resize', handleConfettiResize);
   document.addEventListener('touchstart', preventPinchZoom, { passive: false });
