@@ -1,6 +1,6 @@
 <template>
   <div class="nonogram-canvas-container">
-    <div class="canvas-frame" ref="frameRef" :class="{ 'solved-glowing-aura': showSolveImpact }">
+    <div class="canvas-frame" ref="frameRef">
       <div class="canvas-anim-wrapper">
         <canvas 
           ref="canvasRef" 
@@ -861,23 +861,4 @@ canvas {
   overflow: hidden;
 }
 
-@keyframes blueGlowPulse {
-  0% {
-    box-shadow: 0 0 15px 2px rgba(56, 189, 248, 0.35);
-    border-color: rgba(56, 189, 248, 0.45);
-  }
-  50% {
-    box-shadow: 0 0 30px 8px rgba(99, 102, 241, 0.65);
-    border-color: rgba(129, 140, 248, 0.8);
-  }
-  100% {
-    box-shadow: 0 0 15px 2px rgba(56, 189, 248, 0.35);
-    border-color: rgba(56, 189, 248, 0.45);
-  }
-}
-
-.solved-glowing-aura {
-  animation: blueGlowPulse 2.8s ease-in-out infinite;
-  transition: border-color 0.5s ease, box-shadow 0.5s ease;
-}
 </style>
