@@ -2451,13 +2451,16 @@ body {
   justify-content: center;
   position: relative;
   gap: 0.6rem;
-  background: rgba(30, 41, 59, 0.6);
+  background: linear-gradient(180deg, rgba(30, 41, 59, 0.75) 0%, rgba(15, 23, 42, 0.85) 100%);
   backdrop-filter: blur(12px);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+  border-bottom: 1px solid rgba(0, 0, 0, 0.5);
   padding: 0.35rem 1.5rem;
   border-radius: 0;
   cursor: pointer;
-  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.15);
+  box-shadow: 
+    inset 0 1px 0 0 rgba(255, 255, 255, 0.12),
+    0 4px 20px rgba(0, 0, 0, 0.3);
   transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
   white-space: nowrap;
   width: 100%;
@@ -2483,6 +2486,7 @@ body {
   text-align: center;
   width: 100%;
   letter-spacing: 0.03em;
+  text-shadow: 0 -1px 0 rgba(0, 0, 0, 0.4), 0 1px 2px rgba(0, 0, 0, 0.6);
 }
 
 .badge-progress-bar-container {
