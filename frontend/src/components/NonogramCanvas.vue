@@ -671,9 +671,8 @@ watch(() => props.board.isSolved(), (solved) => {
   justify-content: center;
   align-items: center;
   background-color: #0f172a;
-  border-radius: 0 0 8px 8px;
+  border-radius: 8px;
   border: 1px solid rgba(255, 255, 255, 0.05);
-  border-top: none;
   position: relative;
 }
 

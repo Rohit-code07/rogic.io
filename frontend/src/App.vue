@@ -2453,10 +2453,10 @@ body {
   gap: 0.6rem;
   background: rgba(15, 23, 42, 0.55);
   backdrop-filter: blur(8px);
-  border: 1px solid rgba(255, 255, 255, 0.05);
-  border-bottom: 1px solid rgba(0, 0, 0, 0.4);
+  border: none;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
   padding: 0.35rem 1.5rem;
-  border-radius: 8px 8px 0 0;
+  border-radius: 0;
   cursor: pointer;
   box-shadow: inset 0 2px 5px rgba(0, 0, 0, 0.4);
   transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
