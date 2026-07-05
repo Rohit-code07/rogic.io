@@ -6,6 +6,10 @@
       @mousedown="handleMouseDown"
       @touchstart="handleTouchStart"
       @wheel="handleWheel"
+      @mouseenter="handleFrameMouseEnter"
+      @mousemove="handleFrameMouseMove"
+      @mouseleave="handleFrameMouseLeave"
+      :style="{ cursor: activeCursor }"
       @contextmenu.prevent
     >
       <div class="canvas-anim-wrapper">
@@ -17,56 +21,8 @@
       </div>
     </div>
 
-    <!-- Floating Draw Mode Toggle -->
-    <div v-if="!readOnly" class="draw-mode-hud" @click="toggleDrawMode" title="Toggle Draw Mode" style="cursor: pointer;">
-      <div class="draw-mode-slider" :class="drawMode"></div>
-      <button 
-        class="draw-mode-btn" 
-        :class="{ active: drawMode === 'fill' }" 
-        @click.stop="toggleDrawMode"
-        title="Fill Mode"
-        type="button"
-      >
-        <span class="mode-icon fill-icon"></span>
-      </button>
-      <button 
-        class="draw-mode-btn" 
-        :class="{ active: drawMode === 'x' }" 
-        @click.stop="toggleDrawMode"
-        title="X Mark Mode"
-        type="button"
-      >
-        <svg class="mode-icon x-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-          <path d="M18 6L6 18M6 6l12 12" stroke-width="3.5" stroke-linecap="round"/>
-        </svg>
-      </button>
-    </div>
-
-    <!-- Floating History (Undo/Redo) HUD -->
-    <div v-if="!readOnly" class="history-hud">
-      <button 
-        class="history-btn" 
-        @click="handleUndo" 
-        :disabled="!canUndo" 
-        title="Undo (Ctrl+Z)" 
-        type="button"
-      >
-        <svg class="history-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M3 7v6h6M21 17a9 9 0 0 0-9-9 9 9 0 0 0-6 2.3L3 13" />
-        </svg>
-      </button>
-      <button 
-        class="history-btn" 
-        @click="handleRedo" 
-        :disabled="!canRedo" 
-        title="Redo (Ctrl+Y)" 
-        type="button"
-      >
-        <svg class="history-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M21 7v6h-6M3 17a9 9 0 0 1 9-9 9 9 0 0 1 6 2.3l3 2.7" />
-        </svg>
-      </button>
-    </div>
+    <DrawModeHUD v-if="!readOnly" v-model="drawMode" />
+    <HistoryHUD v-if="!readOnly" :can-undo="canUndo" :can-redo="canRedo" @undo="handleUndo" @redo="handleRedo" />
   </div>
 </template>
 
@@ -74,7 +30,9 @@
 import { ref, onMounted, watch, onUnmounted, computed } from 'vue';
 import { PuzzleBoard } from '../engine/puzzleBoard';
 import { getGridCoordinates } from '../engine/coordinateMapper';
-import { calculateLineHints } from '../engine/hintCalculator';
+import { drawNonogramBoard, getBoardDimensions } from '../engine/canvasRenderer';
+import DrawModeHUD from './DrawModeHUD.vue';
+import HistoryHUD from './HistoryHUD.vue';
 
 const props = defineProps<{
   board: PuzzleBoard;
@@ -91,10 +49,6 @@ const emit = defineEmits<{
 const canvasRef = ref<HTMLCanvasElement | null>(null);
 const drawMode = ref<'fill' | 'x'>('fill');
 
-function toggleDrawMode() {
-  drawMode.value = drawMode.value === 'fill' ? 'x' : 'fill';
-}
-
 // Standard grid layout dimensions
 const getCellSize = (maxCount: number) => {
   if (maxCount <= 10) return 30;
@@ -104,22 +58,7 @@ const getCellSize = (maxCount: number) => {
   return 16; // 30x30 or larger
 };
 
-function isArrayEqual(a: number[], b: number[]) {
-  if (a.length !== b.length) return false;
-  for (let i = 0; i < a.length; i++) {
-    if (a[i] !== b[i]) return false;
-  }
-  return true;
-}
-
 const CELL_SIZE = computed(() => getCellSize(Math.max(props.board.colCount, props.board.rowCount)));
-
-const getHintParams = (cellSize: number) => {
-  const fontSize = Math.max(8, Math.min(12, Math.floor(cellSize * 0.5) + 2));
-  const spacing = Math.max(10, Math.min(16, Math.floor(cellSize * 0.6) + 4));
-  const offset = Math.max(6, Math.min(10, Math.floor(cellSize * 0.3) + 1));
-  return { fontSize, spacing, offset };
-};
 
 const playAngle = props.initialAngle !== undefined ? props.initialAngle : 0;
 const targetOrthogonalAngle = computed(() => {
@@ -145,23 +84,7 @@ const currentAngle = ref(getStartingAngle());
 
 // Dynamic calculations for bounds
 const getDimensions = () => {
-  const cellSizeVal = CELL_SIZE.value;
-  const { spacing } = getHintParams(cellSizeVal);
-  const boardWidth = props.board.colCount * cellSizeVal;
-  const boardHeight = props.board.rowCount * cellSizeVal;
-  const boardDiag = Math.sqrt(boardWidth * boardWidth + boardHeight * boardHeight);
-
-  const maxRowHintsLength = Math.max(...props.board.rowHints.map(h => h.length), 1);
-  const maxColHintsLength = Math.max(...props.board.colHints.map(h => h.length), 1);
-  const hintPadding = Math.max(maxRowHintsLength, maxColHintsLength) * spacing + 40;
-
-  const size = Math.ceil(boardDiag + hintPadding * 2);
-  return {
-    width: size,
-    height: size,
-    halfW: boardWidth / 2,
-    halfH: boardHeight / 2
-  };
+  return getBoardDimensions(props.board, CELL_SIZE.value);
 };
 
 const scale = ref(1.0);
@@ -197,14 +120,10 @@ let panStartX = 0;
 let panStartY = 0;
 
 const canvasStyle = computed(() => {
-  const transitionTime = props.board.isSolved() ? '0.3s' : '0.15s';
-  const transitionStyle = ((isDragging.value || isPanning.value) && !props.board.isSolved()) 
-    ? 'none' 
-    : `transform ${transitionTime} cubic-bezier(0.2, 0.8, 0.2, 1)`;
   return {
     transform: `translate(${offsetX.value}px, ${offsetY.value}px) scale(${scale.value})`,
     transformOrigin: 'center center',
-    transition: transitionStyle
+    transition: 'none'
   };
 });
 
@@ -245,7 +164,7 @@ function drawBoard() {
   const canvas = canvasRef.value;
   if (!canvas) return;
 
-  const { width, height, halfW, halfH } = getDimensions();
+  const { width, height } = getDimensions();
   const cellSizeVal = CELL_SIZE.value;
   if (canvas.width !== width) {
     canvas.width = width;
@@ -257,8 +176,6 @@ function drawBoard() {
   const ctx = canvas.getContext('2d');
   if (!ctx) return;
 
-  const isSolved = props.board.isSolved();
-
   config.centerX = width / 2;
   config.centerY = height / 2;
   config.angle = currentAngle.value;
@@ -266,161 +183,11 @@ function drawBoard() {
   config.colCount = props.board.colCount;
   config.cellSize = cellSizeVal;
 
-  // Clear canvas (sleek dark themed layout)
-  ctx.fillStyle = '#0f172a';
-  ctx.fillRect(0, 0, width, height);
-
-  ctx.save();
-  ctx.translate(config.centerX, config.centerY);
-  ctx.rotate(config.angle);
-
-  // Draw background for overall active board area
-  if (isSolved && glowIntensity.value > 0) {
-    ctx.save();
-    ctx.shadowColor = `rgba(56, 189, 248, ${glowIntensity.value})`;
-    ctx.shadowBlur = glowBlur.value;
-    ctx.fillStyle = '#1e293b'; // slate-800
-    ctx.fillRect(-halfW, -halfH, props.board.colCount * cellSizeVal, props.board.rowCount * cellSizeVal);
-    ctx.restore();
-  } else {
-    ctx.fillStyle = '#1e293b'; // slate-800
-    ctx.fillRect(-halfW, -halfH, props.board.colCount * cellSizeVal, props.board.rowCount * cellSizeVal);
-  }
-
-  // Draw grid cells
-  for (let r = 0; r < props.board.rowCount; r++) {
-    for (let c = 0; c < props.board.colCount; c++) {
-      const x = -halfW + c * cellSizeVal;
-      const y = -halfH + r * cellSizeVal;
-
-      if (!isSolved) {
-        ctx.strokeStyle = '#334155'; // slate-700
-        ctx.lineWidth = 1;
-        ctx.strokeRect(x, y, cellSizeVal, cellSizeVal);
-      }
-
-      const cellState = props.board.currentGrid[r][c];
-      if (cellState === 1) {
-        // Filled with premium gem gradient
-        const grad = ctx.createLinearGradient(x, y, x + cellSizeVal, y + cellSizeVal);
-        grad.addColorStop(0, '#38bdf8'); // sky-400
-        grad.addColorStop(1, '#818cf8'); // indigo-400
-        ctx.fillStyle = grad;
-
-        if (isSolved) {
-          // Seamless full cell fill for clean pixel art when solved
-          ctx.fillRect(x, y, cellSizeVal, cellSizeVal);
-        } else {
-          // Play mode: cell margin and border stroke
-          ctx.fillRect(x + 1.5, y + 1.5, cellSizeVal - 3, cellSizeVal - 3);
-          ctx.strokeStyle = '#6366f1';
-          ctx.lineWidth = 1.5;
-          ctx.strokeRect(x + 1.5, y + 1.5, cellSizeVal - 3, cellSizeVal - 3);
-        }
-      } else if (cellState === 2 && !isSolved) {
-        // Marked (X) - Translucent slate grey
-        ctx.strokeStyle = 'rgba(148, 163, 184, 0.45)';
-        ctx.lineWidth = 2.0;
-        ctx.beginPath();
-        ctx.moveTo(x + cellSizeVal / 4, y + cellSizeVal / 4);
-        ctx.lineTo(x + 3 * cellSizeVal / 4, y + 3 * cellSizeVal / 4);
-        ctx.moveTo(x + 3 * cellSizeVal / 4, y + cellSizeVal / 4);
-        ctx.lineTo(x + cellSizeVal / 4, y + 3 * cellSizeVal / 4);
-        ctx.stroke();
-      }
-    }
-  }
-
-  // Draw bold line markers every 5 lines only when active (not solved)
-  if (!isSolved) {
-    ctx.strokeStyle = '#64748b'; // slate-500
-    ctx.lineWidth = 2.5;
-    for (let r = 0; r <= props.board.rowCount; r += 5) {
-      if (r > 0 && r < props.board.rowCount) {
-        const y = -halfH + r * cellSizeVal;
-        ctx.beginPath();
-        ctx.moveTo(-halfW, y);
-        ctx.lineTo(halfW, y);
-        ctx.stroke();
-      }
-    }
-    for (let c = 0; c <= props.board.colCount; c += 5) {
-      if (c > 0 && c < props.board.colCount) {
-        const x = -halfW + c * cellSizeVal;
-        ctx.beginPath();
-        ctx.moveTo(x, -halfH);
-        ctx.lineTo(x, halfH);
-        ctx.stroke();
-      }
-    }
-  }
-
-  // Draw hints ONLY if not solved
-  if (!isSolved) {
-    const { fontSize, spacing, offset } = getHintParams(cellSizeVal);
-
-    // Draw row hints (on the left side)
-    ctx.font = `bold ${fontSize}px sans-serif`;
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-
-    for (let r = 0; r < props.board.rowCount; r++) {
-      const hints = props.board.rowHints[r] || [0];
-      const y = -halfH + r * cellSizeVal + cellSizeVal / 2;
-
-      // Check if row hints are matched by player's current cells
-      const rowCells = props.board.currentGrid[r];
-      const rowLine = rowCells.map(val => val === 1 ? 1 : 0);
-      const rowCurrentHints = calculateLineHints(rowLine);
-      const isRowMatching = isArrayEqual(rowCurrentHints, hints);
-
-      ctx.fillStyle = isRowMatching ? '#475569' : '#94a3b8'; // Fade to slate-600 if completed correctly
-
-      for (let h = 0; h < hints.length; h++) {
-        const hintVal = hints[hints.length - 1 - h];
-        const hx = -halfW - offset - h * spacing;
-        
-        ctx.save();
-        ctx.translate(hx, y);
-        ctx.rotate(-config.angle);
-        ctx.fillText(hintVal.toString(), 0, 0);
-        ctx.restore();
-      }
-    }
-
-    // Draw col hints (above the grid)
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-
-    for (let c = 0; c < props.board.colCount; c++) {
-      const hints = props.board.colHints[c] || [0];
-      const x = -halfW + c * cellSizeVal + cellSizeVal / 2;
-
-      // Check if column hints are matched by player's current cells
-      const colCells: number[] = [];
-      for (let r = 0; r < props.board.rowCount; r++) {
-        colCells.push(props.board.currentGrid[r][c]);
-      }
-      const colLine = colCells.map(val => val === 1 ? 1 : 0);
-      const colCurrentHints = calculateLineHints(colLine);
-      const isColMatching = isArrayEqual(colCurrentHints, hints);
-
-      ctx.fillStyle = isColMatching ? '#475569' : '#94a3b8'; // Fade to slate-600 if completed correctly
-
-      for (let h = 0; h < hints.length; h++) {
-        const hintVal = hints[hints.length - 1 - h];
-        const hy = -halfH - offset - h * spacing;
-        
-        ctx.save();
-        ctx.translate(x, hy);
-        ctx.rotate(-config.angle);
-        ctx.fillText(hintVal.toString(), 0, 0);
-        ctx.restore();
-      }
-    }
-  }
-
-  ctx.restore();
+  drawNonogramBoard(ctx, props.board, config, {
+    glowIntensity: glowIntensity.value,
+    glowBlur: glowBlur.value,
+    cellSize: cellSizeVal
+  });
 }
 
 let dragValue = 0; // 0: empty, 1: filled, 2: marked
@@ -436,6 +203,77 @@ function getCoordinatesFromEvent(clientX: number, clientY: number) {
   const clickY = (clientY - rect.top) / currentScale;
   return getGridCoordinates(clickX, clickY, config);
 }
+
+const isHoveringGrid = ref(false);
+let cachedCanvasRect: DOMRect | null = null;
+let lastMouseX = 0;
+let lastMouseY = 0;
+let isMouseInsideFrame = false;
+
+function updateHoverState(clientX: number, clientY: number) {
+  if (props.readOnly) return;
+  if (isPanning.value) {
+    isHoveringGrid.value = false;
+    return;
+  }
+
+  if (!cachedCanvasRect && canvasRef.value) {
+    cachedCanvasRect = canvasRef.value.getBoundingClientRect();
+  }
+  if (!cachedCanvasRect || !canvasRef.value) return;
+
+  const rect = cachedCanvasRect;
+  const currentScale = isTestEnv ? 1.0 : (rect.width / canvasRef.value.width);
+  const clickX = (clientX - rect.left) / currentScale;
+  const clickY = (clientY - rect.top) / currentScale;
+  
+  const coords = getGridCoordinates(clickX, clickY, config);
+  isHoveringGrid.value = !!coords;
+}
+
+function handleFrameMouseEnter(event: MouseEvent) {
+  isMouseInsideFrame = true;
+  if (canvasRef.value) {
+    cachedCanvasRect = canvasRef.value.getBoundingClientRect();
+  }
+  lastMouseX = event.clientX;
+  lastMouseY = event.clientY;
+  updateHoverState(lastMouseX, lastMouseY);
+}
+
+function handleFrameMouseMove(event: MouseEvent) {
+  lastMouseX = event.clientX;
+  lastMouseY = event.clientY;
+  updateHoverState(lastMouseX, lastMouseY);
+}
+
+function handleFrameMouseLeave() {
+  isHoveringGrid.value = false;
+  isMouseInsideFrame = false;
+  cachedCanvasRect = null;
+}
+
+const activeCursor = computed(() => {
+  if (props.readOnly) return 'default';
+  if (isPanning.value) return 'grabbing';
+  if (isHoveringGrid.value) {
+    if (drawMode.value === 'fill') {
+      return `url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24'><rect x='2' y='2' width='20' height='20' rx='4' fill='%2338bdf8' stroke='%236366f1' stroke-width='2.5'/></svg>") 12 12, auto`;
+    } else {
+      return `url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24'><line x1='4' y1='4' x2='20' y2='20' stroke='%23f43f5e' stroke-width='3.5' stroke-linecap='round'/><line x1='20' y1='4' x2='4' y2='20' stroke='%23f43f5e' stroke-width='3.5' stroke-linecap='round'/></svg>") 12 12, auto`;
+    }
+  }
+  return 'grab';
+});
+
+watch([scale, offsetX, offsetY, currentAngle], () => {
+  if (canvasRef.value) {
+    cachedCanvasRect = canvasRef.value.getBoundingClientRect();
+    if (isMouseInsideFrame) {
+      updateHoverState(lastMouseX, lastMouseY);
+    }
+  }
+});
 
 const canUndo = ref(false);
 const canRedo = ref(false);
@@ -798,6 +636,7 @@ onMounted(() => {
     if (typeof ResizeObserver !== 'undefined') {
       resizeObserver = new ResizeObserver(() => {
         updateFrameSize();
+        cachedCanvasRect = null;
       });
       resizeObserver.observe(frameRef.value);
     }
@@ -850,6 +689,14 @@ watch(() => props.board, (newBoard) => {
   drawBoard();
 }, { deep: false, immediate: true });
 
+// Invalidate cached canvas bounding rect whenever zoom, pan, or rotation changes
+watch([scale, offsetX, offsetY, currentAngle], () => {
+  cachedCanvasRect = null;
+  if (isMouseInsideFrame) {
+    updateHoverState(lastMouseX, lastMouseY);
+  }
+});
+
 // Watch for solved state to rotate to target
 watch(() => props.board.isSolved(), (solved) => {
   if (solved) {
@@ -883,166 +730,17 @@ watch(() => props.board.isSolved(), (solved) => {
   border: 1px solid rgba(255, 255, 255, 0.05);
   border-top: none;
   position: relative;
-  cursor: pointer;
+  cursor: grab;
 }
 
 canvas {
   display: block;
-  cursor: pointer;
+  cursor: inherit;
   position: absolute;
   -webkit-tap-highlight-color: transparent;
   -webkit-touch-callout: none;
   user-select: none;
   touch-action: none;
-}
-
-/* Floating Draw Mode HUD */
-.draw-mode-hud {
-  position: absolute;
-  bottom: 20px;
-  left: 50%;
-  transform: translateX(-50%);
-  display: flex;
-  align-items: center;
-  background: rgba(15, 23, 42, 0.85);
-  backdrop-filter: blur(8px);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  padding: 4px;
-  border-radius: 9999px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
-  z-index: 10;
-  width: 80px;
-  height: 36px;
-  box-sizing: border-box;
-  -webkit-tap-highlight-color: transparent;
-  -webkit-touch-callout: none;
-  user-select: none;
-}
-
-.draw-mode-slider {
-  position: absolute;
-  top: 4px;
-  left: 4px;
-  width: 36px;
-  height: 28px;
-  background: rgba(255, 255, 255, 0.08);
-  border-radius: 9999px;
-  transition: transform 0.25s cubic-bezier(0.25, 0.8, 0.25, 1);
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  z-index: 1;
-  box-sizing: border-box;
-}
-
-.draw-mode-slider.x {
-  transform: translateX(36px);
-}
-
-.draw-mode-btn {
-  background: none;
-  border: none;
-  margin: 0;
-  padding: 0;
-  width: 36px;
-  height: 28px;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  cursor: pointer;
-  border-radius: 9999px;
-  transition: all 0.2s ease;
-  user-select: none;
-  -webkit-tap-highlight-color: transparent;
-  z-index: 2;
-  box-sizing: border-box;
-}
-
-.mode-icon {
-  transition: transform 0.2s ease;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-}
-
-.draw-mode-btn:hover .mode-icon {
-  transform: scale(1.15);
-}
-
-.fill-icon {
-  width: 14px;
-  height: 14px;
-  background: linear-gradient(135deg, #38bdf8 0%, #818cf8 100%);
-  border-radius: 3px;
-  display: block;
-  box-shadow: 0 1px 3px rgba(56, 189, 248, 0.3);
-}
-
-.x-icon {
-  width: 14px;
-  height: 14px;
-  stroke: #f43f5e;
-  display: block;
-}
-
-/* Floating History (Undo/Redo) HUD */
-.history-hud {
-  position: absolute;
-  bottom: 20px;
-  left: 20px;
-  display: flex;
-  align-items: center;
-  gap: 0.25rem;
-  background: rgba(15, 23, 42, 0.85);
-  backdrop-filter: blur(8px);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  padding: 4px;
-  border-radius: 9999px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
-  z-index: 10;
-  height: 36px;
-  box-sizing: border-box;
-}
-
-.history-btn {
-  background: none;
-  border: none;
-  margin: 0;
-  padding: 0;
-  width: 28px;
-  height: 28px;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  cursor: pointer;
-  border-radius: 9999px;
-  transition: all 0.2s ease;
-  color: #94a3b8;
-}
-
-.history-btn:hover:not(:disabled) {
-  background-color: rgba(255, 255, 255, 0.08);
-  color: #f8fafc;
-}
-
-.history-btn:disabled {
-  color: #475569;
-  cursor: not-allowed;
-}
-
-.history-icon {
-  width: 14px;
-  height: 14px;
-}
-
-@media (max-width: 768px) {
-  .draw-mode-hud {
-    bottom: 12px;
-    left: 50%;
-    transform: translateX(-50%);
-  }
-  .history-hud {
-    bottom: 12px;
-    left: 12px;
-  }
 }
 
 .canvas-anim-wrapper {

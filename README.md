@@ -294,6 +294,9 @@ C4Component
 * **Token Lifetime**: Access/ID Token 수명 5분 단축 설정 및 Refresh Token 30일 설정
 * **Token Rotation**: 갱신 요청 시마다 Refresh Token 무효화 및 신규 발급(One-time Use) 강제화
 * **Token Revocation**: 사용자 로그아웃 요청 시 Cognito Revocation Endpoint 연동 강제 무효화
+* **Solve Verification**: 게스트 풀이 완료 시 백엔드 검증(`/api/stages/{id}/verify`)을 통한 정답 대조 및 HMAC-SHA256 서명 인증 토큰(`proofToken`) 발행
+* **Tamper-proof Migration**: 로그인 전환 시 게스트 이력의 `proofToken` 서명을 백엔드에서 검증하여 무단 전적 갱신 및 XP 획득 차단
+* **Symmetric Key Cryptography**: 대칭키 서명 방식을 채택하여 다중 토큰 검증 연산 부하(개당 0.1ms 미만) 최소화
 
 ---
 
