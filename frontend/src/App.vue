@@ -1237,7 +1237,7 @@ async function loadStageDetails(id: number) {
 
   try {
     const details = await fetchStageById(id);
-    const k = Math.floor(Math.random() * 4);
+    const k = Math.floor(Math.random() * 3) + 1;
     currentRotationSteps.value = k;
     const rotated = rotateGrid(details.solutionGrid, k);
     board.value = new PuzzleBoard(rotated);

@@ -1,7 +1,7 @@
 <template>
   <div class="nonogram-canvas-container">
-    <div class="canvas-frame" ref="frameRef">
-      <div class="canvas-anim-wrapper" :class="{ 'solve-impact-bounce': showSolveImpact }">
+    <div class="canvas-frame" ref="frameRef" :class="{ 'solved-glowing-aura': showSolveImpact }">
+      <div class="canvas-anim-wrapper">
         <canvas 
           ref="canvasRef" 
           data-testid="nonogram-canvas" 
@@ -11,7 +11,6 @@
           @wheel="handleWheel"
           @contextmenu.prevent
         ></canvas>
-        <div v-if="showSolveImpact" class="solve-flash-overlay"></div>
       </div>
     </div>
 
@@ -801,53 +800,23 @@ canvas {
   overflow: hidden;
 }
 
-@keyframes boardBounce {
+@keyframes blueGlowPulse {
   0% {
-    transform: scale(1);
+    box-shadow: 0 0 15px 2px rgba(56, 189, 248, 0.35);
+    border-color: rgba(56, 189, 248, 0.45);
   }
-  14% {
-    transform: scale(1.035);
-  }
-  28% {
-    transform: scale(0.98);
-  }
-  45% {
-    transform: scale(1.01);
-  }
-  70% {
-    transform: scale(0.995);
+  50% {
+    box-shadow: 0 0 30px 8px rgba(99, 102, 241, 0.65);
+    border-color: rgba(129, 140, 248, 0.8);
   }
   100% {
-    transform: scale(1);
+    box-shadow: 0 0 15px 2px rgba(56, 189, 248, 0.35);
+    border-color: rgba(56, 189, 248, 0.45);
   }
 }
 
-.solve-impact-bounce {
-  animation: boardBounce 0.65s cubic-bezier(0.25, 0.8, 0.25, 1) forwards;
-}
-
-.solve-flash-overlay {
-  position: absolute;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  pointer-events: none;
-  background: radial-gradient(circle, rgba(255, 255, 255, 0.95) 0%, rgba(129, 140, 248, 0.3) 45%, rgba(129, 140, 248, 0) 70%);
-  mix-blend-mode: screen;
-  border-radius: 8px;
-  animation: flashOverlayAnim 0.65s cubic-bezier(0.1, 0.8, 0.15, 1) forwards;
-  z-index: 5;
-}
-
-@keyframes flashOverlayAnim {
-  0% {
-    transform: scale(0.2);
-    opacity: 1;
-  }
-  100% {
-    transform: scale(1.5);
-    opacity: 0;
-  }
+.solved-glowing-aura {
+  animation: blueGlowPulse 2.8s ease-in-out infinite;
+  transition: border-color 0.5s ease, box-shadow 0.5s ease;
 }
 </style>
