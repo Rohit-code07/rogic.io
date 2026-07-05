@@ -145,6 +145,9 @@ const getDimensions = () => {
 const scale = ref(1.0);
 const isDragging = ref(false);
 const showSolveImpact = ref(false);
+const glowIntensity = ref(0.0);
+const glowBlur = ref(20);
+let glowAnimationId: any = null;
 
 const frameRef = ref<HTMLElement | null>(null);
 const frameWidth = ref(600);
@@ -229,8 +232,17 @@ function drawBoard() {
   ctx.rotate(config.angle);
 
   // Draw background for overall active board area
-  ctx.fillStyle = '#1e293b'; // slate-800
-  ctx.fillRect(-halfW, -halfH, props.board.colCount * cellSizeVal, props.board.rowCount * cellSizeVal);
+  if (props.board.isSolved() && glowIntensity.value > 0) {
+    ctx.save();
+    ctx.shadowColor = `rgba(56, 189, 248, ${glowIntensity.value})`;
+    ctx.shadowBlur = glowBlur.value;
+    ctx.fillStyle = '#1e293b'; // slate-800
+    ctx.fillRect(-halfW, -halfH, props.board.colCount * cellSizeVal, props.board.rowCount * cellSizeVal);
+    ctx.restore();
+  } else {
+    ctx.fillStyle = '#1e293b'; // slate-800
+    ctx.fillRect(-halfW, -halfH, props.board.colCount * cellSizeVal, props.board.rowCount * cellSizeVal);
+  }
 
   // Draw grid cells
   for (let r = 0; r < props.board.rowCount; r++) {
@@ -498,10 +510,56 @@ function handleWindowTouchEnd() {
   }
 }
 
+function startSolvedGlowAnimation() {
+  stopGlowAnimation();
+  const startTime = performance.now();
+
+  function tick(now: number) {
+    if (!props.board.isSolved()) {
+      stopGlowAnimation();
+      return;
+    }
+
+    const elapsed = now - startTime;
+    if (elapsed < 200) {
+      // 0 to 200ms: shoot up to 1.0 (flash)
+      const progress = elapsed / 200;
+      glowIntensity.value = progress * 1.0;
+      glowBlur.value = 15 + progress * 20; // 15 to 35 blur
+    } else if (elapsed < 1200) {
+      // 200ms to 1200ms: decay down to 0.35
+      const progress = (elapsed - 200) / 1000;
+      const ease = 1 - Math.pow(1 - progress, 2);
+      glowIntensity.value = 1.0 - (1.0 - 0.35) * ease;
+      glowBlur.value = 35 - (35 - 20) * ease;
+    } else {
+      // After 1200ms: gentle pulse infinitely
+      const pulseElapsed = now - (startTime + 1200);
+      const pulse = Math.sin(pulseElapsed / 600) * 0.08;
+      glowIntensity.value = 0.35 + pulse;
+      glowBlur.value = 20 + Math.sin(pulseElapsed / 600) * 4;
+    }
+
+    drawBoard();
+    glowAnimationId = requestAnimationFrame(tick);
+  }
+
+  glowAnimationId = requestAnimationFrame(tick);
+}
+
+function stopGlowAnimation() {
+  if (glowAnimationId !== null) {
+    cancelAnimationFrame(glowAnimationId);
+    glowAnimationId = null;
+  }
+  glowIntensity.value = 0.0;
+}
+
 function animateRotationToTarget() {
   const targetAngle = targetOrthogonalAngle.value;
   if (isTestEnv) {
     currentAngle.value = targetAngle;
+    glowIntensity.value = 0.35;
     drawBoard();
     showSolveImpact.value = true;
     emit('solve-animation-complete');
@@ -528,6 +586,7 @@ function animateRotationToTarget() {
       requestAnimationFrame(tick);
     } else {
       showSolveImpact.value = true;
+      startSolvedGlowAnimation();
       emit('solve-animation-complete');
     }
   }
@@ -552,6 +611,7 @@ onMounted(() => {
 });
 
 onUnmounted(() => {
+  stopGlowAnimation();
   window.removeEventListener('mousemove', handleWindowMouseMove);
   window.removeEventListener('mouseup', handleWindowMouseUp);
   window.removeEventListener('touchmove', handleWindowTouchMove);
@@ -568,6 +628,7 @@ watch(fitScale, (newFitScale) => {
 
 // Redraw if board changes
 watch(() => props.board, () => {
+  stopGlowAnimation();
   showSolveImpact.value = false;
   currentAngle.value = getStartingAngle();
   scale.value = fitScale.value;
