@@ -367,12 +367,6 @@
         </button>
       </div>
 
-      <!-- Progress bar matching the entire header width at its bottom edge -->
-      <transition name="fade">
-        <div v-if="solved && allUnclearedStages.length > 0 && currentTab === 'play'" class="header-progress-bar-container">
-          <div class="header-progress-bar"></div>
-        </div>
-      </transition>
     </header>
 
     <!-- Hidden Selectors to keep legacy tests passing -->
@@ -396,145 +390,107 @@
       <!-- Center Main Column: Canvas & Solved Banner -->
       <main class="app-main">
         <template v-if="currentTab === 'play'">
-          <!-- Loading State -->
-          <div v-if="isLoading" class="loading-state">
-            <div class="spinner-logo">
-              <div class="spinner-cell filled"></div>
-              <div class="spinner-cell"></div>
-              <div class="spinner-cell"></div>
-              <div class="spinner-cell filled"></div>
-            </div>
-            <p class="loading-text">Loading board data...</p>
-          </div>
-
-          <!-- Error State -->
-          <div v-else-if="loadError" class="error-state">
-            <div class="error-icon">⚠️</div>
-            <p class="error-text">{{ loadError }}</p>
-            <button class="retry-btn" @click="handleRetryLoad">
-              🔄 Retry
-            </button>
-          </div>
-
           <!-- All Puzzles Cleared State -->
-          <div v-else-if="!hasUnclearedPuzzles" class="all-cleared-state-container">
+          <div v-if="!isLoading && !hasUnclearedPuzzles" class="all-cleared-state-container">
             <div class="all-cleared-card">
               <div class="countdown-label">Next puzzle in</div>
               <div class="countdown-time">{{ timeUntilMidnight }}</div>
             </div>
           </div>
 
-          <!-- Canvas Area -->
-          <template v-else-if="board && hasUnclearedPuzzles">
-            <!-- Floating Stage Selector -->
+          <template v-else-if="hasUnclearedPuzzles || isLoading">
+            <!-- Full-width thin Stage Selector bar (showing '?' until solved or loading) -->
             <div class="puzzle-selector-floating-container" v-if="currentActiveStage">
-              <div class="active-stage-badge" @click="isStageListOpen = !isStageListOpen">
-                <span class="active-stage-badge-name">{{ currentActiveStage.name }}</span>
-                <span class="active-stage-arrow" :class="{ 'open': isStageListOpen }">▼</span>
+              <div class="active-stage-badge readonly-badge">
+                <span class="active-stage-badge-name">{{ (isLoading || !solveAnimationComplete) ? '?' : currentActiveStage.name }}</span>
+                <!-- Thin Progress bar inside the name display block -->
+                <transition name="fade">
+                  <div v-if="!isLoading && solveAnimationComplete && allUnclearedStages.length > 0 && nextPuzzleSeconds > 0" class="badge-progress-bar-container">
+                    <div class="badge-progress-bar"></div>
+                  </div>
+                </transition>
               </div>
-
-              <!-- Slide-down Dropdown List -->
-              <transition name="slide-down">
-                <div v-if="isStageListOpen" class="puzzle-selector-dropdown">
-                  <div class="stage-card-list">
-                    <div 
-                      v-for="stage in filteredPlayStages" 
-                      :key="stage.id" 
-                      class="stage-item-card"
-                      :class="{ 
-                        active: (isStageAi(stage) ? (selectedAiStageId === stage.id && isAiStageActive) : (selectedStageId === stage.id && !isAiStageActive))
-                      }"
-                      @click.stop="selectStageCard(stage.id, isStageAi(stage))"
-                    >
-                      <div class="stage-card-info">
-                        <div style="display: flex; align-items: center; gap: 0.75rem; width: 100%;">
-                          <span class="stage-card-name">{{ stage.name }}</span>
-                        </div>
-
-                      </div>
-                    </div>
-                    <div v-if="filteredPlayStages.length === 0" class="empty-stages" style="text-align: center; padding: 2rem; color: #64748b; font-size: 0.9rem;">
-                      🎉 No puzzles found!
-                    </div>
-                  </div>
-                  <!-- Pagination Controls -->
-                  <div class="dropdown-pagination-bar" v-if="playStagesTotalPages > 1">
-                    <button 
-                      class="btn btn-sm btn-outline-light" 
-                      :disabled="playStagesCurrentPage === 0"
-                      @click.stop="loadStagesList(playStagesCurrentPage - 1)"
-                    >
-                      ◀
-                    </button>
-                    <span class="page-info">
-                      {{ playStagesCurrentPage + 1 }} / {{ playStagesTotalPages }}
-                    </span>
-                    <button 
-                      class="btn btn-sm btn-outline-light" 
-                      :disabled="playStagesCurrentPage >= playStagesTotalPages - 1"
-                      @click.stop="loadStagesList(playStagesCurrentPage + 1)"
-                    >
-                      ▶
-                    </button>
-                  </div>
-                </div>
-              </transition>
             </div>
 
             <div class="canvas-wrapper-container">
               <!-- Floating Size Selector (Bottom-Right) -->
-              <div class="play-size-filter-bar-floating" v-if="availablePlaySizes.length > 0">
-              <div class="active-size-badge" @click.stop="isSizeListOpen = !isSizeListOpen">
-                <span class="active-size-badge-name">
-                  {{ selectedPlaySizeFilter + 'x' + selectedPlaySizeFilter }}
-                </span>
-                <span class="active-size-arrow" :class="{ 'open': isSizeListOpen }">▲</span>
-              </div>
-              <transition name="slide-up">
-                <div v-if="isSizeListOpen" class="play-size-filter-dropdown">
-                  <div 
-                    v-for="size in availablePlaySizes" 
-                    :key="size"
-                    class="play-size-filter-dropdown-item" 
-                    :class="{ active: selectedPlaySizeFilter === String(size) }"
-                    @click.stop="selectSizeFilter(String(size))"
-                  >
-                    {{ size }}x{{ size }}
-                  </div>
+              <div class="play-size-filter-bar-floating" v-if="availablePlaySizes.length > 0 && !isLoading && !loadError">
+                <div class="active-size-badge" @click.stop="isSizeListOpen = !isSizeListOpen">
+                  <span class="active-size-badge-name">
+                    {{ selectedPlaySizeFilter + 'x' + selectedPlaySizeFilter }}
+                  </span>
+                  <span class="active-size-arrow" :class="{ 'open': isSizeListOpen }">▲</span>
                 </div>
-              </transition>
-            </div>
-
-            <div class="play-area-inner">
-              <div class="canvas-wrapper">
-                <NonogramCanvas :board="board" :rotationSteps="currentRotationSteps" :readOnly="solved" @cell-click="handleCellClick" />
+                <transition name="slide-up">
+                  <div v-if="isSizeListOpen" class="play-size-filter-dropdown">
+                    <div 
+                      v-for="size in availablePlaySizes" 
+                      :key="size"
+                      class="play-size-filter-dropdown-item" 
+                      :class="{ active: selectedPlaySizeFilter === String(size) }"
+                      @click.stop="selectSizeFilter(String(size))"
+                    >
+                      {{ size }}x{{ size }}
+                    </div>
+                  </div>
+                </transition>
               </div>
 
-              <!-- Puzzle Feedback UI when solved -->
-              <transition name="fade">
-                <div v-if="solved" class="solved-feedback-card">
-                  <div v-if="!hasVoted" class="feedback-buttons">
-                    <button class="feedback-btn like" @click="handleVote(true)" aria-label="Like">
-                      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="svg-icon">
-                        <path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3zM7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3" />
-                      </svg>
-                    </button>
-                    <button class="feedback-btn dislike" @click="handleVote(false)" aria-label="Dislike">
-                      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="svg-icon">
-                        <path d="M10 15v4a3 3 0 0 0 3 3l4-9V2H5.72a2 2 0 0 0-2 1.7l-1.38 9a2 2 0 0 0 2 2.3zm7-13h3a2 2 0 0 1 2 2v7a2 2 0 0 1-2 2h-3" />
-                      </svg>
-                    </button>
-                  </div>
-                  <div v-else class="feedback-thanks">
-                    ✨ Thank You!
+              <div class="play-area-inner">
+                <!-- Inline Loading state inside canvas frame placeholder -->
+                <div v-if="isLoading" class="canvas-frame-placeholder">
+                  <div class="loading-state" style="background: transparent; border: none; max-width: none; margin: 0; box-shadow: none; backdrop-filter: none; padding: 0; height: auto;">
+                    <div class="spinner-logo">
+                      <div class="spinner-cell filled"></div>
+                      <div class="spinner-cell"></div>
+                      <div class="spinner-cell"></div>
+                      <div class="spinner-cell filled"></div>
+                    </div>
+                    <p class="loading-text">Loading board data...</p>
                   </div>
                 </div>
-              </transition>
-            </div>
-          </div>
-        </template>
 
-          <div v-if="solved && allUnclearedStages.length === 0" class="celebration-overlay-container">
+                <!-- Inline Error state inside canvas frame placeholder -->
+                <div v-else-if="loadError" class="canvas-frame-placeholder">
+                  <div class="error-state" style="background: transparent; border: none; max-width: none; margin: 0; box-shadow: none; backdrop-filter: none; padding: 0;">
+                    <div class="error-icon">⚠️</div>
+                    <p class="error-text">{{ loadError }}</p>
+                    <button class="retry-btn" @click="handleRetryLoad">
+                      🔄 Retry
+                    </button>
+                  </div>
+                </div>
+
+                <!-- Normal canvas wrapper -->
+                <div v-else-if="board" class="canvas-wrapper">
+                  <NonogramCanvas :board="board" :rotationSteps="currentRotationSteps" :readOnly="solved" @cell-click="handleCellClick" @solve-animation-complete="handleSolveAnimationComplete" />
+                </div>
+
+                <!-- Puzzle Feedback UI when solved -->
+                <transition name="fade">
+                  <div v-if="!isLoading && !loadError && solveAnimationComplete" class="solved-feedback-card">
+                    <div v-if="!hasVoted" class="feedback-buttons">
+                      <button class="feedback-btn like" @click="handleVote(true)" aria-label="Like">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="svg-icon">
+                          <path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3zM7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3" />
+                        </svg>
+                      </button>
+                      <button class="feedback-btn dislike" @click="handleVote(false)" aria-label="Dislike">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="svg-icon">
+                          <path d="M10 15v4a3 3 0 0 0 3 3l4-9V2H5.72a2 2 0 0 0-2 1.7l-1.38 9a2 2 0 0 0 2 2.3zm7-13h3a2 2 0 0 1 2 2v7a2 2 0 0 1-2 2h-3" />
+                        </svg>
+                      </button>
+                    </div>
+                    <div v-else class="feedback-thanks">
+                      ✨ Thank You!
+                    </div>
+                  </div>
+                </transition>
+              </div>
+            </div>
+          </template>
+
+          <div v-if="solveAnimationComplete && allUnclearedStages.length === 0" class="celebration-overlay-container">
             <div class="all-cleared-card">
               <div class="trophy-icon">🏆</div>
               <div class="star-burst">🌟🌟🌟</div>
@@ -797,6 +753,7 @@ const stages = ref<StageSummary[]>([]);
 const selectedStageId = ref<number | null>(null);
 const board = ref<PuzzleBoard | null>(null);
 const solved = ref(false);
+const solveAnimationComplete = ref(false);
 const hasVoted = ref(false);
 const currentStageVotes = ref({ upvotes: 0, downvotes: 0 });
 const nextPuzzleSeconds = ref(3);
@@ -885,6 +842,8 @@ const hasUnclearedPuzzles = computed(() => {
   return hasRegular || hasAi;
 });
 
+
+
 const delaySeconds = ref(0);
 const timeUntilMidnight = ref('');
 let dailyPuzzleTimerId: any = null;
@@ -954,16 +913,6 @@ watch([availablePlaySizes, solved], ([newSizes, isSolved]) => {
     }
   }
 }, { immediate: true });
-
-const filteredPlayStages = computed(() => {
-  const list = allUnclearedStages.value;
-  if (!selectedPlaySizeFilter.value || selectedPlaySizeFilter.value === 'All') {
-    const defaultSize = availablePlaySizes.value[0] || 5;
-    return list.filter(s => s.width === defaultSize);
-  }
-  const size = parseInt(selectedPlaySizeFilter.value);
-  return list.filter(s => s.width === size);
-});
 
 
 const confettiCanvas = ref<HTMLCanvasElement | null>(null);
@@ -1066,7 +1015,7 @@ function handleConfettiResize() {
   }
 }
 
-watch(solved, (newVal) => {
+watch(solveAnimationComplete, (newVal) => {
   if (newVal) {
     startConfetti();
   } else {
@@ -1076,11 +1025,16 @@ watch(solved, (newVal) => {
 
 watch(selectedPlaySizeFilter, async (newSize) => {
   if (newSize === 'All') return;
+
+  // Deactivate AI daily stage to switch to regular stages of the new size filter
+  isAiStageActive.value = false;
+  selectedAiStageId.value = null;
+
   if (isTestEnv) {
     const sizeNum = parseInt(newSize);
     const current = currentActiveStage.value;
-    if (!current || current.width !== sizeNum) {
-      const matching = allUnclearedStages.value.filter(s => s.width === sizeNum);
+    if (!current || current.width !== sizeNum || isAiStageActive.value) {
+      const matching = allUnclearedStages.value.filter(s => s.width === sizeNum && !isStageAi(s));
       if (matching.length > 0 && (!current || current.id !== matching[0].id)) {
         selectStageCard(matching[0].id, isStageAi(matching[0]));
       }
@@ -1276,6 +1230,7 @@ async function loadStageDetails(id: number) {
   isLoading.value = true;
   loadError.value = null;
   board.value = null;
+  solveAnimationComplete.value = false;
   try {
     // Record starting attempt
     await startStage(id);
@@ -1285,7 +1240,7 @@ async function loadStageDetails(id: number) {
 
   try {
     const details = await fetchStageById(id);
-    const k = Math.floor(Math.random() * 4);
+    const k = Math.floor(Math.random() * 3) + 1;
     currentRotationSteps.value = k;
     const rotated = rotateGrid(details.solutionGrid, k);
     board.value = new PuzzleBoard(rotated);
@@ -1335,6 +1290,7 @@ async function onStageChange() {
   }
 }
 
+
 async function loadAiStagesList() {
   try {
     const list = await fetchAiStages();
@@ -1355,68 +1311,70 @@ async function onAiStageChange() {
 
 async function handleCellClick() {
   if (board.value) {
-    const wasSolved = solved.value;
     solved.value = board.value.isSolved();
+  }
+}
 
-    if (solved.value && !wasSolved) {
-      try {
-        let difficulty = 'NORMAL';
-        if (isAiStageActive.value) {
-          difficulty = 'HARD';
-        } else if (board.value.colCount <= 5 && board.value.rowCount <= 5) {
-          difficulty = 'EASY';
-        } else if (board.value.colCount >= 10 || board.value.rowCount >= 10) {
-          difficulty = 'HARD';
-        }
-        const elapsedTime = Math.floor((Date.now() - startTime.value) / 1000);
+async function handleSolveAnimationComplete() {
+  if (solveAnimationComplete.value) return;
+  solveAnimationComplete.value = true;
 
-        if (currentUser.value) {
-          const userId = currentUser.value.id;
-          const stageId = selectedStageId.value !== null ? selectedStageId.value : (selectedAiStageId.value !== null ? selectedAiStageId.value : undefined);
-          if (stageId !== undefined) {
-            clearedStageIds.value.add(stageId);
-          }
-          await clearStage(userId, difficulty, stageId, elapsedTime);
-          allStagesSummary.value = [];
-          await loadRankingsList();
-          await loadUserHistory();
-        } else {
-          const stageId = selectedStageId.value !== null ? selectedStageId.value : (selectedAiStageId.value !== null ? selectedAiStageId.value : undefined);
-          if (stageId !== undefined) {
-            clearedStageIds.value.add(stageId);
-            const savedCleared = localStorage.getItem('guest_cleared_stages');
-            const clearedIds = savedCleared ? JSON.parse(savedCleared) : [];
-            if (!clearedIds.includes(stageId)) {
-              clearedIds.push(stageId);
-              localStorage.setItem('guest_cleared_stages', JSON.stringify(clearedIds));
-            }
-
-            const savedHistories = localStorage.getItem('guest_histories');
-            const localHistories = savedHistories ? JSON.parse(savedHistories) : [];
-            const currentStage = currentActiveStage.value;
-            const stageName = currentStage ? currentStage.name : `Puzzle #${stageId}`;
-            const newHistory: HistoryResponse = {
-              id: Date.now(),
-              userId: 0,
-              stageId: stageId,
-              stageName: stageName,
-              clearedAt: new Date().toISOString(),
-              xpEarned: difficulty === 'EASY' ? 100 : (difficulty === 'HARD' ? 250 : 150),
-              elapsedTime: elapsedTime
-            };
-            localHistories.unshift(newHistory);
-            localStorage.setItem('guest_histories', JSON.stringify(localHistories));
-          }
-          allStagesSummary.value = [];
-          await loadRankingsList();
-          await loadUserHistory();
-        }
-      } catch (error) {
-        console.error('Failed to submit stage clear:', error);
-      } finally {
-        startNextPuzzleCountdown();
-      }
+  try {
+    let difficulty = 'NORMAL';
+    if (isAiStageActive.value) {
+      difficulty = 'HARD';
+    } else if (board.value && board.value.colCount <= 5 && board.value.rowCount <= 5) {
+      difficulty = 'EASY';
+    } else if (board.value && (board.value.colCount >= 10 || board.value.rowCount >= 10)) {
+      difficulty = 'HARD';
     }
+    const elapsedTime = Math.floor((Date.now() - startTime.value) / 1000);
+
+    if (currentUser.value) {
+      const userId = currentUser.value.id;
+      const stageId = selectedStageId.value !== null ? selectedStageId.value : (selectedAiStageId.value !== null ? selectedAiStageId.value : undefined);
+      if (stageId !== undefined) {
+        clearedStageIds.value.add(stageId);
+      }
+      await clearStage(userId, difficulty, stageId, elapsedTime);
+      allStagesSummary.value = [];
+      await loadRankingsList();
+      await loadUserHistory();
+    } else {
+      const stageId = selectedStageId.value !== null ? selectedStageId.value : (selectedAiStageId.value !== null ? selectedAiStageId.value : undefined);
+      if (stageId !== undefined) {
+        clearedStageIds.value.add(stageId);
+        const savedCleared = localStorage.getItem('guest_cleared_stages');
+        const clearedIds = savedCleared ? JSON.parse(savedCleared) : [];
+        if (!clearedIds.includes(stageId)) {
+          clearedIds.push(stageId);
+          localStorage.setItem('guest_cleared_stages', JSON.stringify(clearedIds));
+        }
+
+        const savedHistories = localStorage.getItem('guest_histories');
+        const localHistories = savedHistories ? JSON.parse(savedHistories) : [];
+        const currentStage = currentActiveStage.value;
+        const stageName = currentStage ? currentStage.name : `Puzzle #${stageId}`;
+        const newHistory: HistoryResponse = {
+          id: Date.now(),
+          userId: 0,
+          stageId: stageId,
+          stageName: stageName,
+          clearedAt: new Date().toISOString(),
+          xpEarned: difficulty === 'EASY' ? 100 : (difficulty === 'HARD' ? 250 : 150),
+          elapsedTime: elapsedTime
+        };
+        localHistories.unshift(newHistory);
+        localStorage.setItem('guest_histories', JSON.stringify(localHistories));
+      }
+      allStagesSummary.value = [];
+      await loadRankingsList();
+      await loadUserHistory();
+    }
+  } catch (error) {
+    console.error('Failed to submit stage clear:', error);
+  } finally {
+    startNextPuzzleCountdown();
   }
 }
 
@@ -2180,9 +2138,9 @@ body {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 1rem;
+  margin-bottom: 0;
   padding-bottom: 0.75rem;
-  border-bottom: 1px solid #1e293b;
+  border-bottom: none;
   flex-shrink: 0;
   position: relative;
 }
@@ -2390,7 +2348,7 @@ body {
 
 @media (max-width: 768px) {
   .app-header {
-    margin-bottom: 0.5rem;
+    margin-bottom: 0;
     padding-bottom: 0.5rem;
     gap: 0.5rem;
   }
@@ -2453,11 +2411,6 @@ body {
     max-height: calc(100vh - 250px) !important;
     max-height: calc(100dvh - 250px) !important;
   }
-  .active-stage-badge {
-    width: 85vw;
-    max-width: 340px;
-    padding: 0.5rem 2.5rem;
-  }
   .puzzle-selector-dropdown {
     width: 85vw;
     max-width: 340px;
@@ -2485,48 +2438,75 @@ body {
 /* Floating Stage Selector */
 .puzzle-selector-floating-container {
   position: relative;
-  margin-top: 15px;
-  margin-bottom: 5px;
+  margin-top: 0;
+  margin-bottom: 0;
   z-index: 100;
   display: flex;
   justify-content: center;
+  width: 100%;
 }
 
 .active-stage-badge {
-  display: inline-flex;
+  display: flex;
   align-items: center;
   justify-content: center;
   position: relative;
   gap: 0.6rem;
-  background: rgba(30, 41, 59, 0.7);
-  backdrop-filter: blur(12px);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  padding: 0.35rem 2rem;
-  border-radius: 9999px;
+  background: rgba(30, 41, 59, 0.35);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  padding: 0.35rem 1.5rem;
+  border-radius: 8px 8px 0 0;
+  overflow: hidden;
   cursor: pointer;
-  box-shadow: 0 4px 20px -5px rgba(0, 0, 0, 0.3);
+  box-shadow: none;
   transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
   white-space: nowrap;
-  max-width: 90vw;
+  width: 100%;
   box-sizing: border-box;
-  min-width: 180px;
 }
 
-.active-stage-badge:hover {
-  background: rgba(30, 41, 59, 0.9);
+.active-stage-badge:not(.readonly-badge):hover {
+  background: rgba(30, 41, 59, 0.8);
   border-color: rgba(56, 189, 248, 0.4);
-  box-shadow: 0 6px 24px -5px rgba(56, 189, 248, 0.2);
+}
+
+.active-stage-badge.readonly-badge {
+  cursor: default;
 }
 
 .active-stage-badge-name {
   font-weight: 700;
-  font-size: 0.85rem;
-  color: #f8fafc;
+  font-size: 0.8rem;
+  color: #e2e8f0;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
   text-align: center;
   width: 100%;
+  letter-spacing: 0.03em;
+}
+
+.badge-progress-bar-container {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 3px;
+  background: rgba(56, 189, 248, 0.05);
+  overflow: hidden;
+}
+
+.badge-progress-bar {
+  height: 100%;
+  background: linear-gradient(90deg, #38bdf8 0%, #818cf8 50%, #c084fc 100%);
+  box-shadow: 0 0 8px rgba(56, 189, 248, 0.6);
+  animation: progress-grow-3s 3s linear forwards;
+}
+
+@keyframes progress-grow-3s {
+  from { width: 0%; }
+  to { width: 100%; }
 }
 
 .active-stage-badge-size {
@@ -2978,7 +2958,7 @@ body {
 .app-main {
   display: flex;
   flex-direction: column;
-  justify-content: center;
+  justify-content: flex-start;
   align-items: center;
   min-height: 0;
   flex-grow: 1;
@@ -3095,6 +3075,27 @@ body {
 
 .feedback-btn:hover .svg-icon {
   stroke-width: 2.2;
+}
+
+.canvas-frame-placeholder {
+  width: 100%;
+  height: 100%;
+  min-height: 380px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 1.5rem;
+  background-color: #0f172a;
+  border-radius: 0 0 8px 8px;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-top: none;
+  box-sizing: border-box;
+}
+
+.canvas-frame-placeholder.error {
+  gap: 1.25rem;
+  padding: 2rem;
 }
 
 .loading-state {

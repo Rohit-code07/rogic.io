@@ -1,15 +1,17 @@
 <template>
   <div class="nonogram-canvas-container">
     <div class="canvas-frame" ref="frameRef">
-      <canvas 
-        ref="canvasRef" 
-        data-testid="nonogram-canvas" 
-        :style="canvasStyle"
-        @mousedown="handleMouseDown"
-        @touchstart="handleTouchStart"
-        @wheel="handleWheel"
-        @contextmenu.prevent
-      ></canvas>
+      <div class="canvas-anim-wrapper">
+        <canvas 
+          ref="canvasRef" 
+          data-testid="nonogram-canvas" 
+          :style="canvasStyle"
+          @mousedown="handleMouseDown"
+          @touchstart="handleTouchStart"
+          @wheel="handleWheel"
+          @contextmenu.prevent
+        ></canvas>
+      </div>
     </div>
 
     <!-- Floating Draw Mode Toggle -->
@@ -39,9 +41,9 @@
     
     <!-- Floating Zoom HUD -->
     <div v-if="!readOnly" class="zoom-hud">
-      <button class="zoom-btn" @click="changeZoom(0.15)" title="Zoom In">+</button>
-      <span class="zoom-level" @click="resetZoom" title="Reset Zoom">{{ Math.round(scale * 100) }}%</span>
       <button class="zoom-btn" @click="changeZoom(-0.15)" title="Zoom Out">-</button>
+      <span class="zoom-level" @click="resetZoom" title="Reset Zoom">{{ Math.round(scale * 100) }}%</span>
+      <button class="zoom-btn" @click="changeZoom(0.15)" title="Zoom In">+</button>
     </div>
   </div>
 </template>
@@ -61,6 +63,7 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   (e: 'cell-click'): void;
+  (e: 'solve-animation-complete'): void;
 }>();
 
 const canvasRef = ref<HTMLCanvasElement | null>(null);
@@ -141,6 +144,10 @@ const getDimensions = () => {
 
 const scale = ref(1.0);
 const isDragging = ref(false);
+const showSolveImpact = ref(false);
+const glowIntensity = ref(0.0);
+const glowBlur = ref(20);
+let glowAnimationId: any = null;
 
 const frameRef = ref<HTMLElement | null>(null);
 const frameWidth = ref(600);
@@ -225,8 +232,17 @@ function drawBoard() {
   ctx.rotate(config.angle);
 
   // Draw background for overall active board area
-  ctx.fillStyle = '#1e293b'; // slate-800
-  ctx.fillRect(-halfW, -halfH, props.board.colCount * cellSizeVal, props.board.rowCount * cellSizeVal);
+  if (props.board.isSolved() && glowIntensity.value > 0) {
+    ctx.save();
+    ctx.shadowColor = `rgba(56, 189, 248, ${glowIntensity.value})`;
+    ctx.shadowBlur = glowBlur.value;
+    ctx.fillStyle = '#1e293b'; // slate-800
+    ctx.fillRect(-halfW, -halfH, props.board.colCount * cellSizeVal, props.board.rowCount * cellSizeVal);
+    ctx.restore();
+  } else {
+    ctx.fillStyle = '#1e293b'; // slate-800
+    ctx.fillRect(-halfW, -halfH, props.board.colCount * cellSizeVal, props.board.rowCount * cellSizeVal);
+  }
 
   // Draw grid cells
   for (let r = 0; r < props.board.rowCount; r++) {
@@ -494,10 +510,64 @@ function handleWindowTouchEnd() {
   }
 }
 
+function startSolvedGlowAnimation() {
+  stopGlowAnimation();
+  const startTime = performance.now();
+
+  function tick(now: number) {
+    if (!props.board.isSolved()) {
+      stopGlowAnimation();
+      return;
+    }
+
+    const elapsed = now - startTime;
+    if (elapsed < 200) {
+      // 0 to 200ms: shoot up to 1.0 (flash)
+      const progress = elapsed / 200;
+      glowIntensity.value = progress * 1.0;
+      glowBlur.value = 15 + progress * 20; // 15 to 35 blur
+    } else if (elapsed < 1200) {
+      // 200ms to 1200ms: decay down to 0.35
+      const progress = (elapsed - 200) / 1000;
+      const ease = 1 - Math.pow(1 - progress, 2);
+      glowIntensity.value = 1.0 - (1.0 - 0.35) * ease;
+      glowBlur.value = 35 - (35 - 20) * ease;
+    } else {
+      // After 1200ms: gentle pulse infinitely
+      const pulseElapsed = now - (startTime + 1200);
+      const pulse = Math.sin(pulseElapsed / 600) * 0.08;
+      glowIntensity.value = 0.35 + pulse;
+      glowBlur.value = 20 + Math.sin(pulseElapsed / 600) * 4;
+    }
+
+    drawBoard();
+    glowAnimationId = requestAnimationFrame(tick);
+  }
+
+  glowAnimationId = requestAnimationFrame(tick);
+}
+
+function stopGlowAnimation() {
+  if (glowAnimationId !== null) {
+    cancelAnimationFrame(glowAnimationId);
+    glowAnimationId = null;
+  }
+  glowIntensity.value = 0.0;
+}
+
 function animateRotationToTarget() {
+  const targetAngle = targetOrthogonalAngle.value;
+  if (isTestEnv) {
+    currentAngle.value = targetAngle;
+    glowIntensity.value = 0.35;
+    drawBoard();
+    showSolveImpact.value = true;
+    emit('solve-animation-complete');
+    return;
+  }
+
   const duration = 1000; // 1 second
   const startAngle = currentAngle.value;
-  const targetAngle = targetOrthogonalAngle.value;
   const startTime = performance.now();
 
   function tick(now: number) {
@@ -514,6 +584,10 @@ function animateRotationToTarget() {
 
     if (progress < 1) {
       requestAnimationFrame(tick);
+    } else {
+      showSolveImpact.value = true;
+      startSolvedGlowAnimation();
+      emit('solve-animation-complete');
     }
   }
 
@@ -537,6 +611,7 @@ onMounted(() => {
 });
 
 onUnmounted(() => {
+  stopGlowAnimation();
   window.removeEventListener('mousemove', handleWindowMouseMove);
   window.removeEventListener('mouseup', handleWindowMouseUp);
   window.removeEventListener('touchmove', handleWindowTouchMove);
@@ -553,6 +628,8 @@ watch(fitScale, (newFitScale) => {
 
 // Redraw if board changes
 watch(() => props.board, () => {
+  stopGlowAnimation();
+  showSolveImpact.value = false;
   currentAngle.value = getStartingAngle();
   scale.value = fitScale.value;
   const dims = getDimensions();
@@ -594,8 +671,9 @@ watch(() => props.board.isSolved(), (solved) => {
   justify-content: center;
   align-items: center;
   background-color: #0f172a;
-  border-radius: 8px;
+  border-radius: 0 0 8px 8px;
   border: 1px solid rgba(255, 255, 255, 0.05);
+  border-top: none;
   position: relative;
 }
 
@@ -719,11 +797,13 @@ canvas {
   color: #94a3b8;
   font-size: 1.1rem;
   font-weight: 700;
+  font-family: 'Outfit', sans-serif;
   width: 24px;
   height: 24px;
   display: flex;
   justify-content: center;
   align-items: center;
+  line-height: 1;
   cursor: pointer;
   border-radius: 50%;
   transition: all 0.15s ease;
@@ -772,4 +852,16 @@ canvas {
     font-size: 0.72rem;
   }
 }
+
+.canvas-anim-wrapper {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
 </style>
