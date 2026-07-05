@@ -61,6 +61,7 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   (e: 'cell-click'): void;
+  (e: 'solve-animation-complete'): void;
 }>();
 
 const canvasRef = ref<HTMLCanvasElement | null>(null);
@@ -495,9 +496,16 @@ function handleWindowTouchEnd() {
 }
 
 function animateRotationToTarget() {
+  const targetAngle = targetOrthogonalAngle.value;
+  if (isTestEnv) {
+    currentAngle.value = targetAngle;
+    drawBoard();
+    emit('solve-animation-complete');
+    return;
+  }
+
   const duration = 1000; // 1 second
   const startAngle = currentAngle.value;
-  const targetAngle = targetOrthogonalAngle.value;
   const startTime = performance.now();
 
   function tick(now: number) {
@@ -514,6 +522,8 @@ function animateRotationToTarget() {
 
     if (progress < 1) {
       requestAnimationFrame(tick);
+    } else {
+      emit('solve-animation-complete');
     }
   }
 

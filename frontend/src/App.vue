@@ -369,7 +369,7 @@
 
       <!-- Progress bar matching the entire header width at its bottom edge -->
       <transition name="fade">
-        <div v-if="solved && allUnclearedStages.length > 0 && currentTab === 'play'" class="header-progress-bar-container">
+        <div v-if="solveAnimationComplete && allUnclearedStages.length > 0 && currentTab === 'play'" class="header-progress-bar-container">
           <div class="header-progress-bar"></div>
         </div>
       </transition>
@@ -432,7 +432,7 @@
             <!-- Floating Stage Selector (Read-only badge showing '?' until solved) -->
             <div class="puzzle-selector-floating-container" v-if="currentActiveStage">
               <div class="active-stage-badge readonly-badge">
-                <span class="active-stage-badge-name">{{ solved ? currentActiveStage.name : '?' }}</span>
+                <span class="active-stage-badge-name">{{ solveAnimationComplete ? currentActiveStage.name : '?' }}</span>
               </div>
             </div>
 
@@ -462,12 +462,12 @@
 
             <div class="play-area-inner">
               <div class="canvas-wrapper">
-                <NonogramCanvas :board="board" :rotationSteps="currentRotationSteps" :readOnly="solved" @cell-click="handleCellClick" />
+                <NonogramCanvas :board="board" :rotationSteps="currentRotationSteps" :readOnly="solved" @cell-click="handleCellClick" @solve-animation-complete="handleSolveAnimationComplete" />
               </div>
 
               <!-- Puzzle Feedback UI when solved -->
               <transition name="fade">
-                <div v-if="solved" class="solved-feedback-card">
+                <div v-if="solveAnimationComplete" class="solved-feedback-card">
                   <div v-if="!hasVoted" class="feedback-buttons">
                     <button class="feedback-btn like" @click="handleVote(true)" aria-label="Like">
                       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="svg-icon">
@@ -489,7 +489,7 @@
           </div>
         </template>
 
-          <div v-if="solved && allUnclearedStages.length === 0" class="celebration-overlay-container">
+          <div v-if="solveAnimationComplete && allUnclearedStages.length === 0" class="celebration-overlay-container">
             <div class="all-cleared-card">
               <div class="trophy-icon">🏆</div>
               <div class="star-burst">🌟🌟🌟</div>
@@ -752,6 +752,7 @@ const stages = ref<StageSummary[]>([]);
 const selectedStageId = ref<number | null>(null);
 const board = ref<PuzzleBoard | null>(null);
 const solved = ref(false);
+const solveAnimationComplete = ref(false);
 const hasVoted = ref(false);
 const currentStageVotes = ref({ upvotes: 0, downvotes: 0 });
 const nextPuzzleSeconds = ref(3);
@@ -1011,7 +1012,7 @@ function handleConfettiResize() {
   }
 }
 
-watch(solved, (newVal) => {
+watch(solveAnimationComplete, (newVal) => {
   if (newVal) {
     startConfetti();
   } else {
@@ -1226,6 +1227,7 @@ async function loadStageDetails(id: number) {
   isLoading.value = true;
   loadError.value = null;
   board.value = null;
+  solveAnimationComplete.value = false;
   try {
     // Record starting attempt
     await startStage(id);
@@ -1306,68 +1308,70 @@ async function onAiStageChange() {
 
 async function handleCellClick() {
   if (board.value) {
-    const wasSolved = solved.value;
     solved.value = board.value.isSolved();
+  }
+}
 
-    if (solved.value && !wasSolved) {
-      try {
-        let difficulty = 'NORMAL';
-        if (isAiStageActive.value) {
-          difficulty = 'HARD';
-        } else if (board.value.colCount <= 5 && board.value.rowCount <= 5) {
-          difficulty = 'EASY';
-        } else if (board.value.colCount >= 10 || board.value.rowCount >= 10) {
-          difficulty = 'HARD';
-        }
-        const elapsedTime = Math.floor((Date.now() - startTime.value) / 1000);
+async function handleSolveAnimationComplete() {
+  if (solveAnimationComplete.value) return;
+  solveAnimationComplete.value = true;
 
-        if (currentUser.value) {
-          const userId = currentUser.value.id;
-          const stageId = selectedStageId.value !== null ? selectedStageId.value : (selectedAiStageId.value !== null ? selectedAiStageId.value : undefined);
-          if (stageId !== undefined) {
-            clearedStageIds.value.add(stageId);
-          }
-          await clearStage(userId, difficulty, stageId, elapsedTime);
-          allStagesSummary.value = [];
-          await loadRankingsList();
-          await loadUserHistory();
-        } else {
-          const stageId = selectedStageId.value !== null ? selectedStageId.value : (selectedAiStageId.value !== null ? selectedAiStageId.value : undefined);
-          if (stageId !== undefined) {
-            clearedStageIds.value.add(stageId);
-            const savedCleared = localStorage.getItem('guest_cleared_stages');
-            const clearedIds = savedCleared ? JSON.parse(savedCleared) : [];
-            if (!clearedIds.includes(stageId)) {
-              clearedIds.push(stageId);
-              localStorage.setItem('guest_cleared_stages', JSON.stringify(clearedIds));
-            }
-
-            const savedHistories = localStorage.getItem('guest_histories');
-            const localHistories = savedHistories ? JSON.parse(savedHistories) : [];
-            const currentStage = currentActiveStage.value;
-            const stageName = currentStage ? currentStage.name : `Puzzle #${stageId}`;
-            const newHistory: HistoryResponse = {
-              id: Date.now(),
-              userId: 0,
-              stageId: stageId,
-              stageName: stageName,
-              clearedAt: new Date().toISOString(),
-              xpEarned: difficulty === 'EASY' ? 100 : (difficulty === 'HARD' ? 250 : 150),
-              elapsedTime: elapsedTime
-            };
-            localHistories.unshift(newHistory);
-            localStorage.setItem('guest_histories', JSON.stringify(localHistories));
-          }
-          allStagesSummary.value = [];
-          await loadRankingsList();
-          await loadUserHistory();
-        }
-      } catch (error) {
-        console.error('Failed to submit stage clear:', error);
-      } finally {
-        startNextPuzzleCountdown();
-      }
+  try {
+    let difficulty = 'NORMAL';
+    if (isAiStageActive.value) {
+      difficulty = 'HARD';
+    } else if (board.value && board.value.colCount <= 5 && board.value.rowCount <= 5) {
+      difficulty = 'EASY';
+    } else if (board.value && (board.value.colCount >= 10 || board.value.rowCount >= 10)) {
+      difficulty = 'HARD';
     }
+    const elapsedTime = Math.floor((Date.now() - startTime.value) / 1000);
+
+    if (currentUser.value) {
+      const userId = currentUser.value.id;
+      const stageId = selectedStageId.value !== null ? selectedStageId.value : (selectedAiStageId.value !== null ? selectedAiStageId.value : undefined);
+      if (stageId !== undefined) {
+        clearedStageIds.value.add(stageId);
+      }
+      await clearStage(userId, difficulty, stageId, elapsedTime);
+      allStagesSummary.value = [];
+      await loadRankingsList();
+      await loadUserHistory();
+    } else {
+      const stageId = selectedStageId.value !== null ? selectedStageId.value : (selectedAiStageId.value !== null ? selectedAiStageId.value : undefined);
+      if (stageId !== undefined) {
+        clearedStageIds.value.add(stageId);
+        const savedCleared = localStorage.getItem('guest_cleared_stages');
+        const clearedIds = savedCleared ? JSON.parse(savedCleared) : [];
+        if (!clearedIds.includes(stageId)) {
+          clearedIds.push(stageId);
+          localStorage.setItem('guest_cleared_stages', JSON.stringify(clearedIds));
+        }
+
+        const savedHistories = localStorage.getItem('guest_histories');
+        const localHistories = savedHistories ? JSON.parse(savedHistories) : [];
+        const currentStage = currentActiveStage.value;
+        const stageName = currentStage ? currentStage.name : `Puzzle #${stageId}`;
+        const newHistory: HistoryResponse = {
+          id: Date.now(),
+          userId: 0,
+          stageId: stageId,
+          stageName: stageName,
+          clearedAt: new Date().toISOString(),
+          xpEarned: difficulty === 'EASY' ? 100 : (difficulty === 'HARD' ? 250 : 150),
+          elapsedTime: elapsedTime
+        };
+        localHistories.unshift(newHistory);
+        localStorage.setItem('guest_histories', JSON.stringify(localHistories));
+      }
+      allStagesSummary.value = [];
+      await loadRankingsList();
+      await loadUserHistory();
+    }
+  } catch (error) {
+    console.error('Failed to submit stage clear:', error);
+  } finally {
+    startNextPuzzleCountdown();
   }
 }
 

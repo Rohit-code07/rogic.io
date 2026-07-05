@@ -689,6 +689,35 @@ describe('App.vue Leaderboard Integration TDD', () => {
     expect(vm.selectedStageId).toBe(2);
     expect(fetchStageSpy).toHaveBeenCalledWith(2);
   });
+
+  it('should trigger confetti and clearStage API via solve-animation-complete integration in test env', async () => {
+    const mockStages = [{ id: 1, name: 'Heart Shape', width: 5, height: 5 }];
+    const mockStageDetails = { id: 1, name: 'Heart Shape', width: 5, height: 5, solutionGrid: [[1]] };
+    const mockRankings = [{ id: 3, username: 'Player3', xp: 1000, level: 5 }];
+
+    vi.spyOn(stageApi, 'fetchStages').mockResolvedValue(mockStages);
+    vi.spyOn(stageApi, 'fetchStageById').mockResolvedValue(mockStageDetails);
+    vi.spyOn(userApi, 'fetchRanking').mockResolvedValue(mockRankings);
+    const clearStageSpy = vi.spyOn(userApi, 'clearStage').mockResolvedValue({ id: 1, username: 'Player1', xp: 250, level: 2 });
+
+    const wrapper = mount(App);
+    await new Promise((resolve) => setTimeout(resolve, 50));
+
+    // Initially solved is false, solveAnimationComplete is false
+    const vm = wrapper.vm as any;
+    expect(vm.solved).toBe(false);
+    expect(vm.solveAnimationComplete).toBe(false);
+
+    // Solve the board
+    vm.board.toggleFill(0, 0);
+    await vm.handleCellClick();
+    await wrapper.vm.$nextTick();
+
+    // Under test environment, the animation resolves instantly, triggering the full chain synchronously
+    expect(vm.solved).toBe(true);
+    expect(vm.solveAnimationComplete).toBe(true);
+    expect(clearStageSpy).toHaveBeenCalled();
+  });
 });
 
 
