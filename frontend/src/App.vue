@@ -367,12 +367,6 @@
         </button>
       </div>
 
-      <!-- Progress bar matching the entire header width at its bottom edge -->
-      <transition name="fade">
-        <div v-if="solveAnimationComplete && allUnclearedStages.length > 0 && currentTab === 'play'" class="header-progress-bar-container">
-          <div class="header-progress-bar"></div>
-        </div>
-      </transition>
     </header>
 
     <!-- Hidden Selectors to keep legacy tests passing -->
@@ -431,7 +425,7 @@
           <template v-else-if="board && hasUnclearedPuzzles">
             <!-- Floating Stage Selector (Read-only badge showing '?' until solved) -->
             <div class="puzzle-selector-floating-container" v-if="currentActiveStage">
-              <div class="active-stage-badge readonly-badge">
+              <div class="active-stage-badge readonly-badge" :style="badgeProgressStyle">
                 <span class="active-stage-badge-name">{{ solveAnimationComplete ? currentActiveStage.name : '?' }}</span>
               </div>
             </div>
@@ -839,6 +833,17 @@ const hasUnclearedPuzzles = computed(() => {
   const hasRegular = allStagesSummary.value.some(s => !clearedStageIds.value.has(s.id));
   const hasAi = (aiStages.value || []).some(s => !clearedStageIds.value.has(s.id));
   return hasRegular || hasAi;
+});
+
+const badgeProgressStyle = computed(() => {
+  if (solveAnimationComplete.value && allUnclearedStages.value.length > 0 && nextPuzzleSeconds.value > 0) {
+    const progress = (nextPuzzleSeconds.value / 3) * 100;
+    return {
+      background: `linear-gradient(90deg, rgba(99, 102, 241, 0.25) 0%, rgba(56, 189, 248, 0.25) ${progress}%, rgba(30, 41, 59, 0.7) ${progress}%, rgba(30, 41, 59, 0.7) 100%)`,
+      transition: 'background 0.1s linear'
+    };
+  }
+  return {};
 });
 
 const delaySeconds = ref(0);
@@ -2409,9 +2414,10 @@ body {
     max-height: calc(100dvh - 250px) !important;
   }
   .active-stage-badge {
-    width: 85vw;
-    max-width: 340px;
-    padding: 0.5rem 2.5rem;
+    width: 90vw;
+    max-width: 460px;
+    padding: 0.6rem 1.5rem;
+    border-radius: 12px;
   }
   .puzzle-selector-dropdown {
     width: 85vw;
@@ -2456,13 +2462,14 @@ body {
   background: rgba(30, 41, 59, 0.7);
   backdrop-filter: blur(12px);
   border: 1px solid rgba(255, 255, 255, 0.08);
-  padding: 0.35rem 2rem;
-  border-radius: 9999px;
+  padding: 0.65rem 2rem;
+  border-radius: 12px;
   cursor: pointer;
   box-shadow: 0 4px 20px -5px rgba(0, 0, 0, 0.3);
   transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
   white-space: nowrap;
-  max-width: 90vw;
+  width: 100%;
+  max-width: 500px;
   box-sizing: border-box;
   min-width: 180px;
 }
