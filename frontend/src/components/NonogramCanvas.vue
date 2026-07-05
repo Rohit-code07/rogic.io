@@ -78,7 +78,7 @@
 import { ref, onMounted, watch, onUnmounted, computed } from 'vue';
 import { PuzzleBoard } from '../engine/puzzleBoard';
 import { getGridCoordinates } from '../engine/coordinateMapper';
-import { calculateLineHints } from '../engine/hintCalculator';
+import { drawNonogramBoard, getBoardDimensions } from '../engine/canvasRenderer';
 
 const props = defineProps<{
   board: PuzzleBoard;
@@ -108,22 +108,7 @@ const getCellSize = (maxCount: number) => {
   return 16; // 30x30 or larger
 };
 
-function isArrayEqual(a: number[], b: number[]) {
-  if (a.length !== b.length) return false;
-  for (let i = 0; i < a.length; i++) {
-    if (a[i] !== b[i]) return false;
-  }
-  return true;
-}
-
 const CELL_SIZE = computed(() => getCellSize(Math.max(props.board.colCount, props.board.rowCount)));
-
-const getHintParams = (cellSize: number) => {
-  const fontSize = Math.max(8, Math.min(12, Math.floor(cellSize * 0.5) + 2));
-  const spacing = Math.max(10, Math.min(16, Math.floor(cellSize * 0.6) + 4));
-  const offset = Math.max(6, Math.min(10, Math.floor(cellSize * 0.3) + 1));
-  return { fontSize, spacing, offset };
-};
 
 const playAngle = props.initialAngle !== undefined ? props.initialAngle : 0;
 const targetOrthogonalAngle = computed(() => {
@@ -149,23 +134,7 @@ const currentAngle = ref(getStartingAngle());
 
 // Dynamic calculations for bounds
 const getDimensions = () => {
-  const cellSizeVal = CELL_SIZE.value;
-  const { spacing } = getHintParams(cellSizeVal);
-  const boardWidth = props.board.colCount * cellSizeVal;
-  const boardHeight = props.board.rowCount * cellSizeVal;
-  const boardDiag = Math.sqrt(boardWidth * boardWidth + boardHeight * boardHeight);
-
-  const maxRowHintsLength = Math.max(...props.board.rowHints.map(h => h.length), 1);
-  const maxColHintsLength = Math.max(...props.board.colHints.map(h => h.length), 1);
-  const hintPadding = Math.max(maxRowHintsLength, maxColHintsLength) * spacing + 40;
-
-  const size = Math.ceil(boardDiag + hintPadding * 2);
-  return {
-    width: size,
-    height: size,
-    halfW: boardWidth / 2,
-    halfH: boardHeight / 2
-  };
+  return getBoardDimensions(props.board, CELL_SIZE.value);
 };
 
 const scale = ref(1.0);
@@ -245,7 +214,7 @@ function drawBoard() {
   const canvas = canvasRef.value;
   if (!canvas) return;
 
-  const { width, height, halfW, halfH } = getDimensions();
+  const { width, height } = getDimensions();
   const cellSizeVal = CELL_SIZE.value;
   if (canvas.width !== width) {
     canvas.width = width;
@@ -257,8 +226,6 @@ function drawBoard() {
   const ctx = canvas.getContext('2d');
   if (!ctx) return;
 
-  const isSolved = props.board.isSolved();
-
   config.centerX = width / 2;
   config.centerY = height / 2;
   config.angle = currentAngle.value;
@@ -266,161 +233,11 @@ function drawBoard() {
   config.colCount = props.board.colCount;
   config.cellSize = cellSizeVal;
 
-  // Clear canvas (sleek dark themed layout)
-  ctx.fillStyle = '#0f172a';
-  ctx.fillRect(0, 0, width, height);
-
-  ctx.save();
-  ctx.translate(config.centerX, config.centerY);
-  ctx.rotate(config.angle);
-
-  // Draw background for overall active board area
-  if (isSolved && glowIntensity.value > 0) {
-    ctx.save();
-    ctx.shadowColor = `rgba(56, 189, 248, ${glowIntensity.value})`;
-    ctx.shadowBlur = glowBlur.value;
-    ctx.fillStyle = '#1e293b'; // slate-800
-    ctx.fillRect(-halfW, -halfH, props.board.colCount * cellSizeVal, props.board.rowCount * cellSizeVal);
-    ctx.restore();
-  } else {
-    ctx.fillStyle = '#1e293b'; // slate-800
-    ctx.fillRect(-halfW, -halfH, props.board.colCount * cellSizeVal, props.board.rowCount * cellSizeVal);
-  }
-
-  // Draw grid cells
-  for (let r = 0; r < props.board.rowCount; r++) {
-    for (let c = 0; c < props.board.colCount; c++) {
-      const x = -halfW + c * cellSizeVal;
-      const y = -halfH + r * cellSizeVal;
-
-      if (!isSolved) {
-        ctx.strokeStyle = '#334155'; // slate-700
-        ctx.lineWidth = 1;
-        ctx.strokeRect(x, y, cellSizeVal, cellSizeVal);
-      }
-
-      const cellState = props.board.currentGrid[r][c];
-      if (cellState === 1) {
-        // Filled with premium gem gradient
-        const grad = ctx.createLinearGradient(x, y, x + cellSizeVal, y + cellSizeVal);
-        grad.addColorStop(0, '#38bdf8'); // sky-400
-        grad.addColorStop(1, '#818cf8'); // indigo-400
-        ctx.fillStyle = grad;
-
-        if (isSolved) {
-          // Seamless full cell fill for clean pixel art when solved
-          ctx.fillRect(x, y, cellSizeVal, cellSizeVal);
-        } else {
-          // Play mode: cell margin and border stroke
-          ctx.fillRect(x + 1.5, y + 1.5, cellSizeVal - 3, cellSizeVal - 3);
-          ctx.strokeStyle = '#6366f1';
-          ctx.lineWidth = 1.5;
-          ctx.strokeRect(x + 1.5, y + 1.5, cellSizeVal - 3, cellSizeVal - 3);
-        }
-      } else if (cellState === 2 && !isSolved) {
-        // Marked (X) - Translucent slate grey
-        ctx.strokeStyle = 'rgba(148, 163, 184, 0.45)';
-        ctx.lineWidth = 2.0;
-        ctx.beginPath();
-        ctx.moveTo(x + cellSizeVal / 4, y + cellSizeVal / 4);
-        ctx.lineTo(x + 3 * cellSizeVal / 4, y + 3 * cellSizeVal / 4);
-        ctx.moveTo(x + 3 * cellSizeVal / 4, y + cellSizeVal / 4);
-        ctx.lineTo(x + cellSizeVal / 4, y + 3 * cellSizeVal / 4);
-        ctx.stroke();
-      }
-    }
-  }
-
-  // Draw bold line markers every 5 lines only when active (not solved)
-  if (!isSolved) {
-    ctx.strokeStyle = '#64748b'; // slate-500
-    ctx.lineWidth = 2.5;
-    for (let r = 0; r <= props.board.rowCount; r += 5) {
-      if (r > 0 && r < props.board.rowCount) {
-        const y = -halfH + r * cellSizeVal;
-        ctx.beginPath();
-        ctx.moveTo(-halfW, y);
-        ctx.lineTo(halfW, y);
-        ctx.stroke();
-      }
-    }
-    for (let c = 0; c <= props.board.colCount; c += 5) {
-      if (c > 0 && c < props.board.colCount) {
-        const x = -halfW + c * cellSizeVal;
-        ctx.beginPath();
-        ctx.moveTo(x, -halfH);
-        ctx.lineTo(x, halfH);
-        ctx.stroke();
-      }
-    }
-  }
-
-  // Draw hints ONLY if not solved
-  if (!isSolved) {
-    const { fontSize, spacing, offset } = getHintParams(cellSizeVal);
-
-    // Draw row hints (on the left side)
-    ctx.font = `bold ${fontSize}px sans-serif`;
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-
-    for (let r = 0; r < props.board.rowCount; r++) {
-      const hints = props.board.rowHints[r] || [0];
-      const y = -halfH + r * cellSizeVal + cellSizeVal / 2;
-
-      // Check if row hints are matched by player's current cells
-      const rowCells = props.board.currentGrid[r];
-      const rowLine = rowCells.map(val => val === 1 ? 1 : 0);
-      const rowCurrentHints = calculateLineHints(rowLine);
-      const isRowMatching = isArrayEqual(rowCurrentHints, hints);
-
-      ctx.fillStyle = isRowMatching ? '#475569' : '#94a3b8'; // Fade to slate-600 if completed correctly
-
-      for (let h = 0; h < hints.length; h++) {
-        const hintVal = hints[hints.length - 1 - h];
-        const hx = -halfW - offset - h * spacing;
-        
-        ctx.save();
-        ctx.translate(hx, y);
-        ctx.rotate(-config.angle);
-        ctx.fillText(hintVal.toString(), 0, 0);
-        ctx.restore();
-      }
-    }
-
-    // Draw col hints (above the grid)
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-
-    for (let c = 0; c < props.board.colCount; c++) {
-      const hints = props.board.colHints[c] || [0];
-      const x = -halfW + c * cellSizeVal + cellSizeVal / 2;
-
-      // Check if column hints are matched by player's current cells
-      const colCells: number[] = [];
-      for (let r = 0; r < props.board.rowCount; r++) {
-        colCells.push(props.board.currentGrid[r][c]);
-      }
-      const colLine = colCells.map(val => val === 1 ? 1 : 0);
-      const colCurrentHints = calculateLineHints(colLine);
-      const isColMatching = isArrayEqual(colCurrentHints, hints);
-
-      ctx.fillStyle = isColMatching ? '#475569' : '#94a3b8'; // Fade to slate-600 if completed correctly
-
-      for (let h = 0; h < hints.length; h++) {
-        const hintVal = hints[hints.length - 1 - h];
-        const hy = -halfH - offset - h * spacing;
-        
-        ctx.save();
-        ctx.translate(x, hy);
-        ctx.rotate(-config.angle);
-        ctx.fillText(hintVal.toString(), 0, 0);
-        ctx.restore();
-      }
-    }
-  }
-
-  ctx.restore();
+  drawNonogramBoard(ctx, props.board, config, {
+    glowIntensity: glowIntensity.value,
+    glowBlur: glowBlur.value,
+    cellSize: cellSizeVal
+  });
 }
 
 let dragValue = 0; // 0: empty, 1: filled, 2: marked
