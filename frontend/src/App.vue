@@ -733,7 +733,7 @@ import { ref, onMounted, onUnmounted, computed, watch } from 'vue';
 import NonogramCanvas from './components/NonogramCanvas.vue';
 import { PuzzleBoard } from './engine/puzzleBoard';
 import { rotateGrid } from './engine/gridRotator';
-import { fetchStages, fetchStageById, fetchAiStages, startStage, likeStage, dislikeStage, fetchNextReleaseDelaySeconds } from './api/stageApi';
+import { fetchStages, fetchStageById, fetchAiStages, startStage, likeStage, dislikeStage, fetchNextReleaseDelaySeconds, verifyStageSolve } from './api/stageApi';
 import type { StageSummary } from './api/stageApi';
 import { fetchRanking, clearStage, fetchMeFromServer, fetchUserHistory, syncGuestHistory } from './api/userApi';
 import type { User, HistoryResponse } from './api/userApi';
@@ -1263,17 +1263,52 @@ async function loadStageDetails(id: number) {
     if (selectedStageId.value !== id && selectedAiStageId.value !== id) {
       return;
     }
-    const k = Math.floor(Math.random() * 3) + 1;
-    currentRotationSteps.value = k;
-    const rotated = rotateGrid(details.solutionGrid, k);
-    board.value = new PuzzleBoard(rotated);
-    solved.value = false;
+    
+    // Check for saved progress
+    const key = `rogic_progress_stage_${isAiStageActive.value ? 'ai_' : ''}${id}`;
+    const savedProgressStr = localStorage.getItem(key);
+    let hasLoadedProgress = false;
+    let k = Math.floor(Math.random() * 3) + 1;
+
+    if (savedProgressStr) {
+      try {
+        const progress = JSON.parse(savedProgressStr);
+        if (progress.stageId === id && progress.isAiStage === isAiStageActive.value) {
+          k = progress.rotationSteps || k;
+          currentRotationSteps.value = k;
+          const rotated = rotateGrid(details.solutionGrid, k);
+          board.value = new PuzzleBoard(rotated);
+          
+          for (let r = 0; r < progress.currentGrid.length; r++) {
+            for (let c = 0; c < progress.currentGrid[r].length; c++) {
+              board.value.currentGrid[r][c] = progress.currentGrid[r][c];
+            }
+          }
+          board.value.undoStack = progress.undoStack || [];
+          board.value.redoStack = progress.redoStack || [];
+          
+          solved.value = board.value.isSolved();
+          startTime.value = Date.now() - (progress.elapsedTimeAccumulated || 0) * 1000;
+          hasLoadedProgress = true;
+        }
+      } catch (err) {
+        console.warn('Failed to restore active stage progress:', err);
+      }
+    }
+
+    if (!hasLoadedProgress) {
+      currentRotationSteps.value = k;
+      const rotated = rotateGrid(details.solutionGrid, k);
+      board.value = new PuzzleBoard(rotated);
+      solved.value = false;
+      startTime.value = Date.now();
+    }
+
     currentStageVotes.value = {
       upvotes: details.upvotes || 0,
       downvotes: details.downvotes || 0
     };
     hasVoted.value = false;
-    startTime.value = Date.now();
     isLoading.value = false;
   } catch (error) {
     if (selectedStageId.value !== id && selectedAiStageId.value !== id) {
@@ -1335,9 +1370,37 @@ async function onAiStageChange() {
   }
 }
 
+function saveActiveProgress() {
+  if (!board.value || solved.value) return;
+  const stageId = selectedStageId.value !== null ? selectedStageId.value : selectedAiStageId.value;
+  if (stageId === null) return;
+
+  const elapsedTime = Math.floor((Date.now() - startTime.value) / 1000);
+  const progress = {
+    stageId,
+    isAiStage: isAiStageActive.value,
+    currentGrid: board.value.currentGrid.map(row => [...row]),
+    elapsedTimeAccumulated: elapsedTime,
+    undoStack: board.value.undoStack.map(g => g.map(row => [...row])),
+    redoStack: board.value.redoStack.map(g => g.map(row => [...row])),
+    rotationSteps: currentRotationSteps.value
+  };
+  const key = `rogic_progress_stage_${isAiStageActive.value ? 'ai_' : ''}${stageId}`;
+  localStorage.setItem(key, JSON.stringify(progress));
+}
+
 async function handleCellClick() {
   if (board.value) {
     solved.value = board.value.isSolved();
+    if (solved.value) {
+      const stageId = selectedStageId.value !== null ? selectedStageId.value : selectedAiStageId.value;
+      if (stageId !== null) {
+        const key = `rogic_progress_stage_${isAiStageActive.value ? 'ai_' : ''}${stageId}`;
+        localStorage.removeItem(key);
+      }
+    } else {
+      saveActiveProgress();
+    }
   }
 }
 
@@ -1377,6 +1440,21 @@ async function handleSolveAnimationComplete() {
           localStorage.setItem('guest_cleared_stages', JSON.stringify(clearedIds));
         }
 
+        let token = '';
+        if (board.value) {
+          try {
+            const verification = await verifyStageSolve(
+              stageId,
+              board.value.currentGrid,
+              elapsedTime,
+              currentRotationSteps.value
+            );
+            token = verification.token;
+          } catch (err) {
+            console.error('Failed to verify stage solve on backend:', err);
+          }
+        }
+
         const savedHistories = localStorage.getItem('guest_histories');
         const localHistories = savedHistories ? JSON.parse(savedHistories) : [];
         const currentStage = currentActiveStage.value;
@@ -1388,7 +1466,8 @@ async function handleSolveAnimationComplete() {
           stageName: stageName,
           clearedAt: new Date().toISOString(),
           xpEarned: difficulty === 'EASY' ? 100 : (difficulty === 'HARD' ? 250 : 150),
-          elapsedTime: elapsedTime
+          elapsedTime: elapsedTime,
+          proofToken: token
         };
         localHistories.unshift(newHistory);
         localStorage.setItem('guest_histories', JSON.stringify(localHistories));
@@ -1922,6 +2001,11 @@ function handleGoogleLogin() {
 
 function handleGoogleLogout() {
   googleLogout();
+  const stageId = selectedStageId.value !== null ? selectedStageId.value : selectedAiStageId.value;
+  if (stageId !== null) {
+    const key = `rogic_progress_stage_${isAiStageActive.value ? 'ai_' : ''}${stageId}`;
+    localStorage.removeItem(key);
+  }
 }
 
 async function initializeUserSession() {
@@ -2007,7 +2091,8 @@ async function migrateGuestHistory(userId: number) {
     if (localHistories.length > 0) {
       const guestClears = localHistories.map(h => ({
         stageId: h.stageId,
-        elapsedTime: h.elapsedTime
+        elapsedTime: h.elapsedTime,
+        proofToken: h.proofToken
       }));
 
       // Call bulk sync API
@@ -2093,6 +2178,7 @@ onMounted(async () => {
 
   window.addEventListener('resize', handleConfettiResize);
   document.addEventListener('touchstart', preventPinchZoom, { passive: false });
+  window.addEventListener('pagehide', saveActiveProgress);
   if (!isTestEnv) {
     document.addEventListener('click', handleGlobalClick);
     syncDailyPuzzleCountdown();
@@ -2111,6 +2197,7 @@ onUnmounted(() => {
   resetCountdown();
   window.removeEventListener('resize', handleConfettiResize);
   document.removeEventListener('touchstart', preventPinchZoom);
+  window.removeEventListener('pagehide', saveActiveProgress);
   if (!isTestEnv) {
     window.removeEventListener('hashchange', handleHashChange);
     document.removeEventListener('click', handleGlobalClick);

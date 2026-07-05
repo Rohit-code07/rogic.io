@@ -314,5 +314,118 @@ describe('NonogramCanvas TDD Red Phase', () => {
       expect(Number(canvas.element.getAttribute('width'))).toBe(785);
     });
   });
+
+  describe('Undo/Redo and Canvas Panning features', () => {
+    it('should perform undo and redo operations to restore grid state', async () => {
+      const board = new PuzzleBoard([
+        [0, 0],
+        [0, 0]
+      ]);
+      const wrapper = mount(NonogramCanvas, {
+        props: { board, initialAngle: 0 }
+      });
+      const canvas = wrapper.find('[data-testid="nonogram-canvas"]');
+      canvas.element.getBoundingClientRect = () => ({
+        width: 400,
+        height: 400,
+        top: 0,
+        left: 0,
+        right: 400,
+        bottom: 400,
+        x: 0,
+        y: 0,
+        toJSON: () => {}
+      });
+
+      // Initially, undo/redo should be disabled
+      expect((wrapper.vm as any).canUndo).toBe(false);
+      expect((wrapper.vm as any).canRedo).toBe(false);
+
+      // Make a change
+      await canvas.trigger('mousedown', { button: 0, clientX: 85, clientY: 85 });
+      window.dispatchEvent(new MouseEvent('mouseup'));
+      expect(board.currentGrid[0][0]).toBe(1);
+      expect((wrapper.vm as any).canUndo).toBe(true);
+
+      // Perform undo
+      (wrapper.vm as any).handleUndo();
+      expect(board.currentGrid[0][0]).toBe(0);
+      expect((wrapper.vm as any).canUndo).toBe(false);
+      expect((wrapper.vm as any).canRedo).toBe(true);
+
+      // Perform redo
+      (wrapper.vm as any).handleRedo();
+      expect(board.currentGrid[0][0]).toBe(1);
+      expect((wrapper.vm as any).canUndo).toBe(true);
+      expect((wrapper.vm as any).canRedo).toBe(false);
+    });
+
+    it('should support keyboard shortcuts for undo and redo', async () => {
+      const board = new PuzzleBoard([
+        [0, 0],
+        [0, 0]
+      ]);
+      const wrapper = mount(NonogramCanvas, {
+        props: { board, initialAngle: 0 }
+      });
+      const canvas = wrapper.find('[data-testid="nonogram-canvas"]');
+      canvas.element.getBoundingClientRect = () => ({
+        width: 400,
+        height: 400,
+        top: 0,
+        left: 0,
+        right: 400,
+        bottom: 400,
+        x: 0,
+        y: 0,
+        toJSON: () => {}
+      });
+
+      // Make a change
+      await canvas.trigger('mousedown', { button: 0, clientX: 85, clientY: 85 });
+      window.dispatchEvent(new MouseEvent('mouseup'));
+
+      // Press Ctrl+Z
+      window.dispatchEvent(new KeyboardEvent('keydown', { ctrlKey: true, key: 'z' }));
+      expect(board.currentGrid[0][0]).toBe(0);
+
+      // Press Ctrl+Y
+      window.dispatchEvent(new KeyboardEvent('keydown', { ctrlKey: true, key: 'y' }));
+      expect(board.currentGrid[0][0]).toBe(1);
+    });
+
+    it('should pan the canvas when dragging outside the grid', async () => {
+      const board = new PuzzleBoard([
+        [0, 0],
+        [0, 0]
+      ]);
+      const wrapper = mount(NonogramCanvas, {
+        props: { board, initialAngle: 0 }
+      });
+      const canvas = wrapper.find('[data-testid="nonogram-canvas"]');
+      canvas.element.getBoundingClientRect = () => ({
+        width: 400,
+        height: 400,
+        top: 0,
+        left: 0,
+        right: 400,
+        bottom: 400,
+        x: 0,
+        y: 0,
+        toJSON: () => {}
+      });
+
+      // Drag to pan starting from clientX = 50, clientY = 50 (outside grid)
+      await canvas.trigger('mousedown', { button: 0, clientX: 50, clientY: 50 });
+      window.dispatchEvent(new MouseEvent('mousemove', { clientX: 100, clientY: 70 }));
+
+      // Check offsets
+      expect((wrapper.vm as any).offsetX).toBe(50);
+      expect((wrapper.vm as any).offsetY).toBe(20);
+
+      // Mouse up
+      window.dispatchEvent(new MouseEvent('mouseup'));
+    });
+  });
 });
 

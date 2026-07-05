@@ -19,6 +19,7 @@ export interface HistoryResponse {
   clearedAt: string;
   xpEarned: number;
   elapsedTime: number;
+  proofToken?: string;
 }
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL
@@ -71,7 +72,10 @@ export async function fetchMeFromServer(): Promise<User> {
   return response.data;
 }
 
-export async function syncGuestHistory(userId: number, guestClears: { stageId: number; elapsedTime: number }[]): Promise<User> {
+export async function syncGuestHistory(
+  userId: number,
+  guestClears: { stageId: number; elapsedTime: number; proofToken?: string }[]
+): Promise<User> {
   const response = await axios.post<User>(`${API_BASE_URL}/${userId}/sync-history`, guestClears, {
     headers: getAuthHeader(),
   });

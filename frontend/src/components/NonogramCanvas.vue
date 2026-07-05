@@ -1,15 +1,18 @@
 <template>
   <div class="nonogram-canvas-container">
-    <div class="canvas-frame" ref="frameRef">
+    <div 
+      class="canvas-frame" 
+      ref="frameRef"
+      @mousedown="handleMouseDown"
+      @touchstart="handleTouchStart"
+      @wheel="handleWheel"
+      @contextmenu.prevent
+    >
       <div class="canvas-anim-wrapper">
         <canvas 
           ref="canvasRef" 
           data-testid="nonogram-canvas" 
           :style="canvasStyle"
-          @mousedown="handleMouseDown"
-          @touchstart="handleTouchStart"
-          @wheel="handleWheel"
-          @contextmenu.prevent
         ></canvas>
       </div>
     </div>
@@ -38,12 +41,31 @@
         </svg>
       </button>
     </div>
-    
-    <!-- Floating Zoom HUD -->
-    <div v-if="!readOnly" class="zoom-hud">
-      <button class="zoom-btn" @click="changeZoom(-0.15)" title="Zoom Out">-</button>
-      <span class="zoom-level" @click="resetZoom" title="Reset Zoom">{{ Math.round(scale * 100) }}%</span>
-      <button class="zoom-btn" @click="changeZoom(0.15)" title="Zoom In">+</button>
+
+    <!-- Floating History (Undo/Redo) HUD -->
+    <div v-if="!readOnly" class="history-hud">
+      <button 
+        class="history-btn" 
+        @click="handleUndo" 
+        :disabled="!canUndo" 
+        title="Undo (Ctrl+Z)" 
+        type="button"
+      >
+        <svg class="history-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M3 7v6h6M21 17a9 9 0 0 0-9-9 9 9 0 0 0-6 2.3L3 13" />
+        </svg>
+      </button>
+      <button 
+        class="history-btn" 
+        @click="handleRedo" 
+        :disabled="!canRedo" 
+        title="Redo (Ctrl+Y)" 
+        type="button"
+      >
+        <svg class="history-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M21 7v6h-6M3 17a9 9 0 0 1 9-9 9 9 0 0 1 6 2.3l3 2.7" />
+        </svg>
+      </button>
     </div>
   </div>
 </template>
@@ -73,14 +95,6 @@ function toggleDrawMode() {
   drawMode.value = drawMode.value === 'fill' ? 'x' : 'fill';
 }
 
-function isArrayEqual(a: number[], b: number[]) {
-  if (a.length !== b.length) return false;
-  for (let i = 0; i < a.length; i++) {
-    if (a[i] !== b[i]) return false;
-  }
-  return true;
-}
-
 // Standard grid layout dimensions
 const getCellSize = (maxCount: number) => {
   if (maxCount <= 10) return 30;
@@ -89,6 +103,14 @@ const getCellSize = (maxCount: number) => {
   if (maxCount <= 25) return 18;
   return 16; // 30x30 or larger
 };
+
+function isArrayEqual(a: number[], b: number[]) {
+  if (a.length !== b.length) return false;
+  for (let i = 0; i < a.length; i++) {
+    if (a[i] !== b[i]) return false;
+  }
+  return true;
+}
 
 const CELL_SIZE = computed(() => getCellSize(Math.max(props.board.colCount, props.board.rowCount)));
 
@@ -168,30 +190,45 @@ const fitScale = computed(() => {
   return Math.min(scaleX, scaleY);
 });
 
+const offsetX = ref(0);
+const offsetY = ref(0);
+const isPanning = ref(false);
+let panStartX = 0;
+let panStartY = 0;
+
 const canvasStyle = computed(() => {
   const transitionTime = props.board.isSolved() ? '0.3s' : '0.15s';
-  const transitionStyle = (isDragging.value && !props.board.isSolved()) 
+  const transitionStyle = ((isDragging.value || isPanning.value) && !props.board.isSolved()) 
     ? 'none' 
     : `transform ${transitionTime} cubic-bezier(0.2, 0.8, 0.2, 1)`;
   return {
-    transform: `scale(${scale.value})`,
+    transform: `translate(${offsetX.value}px, ${offsetY.value}px) scale(${scale.value})`,
     transformOrigin: 'center center',
     transition: transitionStyle
   };
 });
 
-function changeZoom(amount: number) {
-  scale.value = Math.max(0.2, Math.min(4.0, scale.value + amount));
-}
-
-function resetZoom() {
-  scale.value = fitScale.value;
+function clampOffsets() {
+  const visibleWidth = props.board.colCount * CELL_SIZE.value;
+  const visibleHeight = props.board.rowCount * CELL_SIZE.value;
+  const scaledWidth = visibleWidth * scale.value;
+  const scaledHeight = visibleHeight * scale.value;
+  
+  // Keep at least 80 pixels overlap with the frame
+  const minOverlap = 80;
+  
+  const maxOffsetX = Math.max(0, frameWidth.value / 2 + scaledWidth / 2 - minOverlap);
+  const maxOffsetY = Math.max(0, frameHeight.value / 2 + scaledHeight / 2 - minOverlap);
+  
+  offsetX.value = Math.max(-maxOffsetX, Math.min(maxOffsetX, offsetX.value));
+  offsetY.value = Math.max(-maxOffsetY, Math.min(maxOffsetY, offsetY.value));
 }
 
 function handleWheel(event: WheelEvent) {
   event.preventDefault();
   const zoomFactor = event.deltaY < 0 ? 1.05 : 0.95;
   scale.value = Math.max(0.2, Math.min(4.0, scale.value * zoomFactor));
+  clampOffsets();
 }
 
 const initialDims = getDimensions();
@@ -400,10 +437,118 @@ function getCoordinatesFromEvent(clientX: number, clientY: number) {
   return getGridCoordinates(clickX, clickY, config);
 }
 
+const canUndo = ref(false);
+const canRedo = ref(false);
+
+function updateHistoryFlags() {
+  canUndo.value = props.board.canUndo();
+  canRedo.value = props.board.canRedo();
+}
+
+function handleUndo() {
+  if (props.readOnly) return;
+  const success = props.board.undo();
+  if (success) {
+    updateHistoryFlags();
+    drawBoard();
+    emit('cell-click');
+  }
+}
+
+function handleRedo() {
+  if (props.readOnly) return;
+  const success = props.board.redo();
+  if (success) {
+    updateHistoryFlags();
+    drawBoard();
+    emit('cell-click');
+  }
+}
+
+function handleKeyDown(event: KeyboardEvent) {
+  if (props.readOnly) return;
+  if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'z') {
+    event.preventDefault();
+    if (event.shiftKey) {
+      handleRedo();
+    } else {
+      handleUndo();
+    }
+  } else if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'y') {
+    event.preventDefault();
+    handleRedo();
+  }
+}
+
+function handlePanMouseMove(event: MouseEvent) {
+  if (!isPanning.value) return;
+  offsetX.value = event.clientX - panStartX;
+  offsetY.value = event.clientY - panStartY;
+  clampOffsets();
+}
+
+function handlePanMouseUp() {
+  if (isPanning.value) {
+    isPanning.value = false;
+    window.removeEventListener('mousemove', handlePanMouseMove);
+    window.removeEventListener('mouseup', handlePanMouseUp);
+  }
+}
+
+function handlePanTouchMove(event: TouchEvent) {
+  if (!isPanning.value) return;
+  event.preventDefault();
+
+  if (event.touches.length === 1) {
+    const touch = event.touches[0];
+    offsetX.value = touch.clientX - panStartX;
+    offsetY.value = touch.clientY - panStartY;
+  } else if (event.touches.length > 1) {
+    const t1 = event.touches[0];
+    const t2 = event.touches[1];
+    const midX = (t1.clientX + t2.clientX) / 2;
+    const midY = (t1.clientY + t2.clientY) / 2;
+    offsetX.value = midX - panStartX;
+    offsetY.value = midY - panStartY;
+  }
+  clampOffsets();
+}
+
+function handlePanTouchEnd() {
+  if (isPanning.value) {
+    isPanning.value = false;
+    window.removeEventListener('touchmove', handlePanTouchMove);
+    window.removeEventListener('touchend', handlePanTouchEnd);
+    window.removeEventListener('touchcancel', handlePanTouchEnd);
+  }
+}
+
 function handleMouseDown(event: MouseEvent) {
   if (props.readOnly) return;
+
+  // Handle middle click panning
+  if (event.button === 1) {
+    isPanning.value = true;
+    panStartX = event.clientX - offsetX.value;
+    panStartY = event.clientY - offsetY.value;
+    window.addEventListener('mousemove', handlePanMouseMove);
+    window.addEventListener('mouseup', handlePanMouseUp);
+    return;
+  }
+
   const coords = getCoordinatesFromEvent(event.clientX, event.clientY);
-  if (!coords) return;
+  
+  // If clicked outside the grid (coords is null) and it is left click, start panning!
+  if (!coords) {
+    if (event.button === 0) {
+      isPanning.value = true;
+      panStartX = event.clientX - offsetX.value;
+      panStartY = event.clientY - offsetY.value;
+      window.addEventListener('mousemove', handlePanMouseMove);
+      window.addEventListener('mouseup', handlePanMouseUp);
+    }
+    return;
+  }
 
   const { row, col } = coords;
   const currentValue = props.board.currentGrid[row][col];
@@ -421,6 +566,10 @@ function handleMouseDown(event: MouseEvent) {
   } else {
     return;
   }
+
+  // Save undo state before changing cell
+  props.board.saveState();
+  updateHistoryFlags();
 
   isDragging.value = true;
   props.board.setCell(row, col, dragValue);
@@ -460,12 +609,38 @@ function handleWindowMouseUp() {
 
 function handleTouchStart(event: TouchEvent) {
   if (props.readOnly) return;
-  if (event.touches.length !== 1) return;
-  event.preventDefault(); // Prevent page scroll/zoom gestures during drawing
 
+  // Handle multi-touch panning
+  if (event.touches.length > 1) {
+    isPanning.value = true;
+    const t1 = event.touches[0];
+    const t2 = event.touches[1];
+    const midX = (t1.clientX + t2.clientX) / 2;
+    const midY = (t1.clientY + t2.clientY) / 2;
+    panStartX = midX - offsetX.value;
+    panStartY = midY - offsetY.value;
+    window.addEventListener('touchmove', handlePanTouchMove, { passive: false });
+    window.addEventListener('touchend', handlePanTouchEnd);
+    window.addEventListener('touchcancel', handlePanTouchEnd);
+    return;
+  }
+
+  if (event.touches.length !== 1) return;
   const touch = event.touches[0];
   const coords = getCoordinatesFromEvent(touch.clientX, touch.clientY);
-  if (!coords) return;
+
+  // If touched outside the grid, start panning!
+  if (!coords) {
+    isPanning.value = true;
+    panStartX = touch.clientX - offsetX.value;
+    panStartY = touch.clientY - offsetY.value;
+    window.addEventListener('touchmove', handlePanTouchMove, { passive: false });
+    window.addEventListener('touchend', handlePanTouchEnd);
+    window.addEventListener('touchcancel', handlePanTouchEnd);
+    return;
+  }
+
+  event.preventDefault(); // Prevent page scroll/zoom gestures during drawing
 
   const { row, col } = coords;
   const currentValue = props.board.currentGrid[row][col];
@@ -475,6 +650,10 @@ function handleTouchStart(event: TouchEvent) {
   } else {
     dragValue = currentValue === 2 ? 0 : 2;
   }
+
+  // Save undo state before changing cell
+  props.board.saveState();
+  updateHistoryFlags();
 
   isDragging.value = true;
   props.board.setCell(row, col, dragValue);
@@ -565,6 +744,9 @@ function animateRotationToTarget() {
   const targetAngle = targetOrthogonalAngle.value;
   if (isTestEnv) {
     currentAngle.value = targetAngle;
+    offsetX.value = 0;
+    offsetY.value = 0;
+    scale.value = fitScale.value;
     glowIntensity.value = 0.35;
     drawBoard();
     showSolveImpact.value = true;
@@ -574,6 +756,10 @@ function animateRotationToTarget() {
 
   const duration = 1000; // 1 second
   const startAngle = currentAngle.value;
+  const startOffsetX = offsetX.value;
+  const startOffsetY = offsetY.value;
+  const startScale = scale.value;
+  const targetScale = fitScale.value;
   const startTime = performance.now();
 
   function tick(now: number) {
@@ -586,6 +772,9 @@ function animateRotationToTarget() {
       : 1 - Math.pow(-2 * progress + 2, 3) / 2;
 
     currentAngle.value = startAngle + (targetAngle - startAngle) * ease;
+    offsetX.value = startOffsetX + (0 - startOffsetX) * ease;
+    offsetY.value = startOffsetY + (0 - startOffsetY) * ease;
+    scale.value = startScale + (targetScale - startScale) * ease;
     drawBoard();
 
     if (progress < 1) {
@@ -603,6 +792,7 @@ function animateRotationToTarget() {
 let resizeObserver: ResizeObserver | null = null;
 
 onMounted(() => {
+  window.addEventListener('keydown', handleKeyDown);
   if (frameRef.value) {
     updateFrameSize();
     if (typeof ResizeObserver !== 'undefined') {
@@ -618,11 +808,17 @@ onMounted(() => {
 
 onUnmounted(() => {
   stopGlowAnimation();
+  window.removeEventListener('keydown', handleKeyDown);
   window.removeEventListener('mousemove', handleWindowMouseMove);
   window.removeEventListener('mouseup', handleWindowMouseUp);
   window.removeEventListener('touchmove', handleWindowTouchMove);
   window.removeEventListener('touchend', handleWindowTouchEnd);
   window.removeEventListener('touchcancel', handleWindowTouchEnd);
+  window.removeEventListener('mousemove', handlePanMouseMove);
+  window.removeEventListener('mouseup', handlePanMouseUp);
+  window.removeEventListener('touchmove', handlePanTouchMove);
+  window.removeEventListener('touchend', handlePanTouchEnd);
+  window.removeEventListener('touchcancel', handlePanTouchEnd);
   if (resizeObserver) {
     resizeObserver.disconnect();
   }
@@ -633,11 +829,17 @@ watch(fitScale, (newFitScale) => {
 });
 
 // Redraw if board changes
-watch(() => props.board, () => {
+watch(() => props.board, (newBoard) => {
   stopGlowAnimation();
   showSolveImpact.value = false;
   currentAngle.value = getStartingAngle();
   scale.value = fitScale.value;
+  offsetX.value = 0;
+  offsetY.value = 0;
+  if (newBoard) {
+    newBoard.resetHistory();
+    updateHistoryFlags();
+  }
   const dims = getDimensions();
   config.centerX = dims.width / 2;
   config.centerY = dims.height / 2;
@@ -646,7 +848,7 @@ watch(() => props.board, () => {
   config.colCount = props.board.colCount;
   config.angle = currentAngle.value;
   drawBoard();
-}, { deep: false });
+}, { deep: false, immediate: true });
 
 // Watch for solved state to rotate to target
 watch(() => props.board.isSolved(), (solved) => {
@@ -681,6 +883,7 @@ watch(() => props.board.isSolved(), (solved) => {
   border: 1px solid rgba(255, 255, 255, 0.05);
   border-top: none;
   position: relative;
+  cursor: pointer;
 }
 
 canvas {
@@ -697,7 +900,8 @@ canvas {
 .draw-mode-hud {
   position: absolute;
   bottom: 20px;
-  left: 20px;
+  left: 50%;
+  transform: translateX(-50%);
   display: flex;
   align-items: center;
   background: rgba(15, 23, 42, 0.85);
@@ -779,83 +983,65 @@ canvas {
   display: block;
 }
 
-/* Floating Zoom HUD */
-.zoom-hud {
+/* Floating History (Undo/Redo) HUD */
+.history-hud {
   position: absolute;
   bottom: 20px;
-  left: 50%;
-  transform: translateX(-50%);
+  left: 20px;
   display: flex;
   align-items: center;
-  gap: 0.5rem;
+  gap: 0.25rem;
   background: rgba(15, 23, 42, 0.85);
   backdrop-filter: blur(8px);
   border: 1px solid rgba(255, 255, 255, 0.08);
-  padding: 0.35rem 0.6rem;
+  padding: 4px;
   border-radius: 9999px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
   z-index: 10;
+  height: 36px;
+  box-sizing: border-box;
 }
 
-.zoom-btn {
+.history-btn {
   background: none;
   border: none;
-  color: #94a3b8;
-  font-size: 1.1rem;
-  font-weight: 700;
-  font-family: 'Outfit', sans-serif;
-  width: 24px;
-  height: 24px;
+  margin: 0;
+  padding: 0;
+  width: 28px;
+  height: 28px;
   display: flex;
   justify-content: center;
   align-items: center;
-  line-height: 1;
   cursor: pointer;
-  border-radius: 50%;
-  transition: all 0.15s ease;
+  border-radius: 9999px;
+  transition: all 0.2s ease;
+  color: #94a3b8;
 }
 
-.zoom-btn:hover {
+.history-btn:hover:not(:disabled) {
   background-color: rgba(255, 255, 255, 0.08);
   color: #f8fafc;
 }
 
-.zoom-level {
-  font-family: 'Outfit', sans-serif;
-  font-weight: 700;
-  font-size: 0.78rem;
-  color: #38bdf8;
-  min-width: 42px;
-  text-align: center;
-  cursor: pointer;
-  user-select: none;
-  transition: color 0.15s ease;
+.history-btn:disabled {
+  color: #475569;
+  cursor: not-allowed;
 }
 
-.zoom-level:hover {
-  color: #818cf8;
+.history-icon {
+  width: 14px;
+  height: 14px;
 }
 
 @media (max-width: 768px) {
   .draw-mode-hud {
     bottom: 12px;
-    left: 12px;
-  }
-  .zoom-hud {
-    bottom: 12px;
     left: 50%;
     transform: translateX(-50%);
-    padding: 0.25rem 0.5rem;
-    gap: 0.35rem;
   }
-  .zoom-btn {
-    width: 20px;
-    height: 20px;
-    font-size: 0.95rem;
-  }
-  .zoom-level {
-    min-width: 36px;
-    font-size: 0.72rem;
+  .history-hud {
+    bottom: 12px;
+    left: 12px;
   }
 }
 
