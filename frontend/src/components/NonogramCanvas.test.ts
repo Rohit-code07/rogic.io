@@ -284,4 +284,35 @@ describe('NonogramCanvas TDD Red Phase', () => {
       expect(calculateLineHints(emptyLine)).toEqual([0]);
     });
   });
+
+  describe('Dynamic layout and cell sizing for larger grids', () => {
+    it('should assign cell size 18 for 25x25 grid and scale padding dynamically', () => {
+      const board = new PuzzleBoard(Array(25).fill(null).map(() => Array(25).fill(0)));
+      const wrapper = mount(NonogramCanvas, {
+        props: { board }
+      });
+      const canvas = wrapper.find('[data-testid="nonogram-canvas"]');
+      
+      // Expected with CELL_SIZE = 18 and dynamic spacing = 14:
+      // boardDiag = 25 * 18 * Math.sqrt(2) = 636.396
+      // hintPadding = 1 * 14 + 40 = 54
+      // size = Math.ceil(636.396 + 108) = 745
+      expect(Number(canvas.element.getAttribute('width'))).toBe(745);
+    });
+
+    it('should assign cell size 16 for 30x30 grid and scale padding dynamically', () => {
+      const board = new PuzzleBoard(Array(30).fill(null).map(() => Array(30).fill(0)));
+      const wrapper = mount(NonogramCanvas, {
+        props: { board }
+      });
+      const canvas = wrapper.find('[data-testid="nonogram-canvas"]');
+      
+      // Expected with CELL_SIZE = 16 and dynamic spacing = 13:
+      // boardDiag = 30 * 16 * Math.sqrt(2) = 678.822
+      // hintPadding = 1 * 13 + 40 = 53
+      // size = Math.ceil(678.822 + 106) = 785
+      expect(Number(canvas.element.getAttribute('width'))).toBe(785);
+    });
+  });
 });
+

@@ -81,12 +81,20 @@ function isArrayEqual(a: number[], b: number[]) {
 // Standard grid layout dimensions
 const getCellSize = (maxCount: number) => {
   if (maxCount <= 10) return 30;
-  if (maxCount <= 15) return 20;
-  if (maxCount <= 20) return 15;
-  return 10; // 30x30 or larger
+  if (maxCount <= 15) return 24;
+  if (maxCount <= 20) return 20;
+  if (maxCount <= 25) return 18;
+  return 16; // 30x30 or larger
 };
 
 const CELL_SIZE = computed(() => getCellSize(Math.max(props.board.colCount, props.board.rowCount)));
+
+const getHintParams = (cellSize: number) => {
+  const fontSize = Math.max(8, Math.min(12, Math.floor(cellSize * 0.5) + 2));
+  const spacing = Math.max(10, Math.min(16, Math.floor(cellSize * 0.6) + 4));
+  const offset = Math.max(6, Math.min(10, Math.floor(cellSize * 0.3) + 1));
+  return { fontSize, spacing, offset };
+};
 
 const playAngle = props.initialAngle !== undefined ? props.initialAngle : 0;
 const targetOrthogonalAngle = computed(() => {
@@ -113,13 +121,14 @@ const currentAngle = ref(getStartingAngle());
 // Dynamic calculations for bounds
 const getDimensions = () => {
   const cellSizeVal = CELL_SIZE.value;
+  const { spacing } = getHintParams(cellSizeVal);
   const boardWidth = props.board.colCount * cellSizeVal;
   const boardHeight = props.board.rowCount * cellSizeVal;
   const boardDiag = Math.sqrt(boardWidth * boardWidth + boardHeight * boardHeight);
 
   const maxRowHintsLength = Math.max(...props.board.rowHints.map(h => h.length), 1);
   const maxColHintsLength = Math.max(...props.board.colHints.map(h => h.length), 1);
-  const hintPadding = Math.max(maxRowHintsLength, maxColHintsLength) * 18 + 40;
+  const hintPadding = Math.max(maxRowHintsLength, maxColHintsLength) * spacing + 40;
 
   const size = Math.ceil(boardDiag + hintPadding * 2);
   return {
@@ -191,19 +200,21 @@ const config = {
 function drawBoard() {
   const canvas = canvasRef.value;
   if (!canvas) return;
-  const ctx = canvas.getContext('2d');
-  if (!ctx) return;
 
   const { width, height, halfW, halfH } = getDimensions();
   const cellSizeVal = CELL_SIZE.value;
   canvas.width = width;
   canvas.height = height;
 
+  const ctx = canvas.getContext('2d');
+  if (!ctx) return;
+
   config.centerX = width / 2;
   config.centerY = height / 2;
   config.angle = currentAngle.value;
   config.rowCount = props.board.rowCount;
   config.colCount = props.board.colCount;
+  config.cellSize = cellSizeVal;
 
   // Clear canvas (sleek dark themed layout)
   ctx.fillStyle = '#0f172a';
@@ -287,8 +298,10 @@ function drawBoard() {
 
   // Draw hints ONLY if not solved
   if (!props.board.isSolved()) {
+    const { fontSize, spacing, offset } = getHintParams(cellSizeVal);
+
     // Draw row hints (on the left side)
-    ctx.font = 'bold 12px sans-serif';
+    ctx.font = `bold ${fontSize}px sans-serif`;
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
 
@@ -306,7 +319,7 @@ function drawBoard() {
 
       for (let h = 0; h < hints.length; h++) {
         const hintVal = hints[hints.length - 1 - h];
-        const hx = -halfW - 8 - h * 16;
+        const hx = -halfW - offset - h * spacing;
         
         ctx.save();
         ctx.translate(hx, y);
@@ -337,7 +350,7 @@ function drawBoard() {
 
       for (let h = 0; h < hints.length; h++) {
         const hintVal = hints[hints.length - 1 - h];
-        const hy = -halfH - 8 - h * 16;
+        const hy = -halfH - offset - h * spacing;
         
         ctx.save();
         ctx.translate(x, hy);
