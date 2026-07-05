@@ -797,11 +797,13 @@ canvas {
   color: #94a3b8;
   font-size: 1.1rem;
   font-weight: 700;
+  font-family: 'Outfit', sans-serif;
   width: 24px;
   height: 24px;
   display: flex;
   justify-content: center;
   align-items: center;
+  line-height: 1;
   cursor: pointer;
   border-radius: 50%;
   transition: all 0.15s ease;
