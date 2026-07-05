@@ -201,14 +201,10 @@ let panStartX = 0;
 let panStartY = 0;
 
 const canvasStyle = computed(() => {
-  const transitionTime = props.board.isSolved() ? '0.3s' : '0.15s';
-  const transitionStyle = ((isDragging.value || isPanning.value) && !props.board.isSolved()) 
-    ? 'none' 
-    : `transform ${transitionTime} cubic-bezier(0.2, 0.8, 0.2, 1)`;
   return {
     transform: `translate(${offsetX.value}px, ${offsetY.value}px) scale(${scale.value})`,
     transformOrigin: 'center center',
-    transition: transitionStyle
+    transition: 'none'
   };
 });
 
@@ -435,7 +431,7 @@ function getCoordinatesFromEvent(clientX: number, clientY: number) {
   const canvas = canvasRef.value;
   if (!canvas) return null;
   const rect = canvas.getBoundingClientRect();
-  const currentScale = isTestEnv ? 1.0 : (rect.width / canvas.width);
+  const currentScale = isTestEnv ? 1.0 : scale.value;
   const clickX = (clientX - rect.left) / currentScale;
   const clickY = (clientY - rect.top) / currentScale;
   return getGridCoordinates(clickX, clickY, config);
@@ -460,7 +456,7 @@ function updateHoverState(clientX: number, clientY: number) {
   if (!cachedCanvasRect || !canvasRef.value) return;
 
   const rect = cachedCanvasRect;
-  const currentScale = isTestEnv ? 1.0 : (rect.width / canvasRef.value.width);
+  const currentScale = isTestEnv ? 1.0 : scale.value;
   const clickX = (clientX - rect.left) / currentScale;
   const clickY = (clientY - rect.top) / currentScale;
   
