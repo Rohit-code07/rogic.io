@@ -37,6 +37,30 @@ public class NemologicRuntimeHints implements RuntimeHintsRegistrar {
             org.springframework.aot.hint.MemberCategory.DECLARED_FIELDS
         );
 
+        // Register SolveVerificationRequest for reflection (Jackson deserialization in native image)
+        hints.reflection().registerType(
+            com.devdoyen.nemologic.dto.SolveVerificationRequest.class,
+            org.springframework.aot.hint.MemberCategory.INVOKE_PUBLIC_CONSTRUCTORS,
+            org.springframework.aot.hint.MemberCategory.INVOKE_PUBLIC_METHODS,
+            org.springframework.aot.hint.MemberCategory.DECLARED_FIELDS
+        );
+
+        // Register SolveVerificationResponse for reflection (Jackson serialization in native image)
+        hints.reflection().registerType(
+            com.devdoyen.nemologic.dto.SolveVerificationResponse.class,
+            org.springframework.aot.hint.MemberCategory.INVOKE_PUBLIC_CONSTRUCTORS,
+            org.springframework.aot.hint.MemberCategory.INVOKE_PUBLIC_METHODS,
+            org.springframework.aot.hint.MemberCategory.DECLARED_FIELDS
+        );
+
+        // Register GuestClearRequest for reflection (Jackson deserialization in native image)
+        hints.reflection().registerType(
+            com.devdoyen.nemologic.dto.GuestClearRequest.class,
+            org.springframework.aot.hint.MemberCategory.INVOKE_PUBLIC_CONSTRUCTORS,
+            org.springframework.aot.hint.MemberCategory.INVOKE_PUBLIC_METHODS,
+            org.springframework.aot.hint.MemberCategory.DECLARED_FIELDS
+        );
+
         // Register Nimbus JOSE/JWT types for native reflection (required for OAuth2 Resource Server)
         try {
             hints.reflection().registerType(
