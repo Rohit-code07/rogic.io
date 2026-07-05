@@ -41,9 +41,9 @@
     
     <!-- Floating Zoom HUD -->
     <div v-if="!readOnly" class="zoom-hud">
-      <button class="zoom-btn" @click="changeZoom(0.15)" title="Zoom In">+</button>
-      <span class="zoom-level" @click="resetZoom" title="Reset Zoom">{{ Math.round(scale * 100) }}%</span>
       <button class="zoom-btn" @click="changeZoom(-0.15)" title="Zoom Out">-</button>
+      <span class="zoom-level" @click="resetZoom" title="Reset Zoom">{{ Math.round(scale * 100) }}%</span>
+      <button class="zoom-btn" @click="changeZoom(0.15)" title="Zoom In">+</button>
     </div>
   </div>
 </template>
