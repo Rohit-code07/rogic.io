@@ -419,12 +419,8 @@
           <!-- All Puzzles Cleared State -->
           <div v-else-if="!hasUnclearedPuzzles" class="all-cleared-state-container">
             <div class="all-cleared-card">
-              <div class="trophy-icon">🏆</div>
-              <h2 class="all-cleared-title">All Solved</h2>
-              <div class="countdown-box">
-                <div class="countdown-label">Next puzzle in</div>
-                <div class="countdown-time">{{ timeUntilMidnight }}</div>
-              </div>
+              <div class="countdown-label">Next puzzle in</div>
+              <div class="countdown-time">{{ timeUntilMidnight }}</div>
             </div>
           </div>
 
@@ -4208,6 +4204,7 @@ body {
   color: #38bdf8;
   text-shadow: 0 0 24px rgba(56, 189, 248, 0.4);
   letter-spacing: 0.05rem;
+  font-variant-numeric: tabular-nums;
 }
 
 @keyframes subtle-pulse {
