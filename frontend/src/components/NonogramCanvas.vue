@@ -118,6 +118,8 @@ const offsetY = ref(0);
 const isPanning = ref(false);
 let panStartX = 0;
 let panStartY = 0;
+let touchStartDist = 0;
+let touchStartScale = 1.0;
 
 const canvasStyle = computed(() => {
   return {
@@ -348,6 +350,12 @@ function handlePanTouchMove(event: TouchEvent) {
     const midY = (t1.clientY + t2.clientY) / 2;
     offsetX.value = midX - panStartX;
     offsetY.value = midY - panStartY;
+
+    if (touchStartDist > 0) {
+      const currentDist = Math.hypot(t1.clientX - t2.clientX, t1.clientY - t2.clientY);
+      const scaleFactor = currentDist / touchStartDist;
+      scale.value = Math.max(0.2, Math.min(4.0, touchStartScale * scaleFactor));
+    }
   }
   clampOffsets();
 }
@@ -355,6 +363,7 @@ function handlePanTouchMove(event: TouchEvent) {
 function handlePanTouchEnd() {
   if (isPanning.value) {
     isPanning.value = false;
+    touchStartDist = 0;
     window.removeEventListener('touchmove', handlePanTouchMove);
     window.removeEventListener('touchend', handlePanTouchEnd);
     window.removeEventListener('touchcancel', handlePanTouchEnd);
@@ -457,6 +466,11 @@ function handleTouchStart(event: TouchEvent) {
     const midY = (t1.clientY + t2.clientY) / 2;
     panStartX = midX - offsetX.value;
     panStartY = midY - offsetY.value;
+
+    const dist = Math.hypot(t1.clientX - t2.clientX, t1.clientY - t2.clientY);
+    touchStartDist = dist;
+    touchStartScale = scale.value;
+
     window.addEventListener('touchmove', handlePanTouchMove, { passive: false });
     window.addEventListener('touchend', handlePanTouchEnd);
     window.addEventListener('touchcancel', handlePanTouchEnd);
