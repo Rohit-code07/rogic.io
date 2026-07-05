@@ -18,10 +18,15 @@ public class StageController {
 
     private final StageService stageService;
     private final com.devdoyen.nemologic.service.AiStageGenerator aiStageGenerator;
+    private final com.devdoyen.nemologic.security.SolveProofTokenService solveProofTokenService;
 
-    public StageController(StageService stageService, com.devdoyen.nemologic.service.AiStageGenerator aiStageGenerator) {
+    public StageController(
+            StageService stageService,
+            com.devdoyen.nemologic.service.AiStageGenerator aiStageGenerator,
+            com.devdoyen.nemologic.security.SolveProofTokenService solveProofTokenService) {
         this.stageService = stageService;
         this.aiStageGenerator = aiStageGenerator;
+        this.solveProofTokenService = solveProofTokenService;
     }
 
     @GetMapping
@@ -105,5 +110,70 @@ public class StageController {
         } catch (IllegalArgumentException e) {
             return ResponseEntity.notFound().build();
         }
+    }
+
+    @org.springframework.web.bind.annotation.PostMapping("/{id}/verify")
+    public ResponseEntity<?> verifyStageSolve(
+            @PathVariable Long id,
+            @org.springframework.web.bind.annotation.RequestBody com.devdoyen.nemologic.dto.SolveVerificationRequest request) {
+        
+        java.util.Optional<Stage> stageOpt = stageService.getStageById(id);
+        if (stageOpt.isEmpty()) {
+            return ResponseEntity.notFound().build();
+        }
+        
+        Stage stage = stageOpt.get();
+        int[][] rotatedSolution = rotateGrid(stage.getSolutionGrid(), request.getRotationSteps());
+        
+        if (!validateGrid(request.getGridState(), rotatedSolution)) {
+            return ResponseEntity.badRequest().body("Incorrect solution grid");
+        }
+        
+        String token = solveProofTokenService.generateProofToken(id, request.getElapsedTime());
+        return ResponseEntity.ok(new com.devdoyen.nemologic.dto.SolveVerificationResponse(token));
+    }
+
+    private int[][] rotateGrid(int[][] grid, int steps) {
+        int[][] current = grid;
+        int normalizedSteps = ((steps % 4) + 4) % 4;
+
+        for (int i = 0; i < normalizedSteps; i++) {
+            int R = current.length;
+            int C = current[0].length;
+            int[][] next = new int[C][R];
+            for (int r = 0; r < R; r++) {
+                for (int c = 0; c < C; c++) {
+                    next[c][R - 1 - r] = current[r][c];
+                }
+            }
+            current = next;
+        }
+        return current;
+    }
+
+    private boolean validateGrid(int[][] clientGrid, int[][] rotatedSolution) {
+        if (clientGrid == null || rotatedSolution == null) {
+            return false;
+        }
+        if (clientGrid.length != rotatedSolution.length) {
+            return false;
+        }
+        for (int r = 0; r < clientGrid.length; r++) {
+            if (clientGrid[r].length != rotatedSolution[r].length) {
+                return false;
+            }
+            for (int c = 0; c < clientGrid[r].length; c++) {
+                int clientVal = clientGrid[r][c];
+                int solutionVal = rotatedSolution[r][c];
+                
+                boolean isClientFilled = (clientVal == 1);
+                boolean isSolutionFilled = (solutionVal == 1);
+                
+                if (isClientFilled != isSolutionFilled) {
+                    return false;
+                }
+            }
+        }
+        return true;
     }
 }

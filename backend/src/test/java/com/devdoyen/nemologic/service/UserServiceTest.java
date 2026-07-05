@@ -25,6 +25,7 @@ public class UserServiceTest {
     private HistoryRepository historyRepository;
     private StageRepository stageRepository;
     private StageService stageService;
+    private com.devdoyen.nemologic.security.SolveProofTokenService solveProofTokenService;
 
     @BeforeEach
     public void setUp() {
@@ -32,7 +33,8 @@ public class UserServiceTest {
         historyRepository = mock(HistoryRepository.class);
         stageRepository = mock(StageRepository.class);
         stageService = mock(StageService.class);
-        userService = new UserService(userRepository, historyRepository, stageRepository, stageService);
+        solveProofTokenService = mock(com.devdoyen.nemologic.security.SolveProofTokenService.class);
+        userService = new UserService(userRepository, historyRepository, stageRepository, stageService, solveProofTokenService);
     }
 
 
@@ -116,8 +118,11 @@ public class UserServiceTest {
         when(historyRepository.findByUserId(1L)).thenReturn(Collections.emptyList());
 
         List<GuestClearRequest> clears = new ArrayList<>();
-        clears.add(new GuestClearRequest(5L, 45));
-        clears.add(new GuestClearRequest(10L, 120));
+        clears.add(new GuestClearRequest(5L, 45, "mock-token-5"));
+        clears.add(new GuestClearRequest(10L, 120, "mock-token-10"));
+
+        when(solveProofTokenService.verifyProofToken("mock-token-5", 5L, 45)).thenReturn(true);
+        when(solveProofTokenService.verifyProofToken("mock-token-10", 10L, 120)).thenReturn(true);
 
         User updatedUser = userService.syncGuestHistory(1L, clears);
 
@@ -144,7 +149,9 @@ public class UserServiceTest {
         when(historyRepository.findByUserId(1L)).thenReturn(Collections.singletonList(existingHistory));
 
         List<GuestClearRequest> clears = new ArrayList<>();
-        clears.add(new GuestClearRequest(5L, 30)); // Duplicate clear of stage 5
+        clears.add(new GuestClearRequest(5L, 30, "mock-token-5")); // Duplicate clear of stage 5
+
+        when(solveProofTokenService.verifyProofToken("mock-token-5", 5L, 30)).thenReturn(true);
 
         User updatedUser = userService.syncGuestHistory(1L, clears);
 

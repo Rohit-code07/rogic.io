@@ -21,15 +21,22 @@ public class UserService {
     private final HistoryRepository historyRepository;
     private final StageRepository stageRepository;
     private final StageService stageService;
+    private final com.devdoyen.nemologic.security.SolveProofTokenService solveProofTokenService;
 
     @jakarta.persistence.PersistenceContext
     private jakarta.persistence.EntityManager entityManager;
 
-    public UserService(UserRepository userRepository, HistoryRepository historyRepository, StageRepository stageRepository, StageService stageService) {
+    public UserService(
+            UserRepository userRepository,
+            HistoryRepository historyRepository,
+            StageRepository stageRepository,
+            StageService stageService,
+            com.devdoyen.nemologic.security.SolveProofTokenService solveProofTokenService) {
         this.userRepository = userRepository;
         this.historyRepository = historyRepository;
         this.stageRepository = stageRepository;
         this.stageService = stageService;
+        this.solveProofTokenService = solveProofTokenService;
     }
 
     @Transactional
@@ -155,6 +162,10 @@ public class UserService {
         for (GuestClearRequest clearReq : guestClears) {
             Long stageId = clearReq.getStageId();
             if (stageId == null || clearedStageIds.contains(stageId)) {
+                continue;
+            }
+
+            if (!solveProofTokenService.verifyProofToken(clearReq.getProofToken(), stageId, clearReq.getElapsedTime())) {
                 continue;
             }
 
