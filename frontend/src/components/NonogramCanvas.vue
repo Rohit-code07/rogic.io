@@ -206,9 +206,10 @@ const canvasStyle = computed(() => {
 });
 
 function clampOffsets() {
-  const { width: canvasWidth, height: canvasHeight } = getDimensions();
-  const scaledWidth = canvasWidth * scale.value;
-  const scaledHeight = canvasHeight * scale.value;
+  const visibleWidth = props.board.colCount * CELL_SIZE.value;
+  const visibleHeight = props.board.rowCount * CELL_SIZE.value;
+  const scaledWidth = visibleWidth * scale.value;
+  const scaledHeight = visibleHeight * scale.value;
   
   // Keep at least 80 pixels overlap with the frame
   const minOverlap = 80;
