@@ -15,12 +15,12 @@
     </div>
 
     <!-- Floating Draw Mode Toggle -->
-    <div v-if="!readOnly" class="draw-mode-hud" @click="toggleDrawMode" title="Toggle Draw Mode" style="cursor: pointer;">
-      <div class="draw-mode-slider" :class="drawMode"></div>
+    <div v-if="!readOnly" class="draw-mode-hud" title="Toggle Draw Mode">
+      <div class="draw-mode-slider" :style="sliderStyle"></div>
       <button 
         class="draw-mode-btn" 
         :class="{ active: drawMode === 'fill' }" 
-        @click.stop="toggleDrawMode"
+        @click="setDrawMode('fill')"
         title="Fill Mode"
         type="button"
       >
@@ -29,12 +29,52 @@
       <button 
         class="draw-mode-btn" 
         :class="{ active: drawMode === 'x' }" 
-        @click.stop="toggleDrawMode"
+        @click="setDrawMode('x')"
         title="X Mark Mode"
         type="button"
       >
         <svg class="mode-icon x-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
           <path d="M18 6L6 18M6 6l12 12" stroke-width="3.5" stroke-linecap="round"/>
+        </svg>
+      </button>
+      <button 
+        class="draw-mode-btn" 
+        :class="{ active: drawMode === 'pan' }" 
+        @click="setDrawMode('pan')"
+        title="Move Mode"
+        type="button"
+      >
+        <svg class="mode-icon pan-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M18 11V6a2 2 0 0 0-2-2v0a2 2 0 0 0-2 2v5" />
+          <path d="M14 10V4a2 2 0 0 0-2-2v0a2 2 0 0 0-2 2v6" />
+          <path d="M10 10.5V6a2 2 0 0 0-2-2v0a2 2 0 0 0-2 2v8" />
+          <path d="M6 14v0a5 5 0 0 0 5 5h3a6 6 0 0 0 6-6V11a2 2 0 0 0-2-2v0a2 2 0 0 0-2 2" />
+        </svg>
+      </button>
+    </div>
+
+    <!-- Floating History (Undo/Redo) HUD -->
+    <div v-if="!readOnly" class="history-hud">
+      <button 
+        class="history-btn" 
+        @click="handleUndo" 
+        :disabled="!canUndo" 
+        title="Undo (Ctrl+Z)" 
+        type="button"
+      >
+        <svg class="history-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M3 7v6h6M21 17a9 9 0 0 0-9-9 9 9 0 0 0-6 2.3L3 13" />
+        </svg>
+      </button>
+      <button 
+        class="history-btn" 
+        @click="handleRedo" 
+        :disabled="!canRedo" 
+        title="Redo (Ctrl+Y)" 
+        type="button"
+      >
+        <svg class="history-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M21 7v6h-6M3 17a9 9 0 0 1 9-9 9 9 0 0 1 6 2.3l3 2.7" />
         </svg>
       </button>
     </div>
@@ -67,11 +107,17 @@ const emit = defineEmits<{
 }>();
 
 const canvasRef = ref<HTMLCanvasElement | null>(null);
-const drawMode = ref<'fill' | 'x'>('fill');
+const drawMode = ref<'fill' | 'x' | 'pan'>('fill');
 
-function toggleDrawMode() {
-  drawMode.value = drawMode.value === 'fill' ? 'x' : 'fill';
+function setDrawMode(mode: 'fill' | 'x' | 'pan') {
+  drawMode.value = mode;
 }
+
+const sliderStyle = computed(() => {
+  if (drawMode.value === 'fill') return { transform: 'translateX(0px)' };
+  if (drawMode.value === 'x') return { transform: 'translateX(36px)' };
+  return { transform: 'translateX(72px)' };
+});
 
 function isArrayEqual(a: number[], b: number[]) {
   if (a.length !== b.length) return false;
@@ -168,13 +214,19 @@ const fitScale = computed(() => {
   return Math.min(scaleX, scaleY);
 });
 
+const offsetX = ref(0);
+const offsetY = ref(0);
+const isPanning = ref(false);
+let panStartX = 0;
+let panStartY = 0;
+
 const canvasStyle = computed(() => {
   const transitionTime = props.board.isSolved() ? '0.3s' : '0.15s';
-  const transitionStyle = (isDragging.value && !props.board.isSolved()) 
+  const transitionStyle = ((isDragging.value || isPanning.value) && !props.board.isSolved()) 
     ? 'none' 
     : `transform ${transitionTime} cubic-bezier(0.2, 0.8, 0.2, 1)`;
   return {
-    transform: `scale(${scale.value})`,
+    transform: `translate(${offsetX.value}px, ${offsetY.value}px) scale(${scale.value})`,
     transformOrigin: 'center center',
     transition: transitionStyle
   };
@@ -400,8 +452,103 @@ function getCoordinatesFromEvent(clientX: number, clientY: number) {
   return getGridCoordinates(clickX, clickY, config);
 }
 
+const canUndo = ref(false);
+const canRedo = ref(false);
+
+function updateHistoryFlags() {
+  canUndo.value = props.board.canUndo();
+  canRedo.value = props.board.canRedo();
+}
+
+function handleUndo() {
+  if (props.readOnly) return;
+  const success = props.board.undo();
+  if (success) {
+    updateHistoryFlags();
+    drawBoard();
+    emit('cell-click');
+  }
+}
+
+function handleRedo() {
+  if (props.readOnly) return;
+  const success = props.board.redo();
+  if (success) {
+    updateHistoryFlags();
+    drawBoard();
+    emit('cell-click');
+  }
+}
+
+function handleKeyDown(event: KeyboardEvent) {
+  if (props.readOnly) return;
+  if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'z') {
+    event.preventDefault();
+    if (event.shiftKey) {
+      handleRedo();
+    } else {
+      handleUndo();
+    }
+  } else if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'y') {
+    event.preventDefault();
+    handleRedo();
+  }
+}
+
+function handlePanMouseMove(event: MouseEvent) {
+  if (!isPanning.value) return;
+  offsetX.value = event.clientX - panStartX;
+  offsetY.value = event.clientY - panStartY;
+}
+
+function handlePanMouseUp() {
+  if (isPanning.value) {
+    isPanning.value = false;
+    window.removeEventListener('mousemove', handlePanMouseMove);
+    window.removeEventListener('mouseup', handlePanMouseUp);
+  }
+}
+
+function handlePanTouchMove(event: TouchEvent) {
+  if (!isPanning.value) return;
+  event.preventDefault();
+
+  if (event.touches.length === 1) {
+    const touch = event.touches[0];
+    offsetX.value = touch.clientX - panStartX;
+    offsetY.value = touch.clientY - panStartY;
+  } else if (event.touches.length > 1) {
+    const t1 = event.touches[0];
+    const t2 = event.touches[1];
+    const midX = (t1.clientX + t2.clientX) / 2;
+    const midY = (t1.clientY + t2.clientY) / 2;
+    offsetX.value = midX - panStartX;
+    offsetY.value = midY - panStartY;
+  }
+}
+
+function handlePanTouchEnd() {
+  if (isPanning.value) {
+    isPanning.value = false;
+    window.removeEventListener('touchmove', handlePanTouchMove);
+    window.removeEventListener('touchend', handlePanTouchEnd);
+    window.removeEventListener('touchcancel', handlePanTouchEnd);
+  }
+}
+
 function handleMouseDown(event: MouseEvent) {
   if (props.readOnly) return;
+
+  // Handle panning mode or middle click
+  if (drawMode.value === 'pan' || event.button === 1) {
+    isPanning.value = true;
+    panStartX = event.clientX - offsetX.value;
+    panStartY = event.clientY - offsetY.value;
+    window.addEventListener('mousemove', handlePanMouseMove);
+    window.addEventListener('mouseup', handlePanMouseUp);
+    return;
+  }
+
   const coords = getCoordinatesFromEvent(event.clientX, event.clientY);
   if (!coords) return;
 
@@ -421,6 +568,10 @@ function handleMouseDown(event: MouseEvent) {
   } else {
     return;
   }
+
+  // Save undo state before changing cell
+  props.board.saveState();
+  updateHistoryFlags();
 
   isDragging.value = true;
   props.board.setCell(row, col, dragValue);
@@ -460,6 +611,28 @@ function handleWindowMouseUp() {
 
 function handleTouchStart(event: TouchEvent) {
   if (props.readOnly) return;
+
+  // Handle touch panning or multi-touch
+  if (drawMode.value === 'pan' || event.touches.length > 1) {
+    isPanning.value = true;
+    if (event.touches.length === 1) {
+      const touch = event.touches[0];
+      panStartX = touch.clientX - offsetX.value;
+      panStartY = touch.clientY - offsetY.value;
+    } else {
+      const t1 = event.touches[0];
+      const t2 = event.touches[1];
+      const midX = (t1.clientX + t2.clientX) / 2;
+      const midY = (t1.clientY + t2.clientY) / 2;
+      panStartX = midX - offsetX.value;
+      panStartY = midY - offsetY.value;
+    }
+    window.addEventListener('touchmove', handlePanTouchMove, { passive: false });
+    window.addEventListener('touchend', handlePanTouchEnd);
+    window.addEventListener('touchcancel', handlePanTouchEnd);
+    return;
+  }
+
   if (event.touches.length !== 1) return;
   event.preventDefault(); // Prevent page scroll/zoom gestures during drawing
 
@@ -475,6 +648,10 @@ function handleTouchStart(event: TouchEvent) {
   } else {
     dragValue = currentValue === 2 ? 0 : 2;
   }
+
+  // Save undo state before changing cell
+  props.board.saveState();
+  updateHistoryFlags();
 
   isDragging.value = true;
   props.board.setCell(row, col, dragValue);
@@ -603,6 +780,7 @@ function animateRotationToTarget() {
 let resizeObserver: ResizeObserver | null = null;
 
 onMounted(() => {
+  window.addEventListener('keydown', handleKeyDown);
   if (frameRef.value) {
     updateFrameSize();
     if (typeof ResizeObserver !== 'undefined') {
@@ -618,11 +796,17 @@ onMounted(() => {
 
 onUnmounted(() => {
   stopGlowAnimation();
+  window.removeEventListener('keydown', handleKeyDown);
   window.removeEventListener('mousemove', handleWindowMouseMove);
   window.removeEventListener('mouseup', handleWindowMouseUp);
   window.removeEventListener('touchmove', handleWindowTouchMove);
   window.removeEventListener('touchend', handleWindowTouchEnd);
   window.removeEventListener('touchcancel', handleWindowTouchEnd);
+  window.removeEventListener('mousemove', handlePanMouseMove);
+  window.removeEventListener('mouseup', handlePanMouseUp);
+  window.removeEventListener('touchmove', handlePanTouchMove);
+  window.removeEventListener('touchend', handlePanTouchEnd);
+  window.removeEventListener('touchcancel', handlePanTouchEnd);
   if (resizeObserver) {
     resizeObserver.disconnect();
   }
@@ -633,11 +817,17 @@ watch(fitScale, (newFitScale) => {
 });
 
 // Redraw if board changes
-watch(() => props.board, () => {
+watch(() => props.board, (newBoard) => {
   stopGlowAnimation();
   showSolveImpact.value = false;
   currentAngle.value = getStartingAngle();
   scale.value = fitScale.value;
+  offsetX.value = 0;
+  offsetY.value = 0;
+  if (newBoard) {
+    newBoard.resetHistory();
+    updateHistoryFlags();
+  }
   const dims = getDimensions();
   config.centerX = dims.width / 2;
   config.centerY = dims.height / 2;
@@ -646,7 +836,7 @@ watch(() => props.board, () => {
   config.colCount = props.board.colCount;
   config.angle = currentAngle.value;
   drawBoard();
-}, { deep: false });
+}, { deep: false, immediate: true });
 
 // Watch for solved state to rotate to target
 watch(() => props.board.isSolved(), (solved) => {
@@ -707,7 +897,7 @@ canvas {
   border-radius: 9999px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
   z-index: 10;
-  width: 80px;
+  width: 116px;
   height: 36px;
   box-sizing: border-box;
   -webkit-tap-highlight-color: transparent;
@@ -727,10 +917,6 @@ canvas {
   border: 1px solid rgba(255, 255, 255, 0.12);
   z-index: 1;
   box-sizing: border-box;
-}
-
-.draw-mode-slider.x {
-  transform: translateX(36px);
 }
 
 .draw-mode-btn {
@@ -777,6 +963,63 @@ canvas {
   height: 14px;
   stroke: #f43f5e;
   display: block;
+}
+
+.pan-icon {
+  width: 14px;
+  height: 14px;
+  stroke: #10b981;
+  display: block;
+}
+
+/* Floating History (Undo/Redo) HUD */
+.history-hud {
+  position: absolute;
+  bottom: 20px;
+  left: 146px;
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  background: rgba(15, 23, 42, 0.85);
+  backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  padding: 4px;
+  border-radius: 9999px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+  z-index: 10;
+  height: 36px;
+  box-sizing: border-box;
+}
+
+.history-btn {
+  background: none;
+  border: none;
+  margin: 0;
+  padding: 0;
+  width: 28px;
+  height: 28px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  cursor: pointer;
+  border-radius: 9999px;
+  transition: all 0.2s ease;
+  color: #94a3b8;
+}
+
+.history-btn:hover:not(:disabled) {
+  background-color: rgba(255, 255, 255, 0.08);
+  color: #f8fafc;
+}
+
+.history-btn:disabled {
+  color: #475569;
+  cursor: not-allowed;
+}
+
+.history-icon {
+  width: 14px;
+  height: 14px;
 }
 
 /* Floating Zoom HUD */
@@ -840,6 +1083,10 @@ canvas {
   .draw-mode-hud {
     bottom: 12px;
     left: 12px;
+  }
+  .history-hud {
+    bottom: 12px;
+    left: 138px;
   }
   .zoom-hud {
     bottom: 12px;

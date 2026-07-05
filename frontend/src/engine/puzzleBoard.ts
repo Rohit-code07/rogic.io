@@ -9,6 +9,9 @@ export class PuzzleBoard {
   public readonly rowHints: number[][];
   public readonly colHints: number[][];
 
+  public undoStack: number[][][] = [];
+  public redoStack: number[][][] = [];
+
   constructor(solutionGrid: number[][]) {
     if (!solutionGrid || solutionGrid.length === 0) {
       throw new Error('Solution grid cannot be empty');
@@ -61,5 +64,47 @@ export class PuzzleBoard {
 
   public isSolved(): boolean {
     return validateGrid(this.currentGrid, this.rowHints, this.colHints);
+  }
+
+  public saveState(): void {
+    this.undoStack.push(this.currentGrid.map(row => [...row]));
+    this.redoStack = [];
+  }
+
+  public undo(): boolean {
+    if (this.undoStack.length === 0) return false;
+    const previous = this.undoStack.pop()!;
+    this.redoStack.push(this.currentGrid.map(row => [...row]));
+    for (let r = 0; r < this.rowCount; r++) {
+      for (let c = 0; c < this.colCount; c++) {
+        this.currentGrid[r][c] = previous[r][c];
+      }
+    }
+    return true;
+  }
+
+  public redo(): boolean {
+    if (this.redoStack.length === 0) return false;
+    const next = this.redoStack.pop()!;
+    this.undoStack.push(this.currentGrid.map(row => [...row]));
+    for (let r = 0; r < this.rowCount; r++) {
+      for (let c = 0; c < this.colCount; c++) {
+        this.currentGrid[r][c] = next[r][c];
+      }
+    }
+    return true;
+  }
+
+  public canUndo(): boolean {
+    return this.undoStack.length > 0;
+  }
+
+  public canRedo(): boolean {
+    return this.redoStack.length > 0;
+  }
+
+  public resetHistory(): void {
+    this.undoStack = [];
+    this.redoStack = [];
   }
 }
