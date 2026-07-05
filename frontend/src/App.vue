@@ -2139,7 +2139,7 @@ body {
   align-items: center;
   margin-bottom: 0;
   padding-bottom: 0.75rem;
-  border-bottom: 1px solid #1e293b;
+  border-bottom: none;
   flex-shrink: 0;
   position: relative;
 }
