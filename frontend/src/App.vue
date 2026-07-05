@@ -428,61 +428,12 @@
             </div>
           </div>
 
-          <!-- Canvas Area -->
           <template v-else-if="board && hasUnclearedPuzzles">
-            <!-- Floating Stage Selector -->
+            <!-- Floating Stage Selector (Read-only badge showing '?' until solved) -->
             <div class="puzzle-selector-floating-container" v-if="currentActiveStage">
-              <div class="active-stage-badge" @click="isStageListOpen = !isStageListOpen">
-                <span class="active-stage-badge-name">{{ currentActiveStage.name }}</span>
-                <span class="active-stage-arrow" :class="{ 'open': isStageListOpen }">▼</span>
+              <div class="active-stage-badge readonly-badge">
+                <span class="active-stage-badge-name">{{ solved ? currentActiveStage.name : '?' }}</span>
               </div>
-
-              <!-- Slide-down Dropdown List -->
-              <transition name="slide-down">
-                <div v-if="isStageListOpen" class="puzzle-selector-dropdown">
-                  <div class="stage-card-list">
-                    <div 
-                      v-for="stage in filteredPlayStages" 
-                      :key="stage.id" 
-                      class="stage-item-card"
-                      :class="{ 
-                        active: (isStageAi(stage) ? (selectedAiStageId === stage.id && isAiStageActive) : (selectedStageId === stage.id && !isAiStageActive))
-                      }"
-                      @click.stop="selectStageCard(stage.id, isStageAi(stage))"
-                    >
-                      <div class="stage-card-info">
-                        <div style="display: flex; align-items: center; gap: 0.75rem; width: 100%;">
-                          <span class="stage-card-name">{{ stage.name }}</span>
-                        </div>
-
-                      </div>
-                    </div>
-                    <div v-if="filteredPlayStages.length === 0" class="empty-stages" style="text-align: center; padding: 2rem; color: #64748b; font-size: 0.9rem;">
-                      🎉 No puzzles found!
-                    </div>
-                  </div>
-                  <!-- Pagination Controls -->
-                  <div class="dropdown-pagination-bar" v-if="playStagesTotalPages > 1">
-                    <button 
-                      class="btn btn-sm btn-outline-light" 
-                      :disabled="playStagesCurrentPage === 0"
-                      @click.stop="loadStagesList(playStagesCurrentPage - 1)"
-                    >
-                      ◀
-                    </button>
-                    <span class="page-info">
-                      {{ playStagesCurrentPage + 1 }} / {{ playStagesTotalPages }}
-                    </span>
-                    <button 
-                      class="btn btn-sm btn-outline-light" 
-                      :disabled="playStagesCurrentPage >= playStagesTotalPages - 1"
-                      @click.stop="loadStagesList(playStagesCurrentPage + 1)"
-                    >
-                      ▶
-                    </button>
-                  </div>
-                </div>
-              </transition>
             </div>
 
             <div class="canvas-wrapper-container">
@@ -959,16 +910,6 @@ watch([availablePlaySizes, solved], ([newSizes, isSolved]) => {
   }
 }, { immediate: true });
 
-const filteredPlayStages = computed(() => {
-  const list = allUnclearedStages.value;
-  if (!selectedPlaySizeFilter.value || selectedPlaySizeFilter.value === 'All') {
-    const defaultSize = availablePlaySizes.value[0] || 5;
-    return list.filter(s => s.width === defaultSize);
-  }
-  const size = parseInt(selectedPlaySizeFilter.value);
-  return list.filter(s => s.width === size);
-});
-
 
 const confettiCanvas = ref<HTMLCanvasElement | null>(null);
 let confettiAnimationId: any = null;
@@ -1080,11 +1021,16 @@ watch(solved, (newVal) => {
 
 watch(selectedPlaySizeFilter, async (newSize) => {
   if (newSize === 'All') return;
+
+  // Deactivate AI daily stage to switch to regular stages of the new size filter
+  isAiStageActive.value = false;
+  selectedAiStageId.value = null;
+
   if (isTestEnv) {
     const sizeNum = parseInt(newSize);
     const current = currentActiveStage.value;
-    if (!current || current.width !== sizeNum) {
-      const matching = allUnclearedStages.value.filter(s => s.width === sizeNum);
+    if (!current || current.width !== sizeNum || isAiStageActive.value) {
+      const matching = allUnclearedStages.value.filter(s => s.width === sizeNum && !isStageAi(s));
       if (matching.length > 0 && (!current || current.id !== matching[0].id)) {
         selectStageCard(matching[0].id, isStageAi(matching[0]));
       }
@@ -1338,6 +1284,7 @@ async function onStageChange() {
     await loadStageDetails(selectedStageId.value);
   }
 }
+
 
 async function loadAiStagesList() {
   try {
@@ -2516,10 +2463,14 @@ body {
   min-width: 180px;
 }
 
-.active-stage-badge:hover {
+.active-stage-badge:not(.readonly-badge):hover {
   background: rgba(30, 41, 59, 0.9);
   border-color: rgba(56, 189, 248, 0.4);
   box-shadow: 0 6px 24px -5px rgba(56, 189, 248, 0.2);
+}
+
+.active-stage-badge.readonly-badge {
+  cursor: default;
 }
 
 .active-stage-badge-name {

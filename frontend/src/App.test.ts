@@ -649,6 +649,46 @@ describe('App.vue Leaderboard Integration TDD', () => {
     // Verify current user XP was updated
     expect((wrapper.vm as any).currentUser.xp).toBe(150);
   });
+
+  it('should deactivate AI stage and load regular stage when size filter changes', async () => {
+    const mockStages = [
+      { id: 1, name: 'Small Puzzle', width: 5, height: 5 },
+      { id: 2, name: 'Large Puzzle', width: 10, height: 10 }
+    ];
+    const mockAiStages = [{ id: 7, name: 'AI Puzzle', width: 10, height: 10 }];
+    const mockStageDetails = { id: 2, name: 'Large Puzzle', width: 10, height: 10, solutionGrid: [[1]] };
+
+    vi.spyOn(stageApi, 'fetchStages').mockResolvedValue(mockStages);
+    vi.spyOn(stageApi, 'fetchAiStages').mockResolvedValue(mockAiStages);
+    const fetchStageSpy = vi.spyOn(stageApi, 'fetchStageById').mockResolvedValue(mockStageDetails);
+
+    const wrapper = mount(App);
+    await new Promise((resolve) => setTimeout(resolve, 50));
+
+    // Ensure the size filter is initially '5'
+    const vm = wrapper.vm as any;
+    vm.selectedPlaySizeFilter = '5';
+    await wrapper.vm.$nextTick();
+
+    // Select AI stage via the hidden select element
+    const aiSelect = wrapper.find('.ai-stage-select');
+    expect(aiSelect.exists()).toBe(true);
+    const option = aiSelect.find('option[value="7"]');
+    expect(option.exists()).toBe(true);
+    (option.element as HTMLOptionElement).selected = true;
+    await aiSelect.trigger('change');
+    await new Promise((resolve) => setTimeout(resolve, 50));
+
+    // Change size filter to '10' (Large Puzzle)
+    vm.selectedPlaySizeFilter = '10';
+    await wrapper.vm.$nextTick();
+    await new Promise((resolve) => setTimeout(resolve, 50));
+
+    // Assert that AI stage is deactivated and regular stage is loaded
+    expect(vm.selectedAiStageId).toBeNull();
+    expect(vm.selectedStageId).toBe(2);
+    expect(fetchStageSpy).toHaveBeenCalledWith(2);
+  });
 });
 
 
