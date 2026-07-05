@@ -2451,14 +2451,14 @@ body {
   justify-content: center;
   position: relative;
   gap: 0.6rem;
-  background: rgba(15, 23, 42, 0.55);
+  background: linear-gradient(180deg, rgba(0, 0, 0, 0.35) 0%, rgba(15, 23, 42, 0.55) 8px, rgba(15, 23, 42, 0.55) 100%);
   backdrop-filter: blur(8px);
   border: none;
   border-bottom: 1px solid rgba(255, 255, 255, 0.05);
   padding: 0.35rem 1.5rem;
   border-radius: 0;
   cursor: pointer;
-  box-shadow: inset 0 2px 5px rgba(0, 0, 0, 0.4);
+  box-shadow: none;
   transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
   white-space: nowrap;
   width: 100%;
