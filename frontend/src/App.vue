@@ -430,7 +430,7 @@
                 <!-- Thin Progress bar inside the name display block -->
                 <transition name="fade">
                   <div v-if="solveAnimationComplete && allUnclearedStages.length > 0 && nextPuzzleSeconds > 0" class="badge-progress-bar-container">
-                    <div class="badge-progress-bar" :style="{ width: (nextPuzzleSeconds / 3) * 100 + '%' }"></div>
+                    <div class="badge-progress-bar" :style="{ width: ((3 - nextPuzzleSeconds) / 3) * 100 + '%' }"></div>
                   </div>
                 </transition>
               </div>
@@ -2951,7 +2951,7 @@ body {
 .app-main {
   display: flex;
   flex-direction: column;
-  justify-content: center;
+  justify-content: flex-start;
   align-items: center;
   min-height: 0;
   flex-grow: 1;
