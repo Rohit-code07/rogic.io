@@ -295,6 +295,11 @@ C4Component
 * **Token Rotation**: 갱신 요청 시마다 Refresh Token 무효화 및 신규 발급(One-time Use) 강제화
 * **Token Revocation**: 사용자 로그아웃 요청 시 Cognito Revocation Endpoint 연동 강제 무효화
 
+### 2.1.5. Guest Solve Verification & Migration Sync
+* **Cryptographic Solve Verification**: 게스트 모드 풀이 완료 시 백엔드 검증(`/api/stages/{id}/verify`)을 통해 원본 퍼즐 정답과 제출된 그리드를 대조 검증한 후, HMAC-SHA256 암호 서명 방식의 인증 토큰(`proofToken`) 발급
+* **Tamper-proof Sync Control**: 로그인 전환 시 전송되는 게스트 이력 목록의 `proofToken` 서명을 백엔드에서 전수 검증하여, 클라이언트의 임의 로컬스토리지 조작을 통한 부정 경험치(XP) 획득 및 무단 전적 갱신 방어
+* **Low-overhead Crypto**: 대칭키 서명 방식을 채택하여 로그인 연동 시 다중 토큰 서명 검증(개당 0.1ms 미만) 및 대조 연산 부하를 최소화
+
 ---
 
 ## 2.2. Infrastructure Protection
