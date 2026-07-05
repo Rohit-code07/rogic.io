@@ -426,12 +426,23 @@ function handleMouseDown(event: MouseEvent) {
   drawBoard();
   emit('cell-click');
 
+  if (props.board.isSolved()) {
+    isDragging.value = false;
+    return;
+  }
+
   window.addEventListener('mousemove', handleWindowMouseMove);
   window.addEventListener('mouseup', handleWindowMouseUp);
 }
 
 function handleWindowMouseMove(event: MouseEvent) {
   if (!isDragging.value) return;
+  if (props.board.isSolved()) {
+    isDragging.value = false;
+    window.removeEventListener('mousemove', handleWindowMouseMove);
+    window.removeEventListener('mouseup', handleWindowMouseUp);
+    return;
+  }
 
   const coords = getCoordinatesFromEvent(event.clientX, event.clientY);
   if (!coords) return;
@@ -443,6 +454,12 @@ function handleWindowMouseMove(event: MouseEvent) {
     lastCol = col;
     drawBoard();
     emit('cell-click');
+
+    if (props.board.isSolved()) {
+      isDragging.value = false;
+      window.removeEventListener('mousemove', handleWindowMouseMove);
+      window.removeEventListener('mouseup', handleWindowMouseUp);
+    }
   }
 }
 
@@ -515,6 +532,11 @@ function handleTouchStart(event: TouchEvent) {
   drawBoard();
   emit('cell-click');
 
+  if (props.board.isSolved()) {
+    isDragging.value = false;
+    return;
+  }
+
   window.addEventListener('touchmove', handleWindowTouchMove, { passive: false });
   window.addEventListener('touchend', handleWindowTouchEnd);
   window.addEventListener('touchcancel', handleWindowTouchEnd);
@@ -522,6 +544,13 @@ function handleTouchStart(event: TouchEvent) {
 
 function handleWindowTouchMove(event: TouchEvent) {
   if (!isDragging.value || event.touches.length !== 1) return;
+  if (props.board.isSolved()) {
+    isDragging.value = false;
+    window.removeEventListener('touchmove', handleWindowTouchMove);
+    window.removeEventListener('touchend', handleWindowTouchEnd);
+    window.removeEventListener('touchcancel', handleWindowTouchEnd);
+    return;
+  }
   event.preventDefault();
 
   const touch = event.touches[0];
@@ -535,6 +564,13 @@ function handleWindowTouchMove(event: TouchEvent) {
     lastCol = col;
     drawBoard();
     emit('cell-click');
+
+    if (props.board.isSolved()) {
+      isDragging.value = false;
+      window.removeEventListener('touchmove', handleWindowTouchMove);
+      window.removeEventListener('touchend', handleWindowTouchEnd);
+      window.removeEventListener('touchcancel', handleWindowTouchEnd);
+    }
   }
 }
 
