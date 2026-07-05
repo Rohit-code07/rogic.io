@@ -64,13 +64,6 @@
         </svg>
       </button>
     </div>
-    
-    <!-- Floating Zoom HUD -->
-    <div v-if="!readOnly" class="zoom-hud">
-      <button class="zoom-btn" @click="changeZoom(-0.15)" title="Zoom Out">-</button>
-      <span class="zoom-level" @click="resetZoom" title="Reset Zoom">{{ Math.round(scale * 100) }}%</span>
-      <button class="zoom-btn" @click="changeZoom(0.15)" title="Zoom In">+</button>
-    </div>
   </div>
 </template>
 
@@ -211,14 +204,6 @@ const canvasStyle = computed(() => {
     transition: transitionStyle
   };
 });
-
-function changeZoom(amount: number) {
-  scale.value = Math.max(0.2, Math.min(4.0, scale.value + amount));
-}
-
-function resetZoom() {
-  scale.value = fitScale.value;
-}
 
 function handleWheel(event: WheelEvent) {
   event.preventDefault();
@@ -1014,63 +999,6 @@ canvas {
   height: 14px;
 }
 
-/* Floating Zoom HUD */
-.zoom-hud {
-  position: absolute;
-  bottom: 20px;
-  left: 50%;
-  transform: translateX(-50%);
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  background: rgba(15, 23, 42, 0.85);
-  backdrop-filter: blur(8px);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  padding: 0.35rem 0.6rem;
-  border-radius: 9999px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
-  z-index: 10;
-}
-
-.zoom-btn {
-  background: none;
-  border: none;
-  color: #94a3b8;
-  font-size: 1.1rem;
-  font-weight: 700;
-  font-family: 'Outfit', sans-serif;
-  width: 24px;
-  height: 24px;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  line-height: 1;
-  cursor: pointer;
-  border-radius: 50%;
-  transition: all 0.15s ease;
-}
-
-.zoom-btn:hover {
-  background-color: rgba(255, 255, 255, 0.08);
-  color: #f8fafc;
-}
-
-.zoom-level {
-  font-family: 'Outfit', sans-serif;
-  font-weight: 700;
-  font-size: 0.78rem;
-  color: #38bdf8;
-  min-width: 42px;
-  text-align: center;
-  cursor: pointer;
-  user-select: none;
-  transition: color 0.15s ease;
-}
-
-.zoom-level:hover {
-  color: #818cf8;
-}
-
 @media (max-width: 768px) {
   .draw-mode-hud {
     bottom: 12px;
@@ -1079,22 +1007,6 @@ canvas {
   .history-hud {
     bottom: 12px;
     left: 102px;
-  }
-  .zoom-hud {
-    bottom: 12px;
-    left: 50%;
-    transform: translateX(-50%);
-    padding: 0.25rem 0.5rem;
-    gap: 0.35rem;
-  }
-  .zoom-btn {
-    width: 20px;
-    height: 20px;
-    font-size: 0.95rem;
-  }
-  .zoom-level {
-    min-width: 36px;
-    font-size: 0.72rem;
   }
 }
 
