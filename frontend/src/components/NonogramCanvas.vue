@@ -744,6 +744,9 @@ function animateRotationToTarget() {
   const targetAngle = targetOrthogonalAngle.value;
   if (isTestEnv) {
     currentAngle.value = targetAngle;
+    offsetX.value = 0;
+    offsetY.value = 0;
+    scale.value = fitScale.value;
     glowIntensity.value = 0.35;
     drawBoard();
     showSolveImpact.value = true;
@@ -753,6 +756,10 @@ function animateRotationToTarget() {
 
   const duration = 1000; // 1 second
   const startAngle = currentAngle.value;
+  const startOffsetX = offsetX.value;
+  const startOffsetY = offsetY.value;
+  const startScale = scale.value;
+  const targetScale = fitScale.value;
   const startTime = performance.now();
 
   function tick(now: number) {
@@ -765,6 +772,9 @@ function animateRotationToTarget() {
       : 1 - Math.pow(-2 * progress + 2, 3) / 2;
 
     currentAngle.value = startAngle + (targetAngle - startAngle) * ease;
+    offsetX.value = startOffsetX + (0 - startOffsetX) * ease;
+    offsetY.value = startOffsetY + (0 - startOffsetY) * ease;
+    scale.value = startScale + (targetScale - startScale) * ease;
     drawBoard();
 
     if (progress < 1) {
