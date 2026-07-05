@@ -423,10 +423,16 @@
           </div>
 
           <template v-else-if="board && hasUnclearedPuzzles">
-            <!-- Floating Stage Selector (Read-only badge showing '?' until solved) -->
+            <!-- Full-width thin Stage Selector bar (showing '?' until solved) -->
             <div class="puzzle-selector-floating-container" v-if="currentActiveStage">
-              <div class="active-stage-badge readonly-badge" :style="badgeProgressStyle">
+              <div class="active-stage-badge readonly-badge">
                 <span class="active-stage-badge-name">{{ solveAnimationComplete ? currentActiveStage.name : '?' }}</span>
+                <!-- Thin Progress bar inside the name display block -->
+                <transition name="fade">
+                  <div v-if="solveAnimationComplete && allUnclearedStages.length > 0 && nextPuzzleSeconds > 0" class="badge-progress-bar-container">
+                    <div class="badge-progress-bar" :style="{ width: (nextPuzzleSeconds / 3) * 100 + '%' }"></div>
+                  </div>
+                </transition>
               </div>
             </div>
 
@@ -835,16 +841,7 @@ const hasUnclearedPuzzles = computed(() => {
   return hasRegular || hasAi;
 });
 
-const badgeProgressStyle = computed(() => {
-  if (solveAnimationComplete.value && allUnclearedStages.value.length > 0 && nextPuzzleSeconds.value > 0) {
-    const progress = (nextPuzzleSeconds.value / 3) * 100;
-    return {
-      background: `linear-gradient(90deg, rgba(99, 102, 241, 0.25) 0%, rgba(56, 189, 248, 0.25) ${progress}%, rgba(30, 41, 59, 0.7) ${progress}%, rgba(30, 41, 59, 0.7) 100%)`,
-      transition: 'background 0.1s linear'
-    };
-  }
-  return {};
-});
+
 
 const delaySeconds = ref(0);
 const timeUntilMidnight = ref('');
@@ -2413,12 +2410,6 @@ body {
     max-height: calc(100vh - 250px) !important;
     max-height: calc(100dvh - 250px) !important;
   }
-  .active-stage-badge {
-    width: 90vw;
-    max-width: 460px;
-    padding: 0.6rem 1.5rem;
-    border-radius: 12px;
-  }
   .puzzle-selector-dropdown {
     width: 85vw;
     max-width: 340px;
@@ -2446,38 +2437,36 @@ body {
 /* Floating Stage Selector */
 .puzzle-selector-floating-container {
   position: relative;
-  margin-top: 15px;
-  margin-bottom: 5px;
+  margin-top: 0;
+  margin-bottom: 0;
   z-index: 100;
   display: flex;
   justify-content: center;
+  width: 100%;
 }
 
 .active-stage-badge {
-  display: inline-flex;
+  display: flex;
   align-items: center;
   justify-content: center;
   position: relative;
   gap: 0.6rem;
-  background: rgba(30, 41, 59, 0.7);
+  background: rgba(30, 41, 59, 0.6);
   backdrop-filter: blur(12px);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  padding: 0.65rem 2rem;
-  border-radius: 12px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  padding: 0.35rem 1.5rem;
+  border-radius: 0;
   cursor: pointer;
-  box-shadow: 0 4px 20px -5px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.15);
   transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
   white-space: nowrap;
   width: 100%;
-  max-width: 500px;
   box-sizing: border-box;
-  min-width: 180px;
 }
 
 .active-stage-badge:not(.readonly-badge):hover {
-  background: rgba(30, 41, 59, 0.9);
+  background: rgba(30, 41, 59, 0.8);
   border-color: rgba(56, 189, 248, 0.4);
-  box-shadow: 0 6px 24px -5px rgba(56, 189, 248, 0.2);
 }
 
 .active-stage-badge.readonly-badge {
@@ -2486,13 +2475,31 @@ body {
 
 .active-stage-badge-name {
   font-weight: 700;
-  font-size: 0.85rem;
-  color: #f8fafc;
+  font-size: 0.8rem;
+  color: #e2e8f0;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
   text-align: center;
   width: 100%;
+  letter-spacing: 0.03em;
+}
+
+.badge-progress-bar-container {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 3px;
+  background: rgba(56, 189, 248, 0.05);
+  overflow: hidden;
+}
+
+.badge-progress-bar {
+  height: 100%;
+  background: linear-gradient(90deg, #38bdf8 0%, #818cf8 50%, #c084fc 100%);
+  box-shadow: 0 0 8px rgba(56, 189, 248, 0.6);
+  transition: width 0.1s linear;
 }
 
 .active-stage-badge-size {
