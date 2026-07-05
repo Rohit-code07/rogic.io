@@ -867,7 +867,8 @@ canvas {
 .draw-mode-hud {
   position: absolute;
   bottom: 20px;
-  left: 20px;
+  left: 50%;
+  transform: translateX(-50%);
   display: flex;
   align-items: center;
   background: rgba(15, 23, 42, 0.85);
@@ -953,7 +954,7 @@ canvas {
 .history-hud {
   position: absolute;
   bottom: 20px;
-  left: 110px;
+  left: 20px;
   display: flex;
   align-items: center;
   gap: 0.25rem;
@@ -1002,11 +1003,12 @@ canvas {
 @media (max-width: 768px) {
   .draw-mode-hud {
     bottom: 12px;
-    left: 12px;
+    left: 50%;
+    transform: translateX(-50%);
   }
   .history-hud {
     bottom: 12px;
-    left: 102px;
+    left: 12px;
   }
 }
 
