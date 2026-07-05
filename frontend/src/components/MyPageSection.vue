@@ -288,4 +288,121 @@ function closeReview() {
   from { opacity: 0; }
   to { opacity: 1; }
 }
+
+.mypage-dashboard {
+  max-width: 600px;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+  box-sizing: border-box;
+}
+
+.mypage-user-profile {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+  background-color: #1e293b;
+  border: 1px solid #334155;
+  border-radius: 16px;
+  padding: 1.5rem;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3);
+  box-sizing: border-box;
+  width: 100%;
+}
+
+.profile-avatar {
+  font-size: 3rem;
+  background-color: #0f172a;
+  width: 4.5rem;
+  height: 4.5rem;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  border-radius: 50%;
+  border: 2px solid #38bdf8;
+}
+
+.profile-username {
+  margin: 0 0 0.5rem 0;
+  color: #f8fafc;
+  font-size: 1.5rem;
+}
+
+.profile-stats {
+  display: flex;
+  gap: 0.75rem;
+}
+
+.profile-lv {
+  color: #38bdf8;
+  background-color: rgba(56, 189, 248, 0.15);
+  font-size: 0.85rem;
+  font-weight: 700;
+  padding: 0.15rem 0.5rem;
+  border-radius: 4px;
+}
+
+.profile-xp {
+  color: #818cf8;
+  font-size: 0.85rem;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+}
+
+/* History Card */
+.history-item {
+  background-color: #1e293b;
+  border: 1px solid #334155;
+  border-radius: 10px;
+  padding: 0.8rem 1rem;
+  transition: all 0.2s;
+}
+
+.history-item:hover {
+  border-color: #38bdf8;
+  transform: translateY(-1px);
+}
+
+.key-indicator {
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  font-weight: 600;
+  font-size: 0.85rem;
+  margin-right: 0.5rem;
+}
+
+.left-click {
+  background-color: #38bdf8;
+  color: #0f172a;
+}
+
+.right-click {
+  background-color: #f43f5e;
+  color: #ffffff;
+}
+
+.modal-content {
+  background-color: #1e293b;
+  border: 1px solid #334155;
+  border-radius: 16px;
+  padding: 2rem;
+  width: 90%;
+  text-align: center;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.55);
+  animation: pop-in 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  box-sizing: border-box;
+}
+
+@keyframes pop-in {
+  0% {
+    transform: scale(0.8);
+    opacity: 0;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
 </style>
