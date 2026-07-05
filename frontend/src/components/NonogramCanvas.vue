@@ -15,12 +15,12 @@
     </div>
 
     <!-- Floating Draw Mode Toggle -->
-    <div v-if="!readOnly" class="draw-mode-hud" title="Toggle Draw Mode">
-      <div class="draw-mode-slider" :style="sliderStyle"></div>
+    <div v-if="!readOnly" class="draw-mode-hud" @click="toggleDrawMode" title="Toggle Draw Mode" style="cursor: pointer;">
+      <div class="draw-mode-slider" :class="drawMode"></div>
       <button 
         class="draw-mode-btn" 
         :class="{ active: drawMode === 'fill' }" 
-        @click="setDrawMode('fill')"
+        @click.stop="toggleDrawMode"
         title="Fill Mode"
         type="button"
       >
@@ -29,26 +29,12 @@
       <button 
         class="draw-mode-btn" 
         :class="{ active: drawMode === 'x' }" 
-        @click="setDrawMode('x')"
+        @click.stop="toggleDrawMode"
         title="X Mark Mode"
         type="button"
       >
         <svg class="mode-icon x-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor">
           <path d="M18 6L6 18M6 6l12 12" stroke-width="3.5" stroke-linecap="round"/>
-        </svg>
-      </button>
-      <button 
-        class="draw-mode-btn" 
-        :class="{ active: drawMode === 'pan' }" 
-        @click="setDrawMode('pan')"
-        title="Move Mode"
-        type="button"
-      >
-        <svg class="mode-icon pan-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M18 11V6a2 2 0 0 0-2-2v0a2 2 0 0 0-2 2v5" />
-          <path d="M14 10V4a2 2 0 0 0-2-2v0a2 2 0 0 0-2 2v6" />
-          <path d="M10 10.5V6a2 2 0 0 0-2-2v0a2 2 0 0 0-2 2v8" />
-          <path d="M6 14v0a5 5 0 0 0 5 5h3a6 6 0 0 0 6-6V11a2 2 0 0 0-2-2v0a2 2 0 0 0-2 2" />
         </svg>
       </button>
     </div>
@@ -107,24 +93,10 @@ const emit = defineEmits<{
 }>();
 
 const canvasRef = ref<HTMLCanvasElement | null>(null);
-const drawMode = ref<'fill' | 'x' | 'pan'>('fill');
+const drawMode = ref<'fill' | 'x'>('fill');
 
-function setDrawMode(mode: 'fill' | 'x' | 'pan') {
-  drawMode.value = mode;
-}
-
-const sliderStyle = computed(() => {
-  if (drawMode.value === 'fill') return { transform: 'translateX(0px)' };
-  if (drawMode.value === 'x') return { transform: 'translateX(36px)' };
-  return { transform: 'translateX(72px)' };
-});
-
-function isArrayEqual(a: number[], b: number[]) {
-  if (a.length !== b.length) return false;
-  for (let i = 0; i < a.length; i++) {
-    if (a[i] !== b[i]) return false;
-  }
-  return true;
+function toggleDrawMode() {
+  drawMode.value = drawMode.value === 'fill' ? 'x' : 'fill';
 }
 
 // Standard grid layout dimensions
@@ -135,6 +107,14 @@ const getCellSize = (maxCount: number) => {
   if (maxCount <= 25) return 18;
   return 16; // 30x30 or larger
 };
+
+function isArrayEqual(a: number[], b: number[]) {
+  if (a.length !== b.length) return false;
+  for (let i = 0; i < a.length; i++) {
+    if (a[i] !== b[i]) return false;
+  }
+  return true;
+}
 
 const CELL_SIZE = computed(() => getCellSize(Math.max(props.board.colCount, props.board.rowCount)));
 
@@ -539,8 +519,8 @@ function handlePanTouchEnd() {
 function handleMouseDown(event: MouseEvent) {
   if (props.readOnly) return;
 
-  // Handle panning mode or middle click
-  if (drawMode.value === 'pan' || event.button === 1) {
+  // Handle middle click panning
+  if (event.button === 1) {
     isPanning.value = true;
     panStartX = event.clientX - offsetX.value;
     panStartY = event.clientY - offsetY.value;
@@ -550,7 +530,18 @@ function handleMouseDown(event: MouseEvent) {
   }
 
   const coords = getCoordinatesFromEvent(event.clientX, event.clientY);
-  if (!coords) return;
+  
+  // If clicked outside the grid (coords is null) and it is left click, start panning!
+  if (!coords) {
+    if (event.button === 0) {
+      isPanning.value = true;
+      panStartX = event.clientX - offsetX.value;
+      panStartY = event.clientY - offsetY.value;
+      window.addEventListener('mousemove', handlePanMouseMove);
+      window.addEventListener('mouseup', handlePanMouseUp);
+    }
+    return;
+  }
 
   const { row, col } = coords;
   const currentValue = props.board.currentGrid[row][col];
@@ -612,21 +603,15 @@ function handleWindowMouseUp() {
 function handleTouchStart(event: TouchEvent) {
   if (props.readOnly) return;
 
-  // Handle touch panning or multi-touch
-  if (drawMode.value === 'pan' || event.touches.length > 1) {
+  // Handle multi-touch panning
+  if (event.touches.length > 1) {
     isPanning.value = true;
-    if (event.touches.length === 1) {
-      const touch = event.touches[0];
-      panStartX = touch.clientX - offsetX.value;
-      panStartY = touch.clientY - offsetY.value;
-    } else {
-      const t1 = event.touches[0];
-      const t2 = event.touches[1];
-      const midX = (t1.clientX + t2.clientX) / 2;
-      const midY = (t1.clientY + t2.clientY) / 2;
-      panStartX = midX - offsetX.value;
-      panStartY = midY - offsetY.value;
-    }
+    const t1 = event.touches[0];
+    const t2 = event.touches[1];
+    const midX = (t1.clientX + t2.clientX) / 2;
+    const midY = (t1.clientY + t2.clientY) / 2;
+    panStartX = midX - offsetX.value;
+    panStartY = midY - offsetY.value;
     window.addEventListener('touchmove', handlePanTouchMove, { passive: false });
     window.addEventListener('touchend', handlePanTouchEnd);
     window.addEventListener('touchcancel', handlePanTouchEnd);
@@ -634,11 +619,21 @@ function handleTouchStart(event: TouchEvent) {
   }
 
   if (event.touches.length !== 1) return;
-  event.preventDefault(); // Prevent page scroll/zoom gestures during drawing
-
   const touch = event.touches[0];
   const coords = getCoordinatesFromEvent(touch.clientX, touch.clientY);
-  if (!coords) return;
+
+  // If touched outside the grid, start panning!
+  if (!coords) {
+    isPanning.value = true;
+    panStartX = touch.clientX - offsetX.value;
+    panStartY = touch.clientY - offsetY.value;
+    window.addEventListener('touchmove', handlePanTouchMove, { passive: false });
+    window.addEventListener('touchend', handlePanTouchEnd);
+    window.addEventListener('touchcancel', handlePanTouchEnd);
+    return;
+  }
+
+  event.preventDefault(); // Prevent page scroll/zoom gestures during drawing
 
   const { row, col } = coords;
   const currentValue = props.board.currentGrid[row][col];
@@ -897,7 +892,7 @@ canvas {
   border-radius: 9999px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
   z-index: 10;
-  width: 116px;
+  width: 80px;
   height: 36px;
   box-sizing: border-box;
   -webkit-tap-highlight-color: transparent;
@@ -917,6 +912,10 @@ canvas {
   border: 1px solid rgba(255, 255, 255, 0.12);
   z-index: 1;
   box-sizing: border-box;
+}
+
+.draw-mode-slider.x {
+  transform: translateX(36px);
 }
 
 .draw-mode-btn {
@@ -965,18 +964,11 @@ canvas {
   display: block;
 }
 
-.pan-icon {
-  width: 14px;
-  height: 14px;
-  stroke: #10b981;
-  display: block;
-}
-
 /* Floating History (Undo/Redo) HUD */
 .history-hud {
   position: absolute;
   bottom: 20px;
-  left: 146px;
+  left: 110px;
   display: flex;
   align-items: center;
   gap: 0.25rem;
@@ -1086,7 +1078,7 @@ canvas {
   }
   .history-hud {
     bottom: 12px;
-    left: 138px;
+    left: 102px;
   }
   .zoom-hud {
     bottom: 12px;

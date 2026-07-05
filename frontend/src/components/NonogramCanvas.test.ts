@@ -394,7 +394,7 @@ describe('NonogramCanvas TDD Red Phase', () => {
       expect(board.currentGrid[0][0]).toBe(1);
     });
 
-    it('should pan the canvas when drawMode is pan', async () => {
+    it('should pan the canvas when dragging outside the grid', async () => {
       const board = new PuzzleBoard([
         [0, 0],
         [0, 0]
@@ -403,13 +403,21 @@ describe('NonogramCanvas TDD Red Phase', () => {
         props: { board, initialAngle: 0 }
       });
       const canvas = wrapper.find('[data-testid="nonogram-canvas"]');
+      canvas.element.getBoundingClientRect = () => ({
+        width: 400,
+        height: 400,
+        top: 0,
+        left: 0,
+        right: 400,
+        bottom: 400,
+        x: 0,
+        y: 0,
+        toJSON: () => {}
+      });
 
-      // Set mode to pan
-      (wrapper.vm as any).setDrawMode('pan');
-
-      // Drag to pan
-      await canvas.trigger('mousedown', { button: 0, clientX: 100, clientY: 100 });
-      window.dispatchEvent(new MouseEvent('mousemove', { clientX: 150, clientY: 120 }));
+      // Drag to pan starting from clientX = 50, clientY = 50 (outside grid)
+      await canvas.trigger('mousedown', { button: 0, clientX: 50, clientY: 50 });
+      window.dispatchEvent(new MouseEvent('mousemove', { clientX: 100, clientY: 70 }));
 
       // Check offsets
       expect((wrapper.vm as any).offsetX).toBe(50);
