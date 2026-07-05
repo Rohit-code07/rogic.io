@@ -2438,7 +2438,7 @@ body {
 .puzzle-selector-floating-container {
   position: relative;
   margin-top: 0;
-  margin-bottom: 0.75rem;
+  margin-bottom: 0;
   z-index: 100;
   display: flex;
   justify-content: center;
@@ -2451,11 +2451,11 @@ body {
   justify-content: center;
   position: relative;
   gap: 0.6rem;
-  background: linear-gradient(180deg, rgba(0, 0, 0, 0.35) 0%, rgba(15, 23, 42, 0.55) 8px, rgba(15, 23, 42, 0.55) 100%);
+  background: rgba(30, 41, 59, 0.35);
   backdrop-filter: blur(8px);
   border: 1px solid rgba(255, 255, 255, 0.05);
   padding: 0.35rem 1.5rem;
-  border-radius: 8px;
+  border-radius: 8px 8px 0 0;
   overflow: hidden;
   cursor: pointer;
   box-shadow: none;
