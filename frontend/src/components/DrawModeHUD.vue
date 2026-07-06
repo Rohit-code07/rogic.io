@@ -38,7 +38,11 @@ function toggleDrawMode() {
 }
 
 function setDrawMode(mode: 'fill' | 'x') {
-  emit('update:modelValue', mode);
+  if (props.modelValue === mode) {
+    emit('update:modelValue', mode === 'fill' ? 'x' : 'fill');
+  } else {
+    emit('update:modelValue', mode);
+  }
 }
 </script>
 
