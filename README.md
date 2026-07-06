@@ -110,7 +110,9 @@ C4Container
     System_Boundary(host, "AWS EC2 Instance (Target Host)") {
         Container(nginx, "Nginx Reverse Proxy", "Docker", "Bearer Token Authentication Endpoint.")
         Container(spring, "Spring Boot Backend", "Docker (GraalVM)", "Exposes Prometheus Actuator Metrics.")
-        Rel(nginx, spring, "Forwards prometheus scraping requests", "Port 8080")
+        Container(node_exporter, "Node Exporter", "Docker", "Exposes host hardware and OS metrics.")
+        Rel(nginx, spring, "Forwards application scraping requests", "Port 8080")
+        Rel(nginx, node_exporter, "Forwards host scraping requests", "Port 9100")
     }
 
     System_Boundary(grafana_cloud, "Grafana Cloud Platform") {
@@ -133,7 +135,7 @@ C4Container
 ```
 
 #### Collection Architecture
-Agentless Pull (에이전트 데몬 배제 및 Mimir 직접 수집)
+Agentless Pull (Grafana Agent를 배제하고, Mimir가 Nginx 프록시를 통해 Spring Actuator 및 Node Exporter 메트릭 직접 수집)
 
 #### Access Security
 Nginx Reverse Proxy단 Bearer Token 상호 검증 및 가상 경로 바인딩
