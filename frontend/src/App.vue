@@ -223,7 +223,7 @@
                     <div class="logo-cell filled"></div>
                   </div>
                 </div>
-                <h2 class="hero-title">rogic.io</h2>
+                <h2 class="hero-title" style="margin: 0 0 1.5rem 0; font-size: 4rem; font-weight: 800; letter-spacing: -0.5px; line-height: 1.25; background: linear-gradient(135deg, #38bdf8 0%, #818cf8 50%, #c084fc 100%); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; display: inline-block;">rogic.io</h2>
                 <p class="hero-subtitle" style="margin: 0; font-size: 1.1rem; color: #94a3b8; line-height: 1.6; max-width: 480px;">
                   The next-generation Nonogram. Solve the puzzle, rotate the grid, and reveal the art.
                 </p>
@@ -241,7 +241,7 @@
 
               <!-- Right Side: Interactive 5x5 Mini Demo Canvas (Transparent & Enlarged) -->
               <div class="hero-demo-block" style="flex: 1; min-width: 280px; display: flex; align-items: center; justify-content: center; position: relative;">
-                <div style="transform: scale(1.5); transform-origin: center; display: flex; align-items: center; justify-content: center;">
+                <div class="demo-transparent-wrapper" style="width: 260px; height: 260px; display: flex; align-items: center; justify-content: center; position: relative;">
                   <NonogramCanvas 
                     v-if="demoBoard"
                     :board="demoBoard" 
