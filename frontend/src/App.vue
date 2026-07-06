@@ -363,7 +363,7 @@ function initDemoBoard() {
   demoBoard.value = boardObj;
   demoSolved.value = false;
   demoSolveAnimationComplete.value = false;
-  demoRotationSteps.value = 0;
+  demoRotationSteps.value = 1;
 }
 
 function handleDemoCellClick() {
@@ -374,7 +374,7 @@ function handleDemoCellClick() {
 
 function handleDemoSolveAnimationComplete() {
   demoSolveAnimationComplete.value = true;
-  demoRotationSteps.value += 4;
+  demoRotationSteps.value = 4;
 }
 const solved = ref(false);
 const solveAnimationComplete = ref(false);
