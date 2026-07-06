@@ -12,6 +12,7 @@ vi.mock('./api/cognito', () => ({
   loginWithGoogle: vi.fn(),
   logout: vi.fn(),
   getStoredToken: vi.fn(() => localStorage.getItem('nemologic_id_token')),
+  getOrRefreshToken: vi.fn(() => Promise.resolve(localStorage.getItem('nemologic_id_token'))),
   isTokenExpired: vi.fn(() => false)
 }));
 

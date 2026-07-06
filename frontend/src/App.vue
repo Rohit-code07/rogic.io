@@ -304,7 +304,7 @@ import { fetchRanking, clearStage, fetchMeFromServer, fetchUserHistory, syncGues
 import type { User, HistoryResponse } from './api/userApi';
 import { setUserSession, clearUserSession } from './api/auth';
 import type { UserSession } from './api/auth';
-import { loginWithGoogle, logout as googleLogout, getStoredToken } from './api/cognito';
+import { loginWithGoogle, logout as googleLogout, getOrRefreshToken } from './api/cognito';
 import { isAdminAuthenticated } from './api/adminApi';
 
 const isAdminMode = ref(false);
@@ -1172,7 +1172,7 @@ async function initializeUserSession() {
     }
 
     // 2. Load profile if token is valid
-    const token = getStoredToken();
+    const token = await getOrRefreshToken();
     if (token === 'dummy-token') {
       const debugSession = {
         id: 999,

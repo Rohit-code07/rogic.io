@@ -9,9 +9,11 @@ export interface UserSession {
   idToken?: string;
 }
 
+/**
+ * @deprecated Automated by apiClient request interceptor.
+ */
 export function getAuthHeader(): Record<string, string> {
-  const token = localStorage.getItem('nemologic_id_token');
-  return token ? { Authorization: `Bearer ${token}` } : {};
+  return {};
 }
 
 

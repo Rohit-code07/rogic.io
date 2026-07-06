@@ -1,4 +1,4 @@
-import axios from 'axios';
+import apiClient from './apiClient';
 
 export interface StageSummary {
   id: number;
@@ -36,40 +36,40 @@ export async function fetchStages(page?: number, size?: number, width?: number):
   
   const hasParams = Object.keys(params).length > 0;
   if (hasParams) {
-    const response = await axios.get<StageSummary[] | PageResponse<StageSummary>>(API_BASE_URL, { params });
+    const response = await apiClient.get<StageSummary[] | PageResponse<StageSummary>>(API_BASE_URL, { params });
     return response.data;
   } else {
-    const response = await axios.get<StageSummary[] | PageResponse<StageSummary>>(API_BASE_URL);
+    const response = await apiClient.get<StageSummary[] | PageResponse<StageSummary>>(API_BASE_URL);
     return response.data;
   }
 }
 
 export async function fetchStageById(id: number): Promise<StageDetails> {
-  const response = await axios.get<StageDetails>(`${API_BASE_URL}/${id}`);
+  const response = await apiClient.get<StageDetails>(`${API_BASE_URL}/${id}`);
   return response.data;
 }
 
 export async function fetchAiStages(): Promise<StageSummary[]> {
-  const response = await axios.get<StageSummary[]>(API_BASE_URL);
+  const response = await apiClient.get<StageSummary[]>(API_BASE_URL);
   return response.data;
 }
 
 export async function fetchNextReleaseDelaySeconds(): Promise<number> {
-  const response = await axios.get<number>(`${API_BASE_URL}/next-release-delay`);
+  const response = await apiClient.get<number>(`${API_BASE_URL}/next-release-delay`);
   return response.data;
 }
 
 export async function startStage(id: number): Promise<void> {
-  await axios.post(`${API_BASE_URL}/${id}/start`);
+  await apiClient.post(`${API_BASE_URL}/${id}/start`);
 }
 
 export async function likeStage(id: number): Promise<StageDetails> {
-  const response = await axios.post<StageDetails>(`${API_BASE_URL}/${id}/like`);
+  const response = await apiClient.post<StageDetails>(`${API_BASE_URL}/${id}/like`);
   return response.data;
 }
 
 export async function dislikeStage(id: number): Promise<StageDetails> {
-  const response = await axios.post<StageDetails>(`${API_BASE_URL}/${id}/dislike`);
+  const response = await apiClient.post<StageDetails>(`${API_BASE_URL}/${id}/dislike`);
   return response.data;
 }
 
@@ -83,7 +83,7 @@ export async function verifyStageSolve(
   elapsedTime: number,
   rotationSteps: number
 ): Promise<SolveVerificationResponse> {
-  const response = await axios.post<SolveVerificationResponse>(`${API_BASE_URL}/${id}/verify`, {
+  const response = await apiClient.post<SolveVerificationResponse>(`${API_BASE_URL}/${id}/verify`, {
     gridState,
     elapsedTime,
     rotationSteps
