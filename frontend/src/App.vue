@@ -223,7 +223,7 @@
                     <div class="logo-cell filled"></div>
                   </div>
                 </div>
-                <h2 class="hero-title" style="margin: 0; font-size: 3rem; font-weight: 800; background: linear-gradient(135deg, #38bdf8, #818cf8); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;">rogic.io</h2>
+                <h2 class="hero-title">rogic.io</h2>
                 <p class="hero-subtitle" style="margin: 0; font-size: 1.1rem; color: #94a3b8; line-height: 1.6; max-width: 480px;">
                   The next-generation Nonogram. Solve the puzzle, rotate the grid, and reveal the art.
                 </p>
@@ -239,23 +239,17 @@
                 </div>
               </div>
 
-              <!-- Right Side: Interactive 5x5 Mini Demo Canvas -->
-              <div class="hero-demo-block" style="flex: 1; min-width: 280px; display: flex; flex-direction: column; align-items: center; justify-content: center; position: relative;">
-                <div class="demo-canvas-card" style="background: rgba(30, 41, 59, 0.5); border: 1px solid rgba(255,255,255,0.06); padding: 1.5rem; border-radius: 16px; backdrop-filter: blur(12px); box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.3); display: flex; flex-direction: column; align-items: center; gap: 0.75rem; position: relative; width: 230px; box-sizing: border-box;">
-                  <div class="demo-label" style="font-size: 0.75rem; font-weight: 700; color: #38bdf8; text-transform: uppercase; letter-spacing: 0.05em; display: flex; align-items: center; gap: 0.25rem;">
-                    <span>🕹️</span> Try the 5x5 Demo
-                  </div>
-                  
-                  <div class="demo-canvas-wrapper" style="width: 170px; height: 170px; background-color: #0f172a; border-radius: 8px; overflow: hidden; border: 1px solid rgba(255, 255, 255, 0.08); display: flex; justify-content: center; align-items: center; position: relative;">
-                    <NonogramCanvas 
-                      v-if="demoBoard"
-                      :board="demoBoard" 
-                      :rotationSteps="demoRotationSteps" 
-                      :readOnly="demoSolved" 
-                      @cell-click="handleDemoCellClick" 
-                      @solve-animation-complete="handleDemoSolveAnimationComplete" 
-                    />
-                  </div>
+              <!-- Right Side: Interactive 5x5 Mini Demo Canvas (Transparent & Enlarged) -->
+              <div class="hero-demo-block" style="flex: 1; min-width: 280px; display: flex; align-items: center; justify-content: center; position: relative;">
+                <div style="transform: scale(1.5); transform-origin: center; display: flex; align-items: center; justify-content: center;">
+                  <NonogramCanvas 
+                    v-if="demoBoard"
+                    :board="demoBoard" 
+                    :rotationSteps="demoRotationSteps" 
+                    :readOnly="demoSolved" 
+                    @cell-click="handleDemoCellClick" 
+                    @solve-animation-complete="handleDemoSolveAnimationComplete" 
+                  />
                 </div>
               </div>
 
