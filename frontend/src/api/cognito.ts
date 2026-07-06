@@ -5,6 +5,7 @@ const CLIENT_ID = import.meta.env.VITE_COGNITO_CLIENT_ID || '';
 const APP_URL = import.meta.env.VITE_APP_URL || (typeof window !== 'undefined' ? window.location.origin : 'http://localhost:5173');
 
 const TOKEN_KEY = 'nemologic_id_token';
+const REFRESH_KEY = 'nemologic_refresh_token';
 const VERIFIER_KEY = 'nemologic_code_verifier';
 
 // PKCE helper: Generate random string
@@ -79,20 +80,71 @@ export async function handleCallback(code: string): Promise<string> {
   });
 
   const idToken = response.data.id_token;
+  const refreshToken = response.data.refresh_token;
   if (!idToken) {
     throw new Error('No id_token returned from token endpoint');
   }
 
   localStorage.setItem(TOKEN_KEY, idToken);
+  if (refreshToken) {
+    localStorage.setItem(REFRESH_KEY, refreshToken);
+  }
   sessionStorage.removeItem(VERIFIER_KEY);
   return idToken;
 }
 
 export function logout(): void {
   localStorage.removeItem(TOKEN_KEY);
+  localStorage.removeItem(REFRESH_KEY);
   const redirectUri = `${APP_URL}/`;
   const logoutUrl = `${COGNITO_DOMAIN}/logout?client_id=${CLIENT_ID}&logout_uri=${encodeURIComponent(redirectUri)}`;
   window.location.href = logoutUrl;
+}
+
+export async function getOrRefreshToken(): Promise<string | null> {
+  const token = localStorage.getItem(TOKEN_KEY);
+  if (token && !isTokenExpired(token)) {
+    return token;
+  }
+
+  const refreshToken = localStorage.getItem(REFRESH_KEY);
+  if (!refreshToken) {
+    localStorage.removeItem(TOKEN_KEY);
+    localStorage.removeItem(REFRESH_KEY);
+    return null;
+  }
+
+  try {
+    const params = new URLSearchParams();
+    params.append('grant_type', 'refresh_token');
+    params.append('client_id', CLIENT_ID);
+    params.append('refresh_token', refreshToken);
+
+    const tokenUrl = `${COGNITO_DOMAIN}/oauth2/token`;
+    const response = await axios.post(tokenUrl, params.toString(), {
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+      },
+    });
+
+    const newIdToken = response.data.id_token;
+    const newRefreshToken = response.data.refresh_token;
+
+    if (!newIdToken) {
+      throw new Error('No id_token returned during refresh');
+    }
+
+    localStorage.setItem(TOKEN_KEY, newIdToken);
+    if (newRefreshToken) {
+      localStorage.setItem(REFRESH_KEY, newRefreshToken);
+    }
+    return newIdToken;
+  } catch (error) {
+    console.error('Failed to refresh Cognito token:', error);
+    localStorage.removeItem(TOKEN_KEY);
+    localStorage.removeItem(REFRESH_KEY);
+    return null;
+  }
 }
 
 export function getStoredToken(): string | null {
@@ -101,6 +153,7 @@ export function getStoredToken(): string | null {
 
   if (isTokenExpired(token)) {
     localStorage.removeItem(TOKEN_KEY);
+    localStorage.removeItem(REFRESH_KEY);
     return null;
   }
   return token;
