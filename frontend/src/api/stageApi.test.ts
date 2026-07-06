@@ -1,8 +1,8 @@
 import { describe, it, expect, vi } from 'vitest';
-import axios from 'axios';
+import apiClient from './apiClient';
 import { fetchStages, fetchStageById, fetchAiStages } from './stageApi';
 
-vi.mock('axios');
+vi.mock('./apiClient');
 
 describe('stageApi TDD Red Phase', () => {
   it('fetchStages should call get and return stage summaries', async () => {
@@ -10,10 +10,10 @@ describe('stageApi TDD Red Phase', () => {
       { id: 1, name: 'Heart Shape', width: 5, height: 5 }
     ];
     
-    vi.mocked(axios.get).mockResolvedValue({ data: mockData });
+    vi.mocked(apiClient.get).mockResolvedValue({ data: mockData });
 
     const result = await fetchStages();
-    expect(axios.get).toHaveBeenCalledWith('http://localhost:8080/api/stages');
+    expect(apiClient.get).toHaveBeenCalledWith('http://localhost:8080/api/stages');
     expect(result).toEqual(mockData);
   });
 
@@ -30,10 +30,10 @@ describe('stageApi TDD Red Phase', () => {
       ]
     };
     
-    vi.mocked(axios.get).mockResolvedValue({ data: mockDetails });
+    vi.mocked(apiClient.get).mockResolvedValue({ data: mockDetails });
 
     const result = await fetchStageById(1);
-    expect(axios.get).toHaveBeenCalledWith('http://localhost:8080/api/stages/1');
+    expect(apiClient.get).toHaveBeenCalledWith('http://localhost:8080/api/stages/1');
     expect(result).toEqual(mockDetails);
   });
 
@@ -43,10 +43,10 @@ describe('stageApi TDD Red Phase', () => {
       { id: 2, name: 'AI Puzzle', width: 5, height: 5 }
     ];
     
-    vi.mocked(axios.get).mockResolvedValue({ data: mockData });
+    vi.mocked(apiClient.get).mockResolvedValue({ data: mockData });
 
     const result = await fetchAiStages();
-    expect(axios.get).toHaveBeenCalledWith('http://localhost:8080/api/stages');
+    expect(apiClient.get).toHaveBeenCalledWith('http://localhost:8080/api/stages');
     expect(result).toEqual(mockData);
   });
 });

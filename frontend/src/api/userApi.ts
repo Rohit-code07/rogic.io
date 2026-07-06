@@ -1,5 +1,4 @@
-import axios from 'axios';
-import { getAuthHeader } from './auth';
+import apiClient from './apiClient';
 
 export interface User {
   id: number;
@@ -27,7 +26,7 @@ const API_BASE_URL = import.meta.env.VITE_API_BASE_URL
   : (import.meta.env.PROD ? '/api/users' : 'http://localhost:8080/api/users');
 
 export async function fetchRanking(): Promise<User[]> {
-  const response = await axios.get<User[]>(`${API_BASE_URL}/ranking`);
+  const response = await apiClient.get<User[]>(`${API_BASE_URL}/ranking`);
   return response.data;
 }
 
@@ -39,9 +38,8 @@ export async function clearStage(userId: number, difficulty: string, stageId?: n
   if (elapsedTime !== undefined) {
     params.elapsedTime = elapsedTime;
   }
-  const response = await axios.post<User>(`${API_BASE_URL}/${userId}/clear`, null, {
+  const response = await apiClient.post<User>(`${API_BASE_URL}/${userId}/clear`, null, {
     params,
-    headers: getAuthHeader(),
   });
   return response.data;
 }
@@ -54,11 +52,10 @@ export async function fetchUserHistory(userId: number, page?: number, size?: num
   if (size !== undefined) params.size = size;
   
   const config: any = {
-    headers: getAuthHeader(),
     params
   };
   
-  const response = await axios.get<HistoryResponse[] | PageResponse<HistoryResponse>>(`${API_BASE_URL}/${userId}/history`, config);
+  const response = await apiClient.get<HistoryResponse[] | PageResponse<HistoryResponse>>(`${API_BASE_URL}/${userId}/history`, config);
   return response.data;
 }
 
@@ -66,9 +63,7 @@ export async function fetchMeFromServer(): Promise<User> {
   const authBaseUrl = import.meta.env.VITE_API_BASE_URL
     ? `${import.meta.env.VITE_API_BASE_URL}/api/auth`
     : (import.meta.env.PROD ? '/api/auth' : 'http://localhost:8080/api/auth');
-  const response = await axios.post<User>(`${authBaseUrl}/me`, null, {
-    headers: getAuthHeader(),
-  });
+  const response = await apiClient.post<User>(`${authBaseUrl}/me`, null);
   return response.data;
 }
 
@@ -76,9 +71,7 @@ export async function syncGuestHistory(
   userId: number,
   guestClears: { stageId: number; elapsedTime: number; proofToken?: string }[]
 ): Promise<User> {
-  const response = await axios.post<User>(`${API_BASE_URL}/${userId}/sync-history`, guestClears, {
-    headers: getAuthHeader(),
-  });
+  const response = await apiClient.post<User>(`${API_BASE_URL}/${userId}/sync-history`, guestClears);
   return response.data;
 }
 
