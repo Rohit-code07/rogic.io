@@ -99,117 +99,116 @@
     <div class="app-layout">
       <!-- Center Main Column: Canvas & Solved Banner -->
       <main class="app-main">
-        <template v-if="currentTab === 'play'">
-          <!-- All Puzzles Cleared State -->
-          <div v-if="!isLoading && !hasUnclearedPuzzles" class="all-cleared-state-container">
-            <div class="all-cleared-card">
-              <div class="countdown-label">Next puzzle in</div>
-              <div class="countdown-time">{{ timeUntilMidnight }}</div>
+        <div v-if="currentTab === 'play'" class="play-tab-container tab-fade-in" style="width: 100%; display: flex; flex-direction: column; align-items: center; justify-content: flex-start; min-height: 0; flex: 1;">
+            <!-- All Puzzles Cleared State -->
+            <div v-if="!isLoading && !hasUnclearedPuzzles" class="all-cleared-state-container">
+              <div class="all-cleared-card">
+                <div class="countdown-label">Next puzzle in</div>
+                <div class="countdown-time">{{ timeUntilMidnight }}</div>
+              </div>
+            </div>
+
+            <div v-else-if="hasUnclearedPuzzles || isLoading" class="canvas-wrapper-container" style="width: 100%; display: flex; flex-direction: column; align-items: center; min-height: 0; flex: 1;">
+              <!-- Full-width thin Stage Selector bar (showing '?' until solved or loading) -->
+              <div class="puzzle-selector-floating-container" v-if="currentActiveStage">
+                <div class="active-stage-badge readonly-badge">
+                  <span class="active-stage-badge-name">{{ (isLoading || !solveAnimationComplete) ? '?' : currentActiveStage.name }}</span>
+                  <!-- Thin Progress bar inside the name display block -->
+                  <transition name="fade">
+                    <div v-if="!isLoading && solveAnimationComplete && allUnclearedStages.length > 0 && nextPuzzleSeconds > 0" class="badge-progress-bar-container">
+                      <div class="badge-progress-bar"></div>
+                    </div>
+                  </transition>
+                </div>
+              </div>
+
+              <div class="canvas-wrapper-container" style="width: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; position: relative; min-height: 0; flex: 1;">
+                <!-- Floating Size Selector (Bottom-Right) -->
+                <div class="play-size-filter-bar-floating" v-if="availablePlaySizes.length > 0 && !isLoading && !loadError">
+                  <div class="active-size-badge" @click.stop="isSizeListOpen = !isSizeListOpen">
+                    <span class="active-size-badge-name">
+                      {{ selectedPlaySizeFilter + 'x' + selectedPlaySizeFilter }}
+                    </span>
+                    <span class="active-size-arrow" :class="{ 'open': isSizeListOpen }">▲</span>
+                  </div>
+                  <transition name="slide-up">
+                    <div v-if="isSizeListOpen" class="play-size-filter-dropdown">
+                      <div 
+                        v-for="size in availablePlaySizes" 
+                        :key="size"
+                        class="play-size-filter-dropdown-item" 
+                        :class="{ active: selectedPlaySizeFilter === String(size) }"
+                        @click.stop="selectSizeFilter(String(size))"
+                      >
+                        {{ size }}x{{ size }}
+                      </div>
+                    </div>
+                  </transition>
+                </div>
+
+                <div class="play-area-inner">
+                  <!-- Inline Loading state inside canvas frame placeholder -->
+                  <div v-if="isLoading" class="canvas-frame-placeholder">
+                    <div class="loading-state" style="background: transparent; border: none; max-width: none; margin: 0; box-shadow: none; backdrop-filter: none; padding: 0; height: auto;">
+                      <div class="spinner-logo">
+                        <div class="spinner-cell filled"></div>
+                        <div class="spinner-cell"></div>
+                        <div class="spinner-cell"></div>
+                        <div class="spinner-cell filled"></div>
+                      </div>
+                      <p class="loading-text">Loading board data...</p>
+                    </div>
+                  </div>
+
+                  <!-- Inline Error state inside canvas frame placeholder -->
+                  <div v-else-if="loadError" class="canvas-frame-placeholder">
+                    <div class="error-state" style="background: transparent; border: none; max-width: none; margin: 0; box-shadow: none; backdrop-filter: none; padding: 0;">
+                      <div class="error-icon">⚠️</div>
+                      <p class="error-text">{{ loadError }}</p>
+                      <button class="retry-btn" @click="handleRetryLoad">
+                        🔄 Retry
+                      </button>
+                    </div>
+                  </div>
+
+                  <!-- Normal canvas wrapper -->
+                  <div v-else-if="board" class="canvas-wrapper">
+                    <NonogramCanvas :board="board" :rotationSteps="currentRotationSteps" :readOnly="solved" @cell-click="handleCellClick" @solve-animation-complete="handleSolveAnimationComplete" />
+                  </div>
+
+                  <!-- Puzzle Feedback UI when solved -->
+                  <transition name="fade">
+                    <div v-if="!isLoading && !loadError && solveAnimationComplete" class="solved-feedback-card">
+                      <div v-if="!hasVoted" class="feedback-buttons">
+                        <button class="feedback-btn like" @click="handleVote(true)" aria-label="Like">
+                          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="svg-icon">
+                            <path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3zM7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3" />
+                          </svg>
+                        </button>
+                        <button class="feedback-btn dislike" @click="handleVote(false)" aria-label="Dislike">
+                          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="svg-icon">
+                            <path d="M10 15v4a3 3 0 0 0 3 3l4-9V2H5.72a2 2 0 0 0-2 1.7l-1.38 9a2 2 0 0 0 2 2.3zm7-13h3a2 2 0 0 1 2 2v7a2 2 0 0 1-2 2h-3" />
+                          </svg>
+                        </button>
+                      </div>
+                      <div v-else class="feedback-thanks">
+                        ✨ Thank You!
+                      </div>
+                    </div>
+                  </transition>
+                </div>
+              </div>
+            </div>
+
+            <div v-if="solveAnimationComplete && allUnclearedStages.length === 0" class="celebration-overlay-container">
+              <div class="all-cleared-card">
+                <div class="trophy-icon">🏆</div>
+                <div class="star-burst">🌟🌟🌟</div>
+              </div>
             </div>
           </div>
 
-          <template v-else-if="hasUnclearedPuzzles || isLoading">
-            <!-- Full-width thin Stage Selector bar (showing '?' until solved or loading) -->
-            <div class="puzzle-selector-floating-container" v-if="currentActiveStage">
-              <div class="active-stage-badge readonly-badge">
-                <span class="active-stage-badge-name">{{ (isLoading || !solveAnimationComplete) ? '?' : currentActiveStage.name }}</span>
-                <!-- Thin Progress bar inside the name display block -->
-                <transition name="fade">
-                  <div v-if="!isLoading && solveAnimationComplete && allUnclearedStages.length > 0 && nextPuzzleSeconds > 0" class="badge-progress-bar-container">
-                    <div class="badge-progress-bar"></div>
-                  </div>
-                </transition>
-              </div>
-            </div>
-
-            <div class="canvas-wrapper-container">
-              <!-- Floating Size Selector (Bottom-Right) -->
-              <div class="play-size-filter-bar-floating" v-if="availablePlaySizes.length > 0 && !isLoading && !loadError">
-                <div class="active-size-badge" @click.stop="isSizeListOpen = !isSizeListOpen">
-                  <span class="active-size-badge-name">
-                    {{ selectedPlaySizeFilter + 'x' + selectedPlaySizeFilter }}
-                  </span>
-                  <span class="active-size-arrow" :class="{ 'open': isSizeListOpen }">▲</span>
-                </div>
-                <transition name="slide-up">
-                  <div v-if="isSizeListOpen" class="play-size-filter-dropdown">
-                    <div 
-                      v-for="size in availablePlaySizes" 
-                      :key="size"
-                      class="play-size-filter-dropdown-item" 
-                      :class="{ active: selectedPlaySizeFilter === String(size) }"
-                      @click.stop="selectSizeFilter(String(size))"
-                    >
-                      {{ size }}x{{ size }}
-                    </div>
-                  </div>
-                </transition>
-              </div>
-
-              <div class="play-area-inner">
-                <!-- Inline Loading state inside canvas frame placeholder -->
-                <div v-if="isLoading" class="canvas-frame-placeholder">
-                  <div class="loading-state" style="background: transparent; border: none; max-width: none; margin: 0; box-shadow: none; backdrop-filter: none; padding: 0; height: auto;">
-                    <div class="spinner-logo">
-                      <div class="spinner-cell filled"></div>
-                      <div class="spinner-cell"></div>
-                      <div class="spinner-cell"></div>
-                      <div class="spinner-cell filled"></div>
-                    </div>
-                    <p class="loading-text">Loading board data...</p>
-                  </div>
-                </div>
-
-                <!-- Inline Error state inside canvas frame placeholder -->
-                <div v-else-if="loadError" class="canvas-frame-placeholder">
-                  <div class="error-state" style="background: transparent; border: none; max-width: none; margin: 0; box-shadow: none; backdrop-filter: none; padding: 0;">
-                    <div class="error-icon">⚠️</div>
-                    <p class="error-text">{{ loadError }}</p>
-                    <button class="retry-btn" @click="handleRetryLoad">
-                      🔄 Retry
-                    </button>
-                  </div>
-                </div>
-
-                <!-- Normal canvas wrapper -->
-                <div v-else-if="board" class="canvas-wrapper">
-                  <NonogramCanvas :board="board" :rotationSteps="currentRotationSteps" :readOnly="solved" @cell-click="handleCellClick" @solve-animation-complete="handleSolveAnimationComplete" />
-                </div>
-
-                <!-- Puzzle Feedback UI when solved -->
-                <transition name="fade">
-                  <div v-if="!isLoading && !loadError && solveAnimationComplete" class="solved-feedback-card">
-                    <div v-if="!hasVoted" class="feedback-buttons">
-                      <button class="feedback-btn like" @click="handleVote(true)" aria-label="Like">
-                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="svg-icon">
-                          <path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3zM7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3" />
-                        </svg>
-                      </button>
-                      <button class="feedback-btn dislike" @click="handleVote(false)" aria-label="Dislike">
-                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="svg-icon">
-                          <path d="M10 15v4a3 3 0 0 0 3 3l4-9V2H5.72a2 2 0 0 0-2 1.7l-1.38 9a2 2 0 0 0 2 2.3zm7-13h3a2 2 0 0 1 2 2v7a2 2 0 0 1-2 2h-3" />
-                        </svg>
-                      </button>
-                    </div>
-                    <div v-else class="feedback-thanks">
-                      ✨ Thank You!
-                    </div>
-                  </div>
-                </transition>
-              </div>
-            </div>
-          </template>
-
-          <div v-if="solveAnimationComplete && allUnclearedStages.length === 0" class="celebration-overlay-container">
-            <div class="all-cleared-card">
-              <div class="trophy-icon">🏆</div>
-              <div class="star-burst">🌟🌟🌟</div>
-            </div>
-          </div>
-        </template>
-
-        <template v-else-if="currentTab === 'home'">
-          <div class="home-dashboard">
+          <div v-else-if="currentTab === 'home'" class="home-dashboard tab-fade-in">
             <!-- Hero Slogan Card & Interactive 5x5 Demo Puzzle -->
             <div class="hero-section flex-row-layout" style="display: flex; flex-direction: row; align-items: center; justify-content: center; gap: 2rem; width: 100%; max-width: 800px; margin: 0 auto; padding: 6rem 2rem; box-sizing: border-box; flex-wrap: wrap; text-align: left;">
               
@@ -263,23 +262,21 @@
               <p class="footer-copyright">&copy; 2026 rogic.io. All rights reserved.</p>
             </footer>
           </div>
-        </template>
 
-        <MyPageSection
-          v-else-if="currentTab === 'mypage'"
-          v-model:is-review-mode="isReviewMode"
-          v-model:modal-board="modalBoard"
-          :current-user="currentUser"
-          :histories="histories"
-          :history-current-page="historyCurrentPage"
-          :history-total-pages="historyTotalPages"
-          @close="onTabChange('play')"
-          @login="handleGoogleLogin"
-          @logout="handleGoogleLogout"
-          @page-change="loadUserHistory"
-        />
-
-
+          <MyPageSection
+            v-else-if="currentTab === 'mypage'"
+            key="mypage"
+            v-model:is-review-mode="isReviewMode"
+            v-model:modal-board="modalBoard"
+            :current-user="currentUser"
+            :histories="histories"
+            :history-current-page="historyCurrentPage"
+            :history-total-pages="historyTotalPages"
+            @close="onTabChange('play')"
+            @login="handleGoogleLogin"
+            @logout="handleGoogleLogout"
+            @page-change="loadUserHistory"
+          />
       </main>
     </div>
 
@@ -2004,6 +2001,15 @@ body {
 }
 
 /* Transitions */
+.tab-fade-enter-active,
+.tab-fade-leave-active {
+  transition: opacity 0.2s ease-in-out;
+}
+.tab-fade-enter-from,
+.tab-fade-leave-to {
+  opacity: 0;
+}
+
 .slide-down-enter-active,
 .slide-down-leave-active {
   transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
