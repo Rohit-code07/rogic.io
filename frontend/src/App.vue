@@ -354,7 +354,7 @@ const demoSolutionGrid = [
 ];
 
 function initDemoBoard() {
-  const rotatedSolution = rotateGrid(demoSolutionGrid, 1);
+  const rotatedSolution = rotateGrid(demoSolutionGrid, 3);
   const boardObj = new PuzzleBoard(rotatedSolution);
   for (let r = 0; r < 5; r++) {
     for (let c = 0; c < 5; c++) {
@@ -364,7 +364,7 @@ function initDemoBoard() {
   demoBoard.value = boardObj;
   demoSolved.value = false;
   demoSolveAnimationComplete.value = false;
-  demoRotationSteps.value = 1;
+  demoRotationSteps.value = 3;
 }
 
 function handleDemoCellClick() {
