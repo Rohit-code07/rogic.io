@@ -211,31 +211,28 @@
         <template v-else-if="currentTab === 'home'">
           <div class="home-dashboard">
             <!-- Hero Slogan Card & Interactive 5x5 Demo Puzzle -->
-            <div class="hero-section flex-row-layout" style="display: flex; flex-direction: row; align-items: center; justify-content: center; gap: 4rem; width: 100%; max-width: 1024px; margin: 0 auto; padding: 6rem 2rem; box-sizing: border-box; flex-wrap: wrap; text-align: left;">
+            <div class="hero-section flex-row-layout" style="display: flex; flex-direction: row; align-items: center; justify-content: center; gap: 2rem; width: 100%; max-width: 800px; margin: 0 auto; padding: 6rem 2rem; box-sizing: border-box; flex-wrap: wrap; text-align: left;">
               
               <!-- Left Side: Hero Text & Slogan -->
               <div class="hero-text-block" style="flex: 1.2; min-width: 320px; display: flex; flex-direction: column; gap: 1rem; align-items: flex-start;">
-                <div class="hero-logo-container" style="display: none;">
-                  <div class="hero-logo-icon-large">
-                    <div class="logo-cell filled"></div>
-                    <div class="logo-cell"></div>
-                    <div class="logo-cell"></div>
-                    <div class="logo-cell filled"></div>
+                <div style="display: flex; align-items: center; gap: 0.85rem; margin-bottom: 0.25rem;">
+                  <div class="logo-icon" style="flex-shrink: 0; width: 2.25rem; height: 2.25rem; display: grid; grid-template-columns: repeat(2, 1fr); grid-template-rows: repeat(2, 1fr); gap: 3px; animation: spin 8s linear infinite; filter: drop-shadow(0 0 12px rgba(56, 189, 248, 0.45));">
+                    <div class="logo-cell filled" style="background: linear-gradient(135deg, #38bdf8, #818cf8); border-radius: 2px;"></div>
+                    <div class="logo-cell" style="background: rgba(255,255,255,0.05); border-radius: 2px;"></div>
+                    <div class="logo-cell" style="background: rgba(255,255,255,0.05); border-radius: 2px;"></div>
+                    <div class="logo-cell filled" style="background: linear-gradient(135deg, #38bdf8, #818cf8); border-radius: 2px;"></div>
                   </div>
+                  <h2 class="hero-title" style="margin: 0; font-size: 4rem; font-weight: 800; letter-spacing: -0.5px; line-height: 1.25; background: linear-gradient(135deg, #38bdf8 0%, #818cf8 50%, #c084fc 100%); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; display: inline-block;">rogic.io</h2>
                 </div>
-                <h2 class="hero-title" style="margin: 0; font-size: 4rem; font-weight: 800; letter-spacing: -0.5px; line-height: 1.25; background: linear-gradient(135deg, #38bdf8 0%, #818cf8 50%, #c084fc 100%); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; display: inline-block;">rogic.io</h2>
                 <p class="hero-subtitle" style="margin: 0; font-size: 1.2rem; color: #a1a1aa; line-height: 1.6; max-width: 440px;">
-                  The next-generation Nonogram. Solve the puzzle, rotate the grid, and reveal the art.
+                  The next-generation Nonogram.<br>
+                  Solve the puzzle, rotate the grid,<br>
+                  and reveal the art.
                 </p>
                 <div class="hero-actions" style="margin-top: 1rem; display: flex; flex-direction: column; gap: 0.75rem; align-items: flex-start; width: auto;">
                   <button class="cta-play-btn" @click="onTabChange('play')" style="margin: 0;">
                     Play Now
                   </button>
-                  <transition name="fade">
-                    <div v-if="demoSolveAnimationComplete" class="demo-success-badge" style="font-size: 0.85rem; font-weight: 600; color: #34d399; background: rgba(52, 211, 153, 0.1); border: 1px solid rgba(52, 211, 153, 0.2); padding: 0.4rem 0.8rem; border-radius: 8px; display: flex; align-items: center; gap: 0.35rem; margin-top: 0.5rem;">
-                      ✨ Demo Solved! Ready for real puzzles?
-                    </div>
-                  </transition>
                 </div>
               </div>
 
