@@ -210,23 +210,46 @@
 
         <template v-else-if="currentTab === 'home'">
           <div class="home-dashboard">
-            <!-- Hero Slogan Card (Vercel-like style) -->
-            <div class="hero-section">
-              <div class="hero-logo-container">
-                <div class="hero-logo-icon-large">
-                  <div class="logo-cell filled"></div>
-                  <div class="logo-cell"></div>
-                  <div class="logo-cell"></div>
-                  <div class="logo-cell filled"></div>
+            <!-- Hero Slogan Card & Interactive 5x5 Demo Puzzle -->
+            <div class="hero-section flex-row-layout" style="display: flex; flex-direction: row; align-items: center; justify-content: center; gap: 2rem; width: 100%; max-width: 800px; margin: 0 auto; padding: 6rem 2rem; box-sizing: border-box; flex-wrap: wrap; text-align: left;">
+              
+              <!-- Left Side: Hero Text & Slogan -->
+              <div class="hero-text-block" style="flex: 1.2; min-width: 320px; display: flex; flex-direction: column; gap: 1rem; align-items: flex-start;">
+                <div style="display: flex; align-items: center; gap: 1.0rem; margin-bottom: 0.25rem;">
+                  <div class="logo-icon" style="flex-shrink: 0; width: 3.1rem; height: 3.1rem; display: grid; grid-template-columns: repeat(2, 1fr); grid-template-rows: repeat(2, 1fr); gap: 4px; animation: spin 8s linear infinite; filter: drop-shadow(0 0 16px rgba(56, 189, 248, 0.45));">
+                    <div class="logo-cell filled" style="background: linear-gradient(135deg, #38bdf8, #818cf8); border-radius: 4px;"></div>
+                    <div class="logo-cell" style="background: rgba(255,255,255,0.05); border-radius: 4px;"></div>
+                    <div class="logo-cell" style="background: rgba(255,255,255,0.05); border-radius: 4px;"></div>
+                    <div class="logo-cell filled" style="background: linear-gradient(135deg, #38bdf8, #818cf8); border-radius: 4px;"></div>
+                  </div>
+                  <h2 class="hero-title" style="margin: 0; font-size: 3.6rem; font-weight: 800; letter-spacing: -0.5px; line-height: 1.25; background: linear-gradient(135deg, #38bdf8 0%, #818cf8 50%, #c084fc 100%); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; display: inline-block;">rogic.io</h2>
+                </div>
+                <p class="hero-subtitle" style="margin: 0; font-size: 1.2rem; color: #a1a1aa; line-height: 1.6; max-width: 440px;">
+                  The next-generation Nonogram.<br>
+                  Solve the puzzle, rotate the grid,<br>
+                  and reveal the art.
+                </p>
+                <div class="hero-actions" style="margin-top: 1rem; display: flex; flex-direction: column; gap: 0.75rem; align-items: flex-start; width: auto;">
+                  <button class="cta-play-btn" @click="onTabChange('play')" style="margin: 0;">
+                    Play Now
+                  </button>
                 </div>
               </div>
-              <h2 class="hero-title">rogic.io</h2>
-              <p class="hero-subtitle">The next-generation Nonogram. Align your mind, solve the puzzle, and watch the grid rotate to reveal the hidden pattern.</p>
-              <div class="hero-actions">
-                <button class="cta-play-btn" @click="onTabChange('play')">
-                  Play Now
-                </button>
+
+              <!-- Right Side: Interactive 5x5 Mini Demo Canvas (Transparent & Enlarged) -->
+              <div class="hero-demo-block" style="flex: 0.8; min-width: 260px; display: flex; align-items: center; justify-content: center;">
+                <div class="demo-transparent-wrapper" style="width: 300px; height: 300px; display: flex; align-items: center; justify-content: center; position: relative;">
+                  <NonogramCanvas 
+                    v-if="demoBoard"
+                    :board="demoBoard" 
+                    :rotationSteps="demoRotationSteps" 
+                    :readOnly="demoSolved" 
+                    @cell-click="handleDemoCellClick" 
+                    @solve-animation-complete="handleDemoSolveAnimationComplete" 
+                  />
+                </div>
               </div>
+
             </div>
             <!-- Footer with Privacy Policy and Terms of Service -->
             <footer class="home-footer">
@@ -234,6 +257,8 @@
                 <a href="/privacy.html" target="_blank" rel="noopener noreferrer">Privacy Policy</a>
                 <span class="footer-divider">|</span>
                 <a href="/terms.html" target="_blank" rel="noopener noreferrer">Terms of Service</a>
+                <span class="footer-divider">|</span>
+                <a href="https://github.com/devdoyen/rogic.io" target="_blank" rel="noopener noreferrer">GitHub</a>
               </div>
               <p class="footer-copyright">&copy; 2026 rogic.io. All rights reserved.</p>
             </footer>
@@ -313,6 +338,44 @@ const stages = ref<StageSummary[]>([]);
 
 const selectedStageId = ref<number | null>(null);
 const board = ref<PuzzleBoard | null>(null);
+
+// Interactive Demo Puzzle State Models
+const demoBoard = ref<PuzzleBoard | null>(null);
+const demoSolved = ref(false);
+const demoSolveAnimationComplete = ref(false);
+const demoRotationSteps = ref(0);
+
+const demoSolutionGrid = [
+  [0, 1, 0, 1, 0],
+  [1, 1, 1, 1, 1],
+  [1, 1, 1, 1, 1],
+  [0, 1, 1, 1, 0],
+  [0, 0, 1, 0, 0]
+];
+
+function initDemoBoard() {
+  const boardObj = new PuzzleBoard(demoSolutionGrid);
+  for (let r = 0; r < 5; r++) {
+    for (let c = 0; c < 5; c++) {
+      boardObj.setCell(r, c, 0);
+    }
+  }
+  demoBoard.value = boardObj;
+  demoSolved.value = false;
+  demoSolveAnimationComplete.value = false;
+  demoRotationSteps.value = 0;
+}
+
+function handleDemoCellClick() {
+  if (demoBoard.value) {
+    demoSolved.value = demoBoard.value.isSolved();
+  }
+}
+
+function handleDemoSolveAnimationComplete() {
+  demoSolveAnimationComplete.value = true;
+  demoRotationSteps.value += 4;
+}
 const solved = ref(false);
 const solveAnimationComplete = ref(false);
 const hasVoted = ref(false);
@@ -554,7 +617,7 @@ function startConfetti() {
       ctx.restore();
     });
 
-    if (active && solved.value) {
+    if (active && (solved.value || demoSolved.value)) {
       confettiAnimationId = requestAnimationFrame(loop);
     } else {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -584,8 +647,8 @@ function handleConfettiResize() {
   }
 }
 
-watch(solveAnimationComplete, (newVal) => {
-  if (newVal) {
+watch([solveAnimationComplete, demoSolveAnimationComplete], ([newVal, newDemoVal]) => {
+  if (newVal || newDemoVal) {
     startConfetti();
   } else {
     stopConfetti();
@@ -1100,6 +1163,9 @@ async function handleHashChange() {
 async function onTabChange(tab: 'home' | 'play' | 'mypage' | 'admin') {
   currentTab.value = tab;
   updateHashFromTab(tab);
+  if (tab === 'home') {
+    initDemoBoard();
+  }
   if (tab === 'mypage') {
     await loadUserHistory();
     const tipShown = localStorage.getItem('rogic_mypage_tip_shown');
@@ -1273,6 +1339,7 @@ function preventPinchZoom(e: TouchEvent) {
 
 
 onMounted(async () => {
+  initDemoBoard();
   // Check if admin param is in URL or hash
   const urlParams = new URLSearchParams(window.location.search);
   const hasAdminParam = urlParams.get('admin') === 'true';
@@ -1397,12 +1464,12 @@ body {
 .logo-wrapper {
   display: flex;
   align-items: center;
-  gap: 0.75rem;
+  gap: 0.6rem;
 }
 
 .logo-icon {
-  width: 2.2rem;
-  height: 2.2rem;
+  width: 1.8rem;
+  height: 1.8rem;
   display: grid;
   grid-template-columns: repeat(2, 1fr);
   grid-template-rows: repeat(2, 1fr);
