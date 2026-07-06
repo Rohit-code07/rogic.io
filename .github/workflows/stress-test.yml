@@ -1,0 +1,39 @@
+name: Stress / Load Testing
+
+on:
+  workflow_dispatch:
+    inputs:
+      target_host:
+        description: 'Target backend endpoint URL'
+        required: true
+        default: 'https://stage.rogic.io'
+      vus:
+        description: 'Number of concurrent virtual users (VUs)'
+        required: true
+        default: '10'
+      duration:
+        description: 'Duration of the load test (e.g. 1m, 3m)'
+        required: true
+        default: '3m'
+      cognito_token:
+        description: 'Pre-authenticated Cognito JWT token (optional)'
+        required: false
+        default: ''
+
+jobs:
+  k6_load_test:
+    name: Execute k6 Stress Test
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Source Code
+        uses: actions/checkout@v4
+
+      - name: Run k6 Load Test Scenario
+        uses: grafana/k6-action@v0.3.1
+        with:
+          filename: infra/stress-test/load_scenario.js
+          flags: --vus ${{ github.event.inputs.vus }} --duration ${{ github.event.inputs.duration }}
+        env:
+          TARGET_HOST: ${{ github.event.inputs.target_host }}
+          K6_COGNITO_TOKEN: ${{ github.event.inputs.cognito_token }}
