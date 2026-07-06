@@ -99,8 +99,7 @@
     <div class="app-layout">
       <!-- Center Main Column: Canvas & Solved Banner -->
       <main class="app-main">
-        <transition name="tab-fade" mode="out-in">
-          <div v-if="currentTab === 'play'" key="play" class="play-tab-container" style="width: 100%; display: flex; flex-direction: column; align-items: center; justify-content: flex-start; min-height: 0; flex: 1;">
+        <div v-if="currentTab === 'play'" class="play-tab-container tab-fade-in" style="width: 100%; display: flex; flex-direction: column; align-items: center; justify-content: flex-start; min-height: 0; flex: 1;">
             <!-- All Puzzles Cleared State -->
             <div v-if="!isLoading && !hasUnclearedPuzzles" class="all-cleared-state-container">
               <div class="all-cleared-card">
@@ -209,7 +208,7 @@
             </div>
           </div>
 
-          <div v-else-if="currentTab === 'home'" key="home" class="home-dashboard">
+          <div v-else-if="currentTab === 'home'" class="home-dashboard tab-fade-in">
             <!-- Hero Slogan Card & Interactive 5x5 Demo Puzzle -->
             <div class="hero-section flex-row-layout" style="display: flex; flex-direction: row; align-items: center; justify-content: center; gap: 2rem; width: 100%; max-width: 800px; margin: 0 auto; padding: 6rem 2rem; box-sizing: border-box; flex-wrap: wrap; text-align: left;">
               
@@ -278,7 +277,6 @@
             @logout="handleGoogleLogout"
             @page-change="loadUserHistory"
           />
-        </transition>
       </main>
     </div>
 
