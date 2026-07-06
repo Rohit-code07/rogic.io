@@ -215,14 +215,14 @@
               
               <!-- Left Side: Hero Text & Slogan -->
               <div class="hero-text-block" style="flex: 1.2; min-width: 320px; display: flex; flex-direction: column; gap: 1rem; align-items: flex-start;">
-                <div style="display: flex; align-items: center; gap: 1.25rem; margin-bottom: 0.25rem;">
-                  <div class="logo-icon" style="flex-shrink: 0; width: 3.5rem; height: 3.5rem; display: grid; grid-template-columns: repeat(2, 1fr); grid-template-rows: repeat(2, 1fr); gap: 5px; animation: spin 8s linear infinite; filter: drop-shadow(0 0 16px rgba(56, 189, 248, 0.45));">
+                <div style="display: flex; align-items: center; gap: 1.0rem; margin-bottom: 0.25rem;">
+                  <div class="logo-icon" style="flex-shrink: 0; width: 3.1rem; height: 3.1rem; display: grid; grid-template-columns: repeat(2, 1fr); grid-template-rows: repeat(2, 1fr); gap: 4px; animation: spin 8s linear infinite; filter: drop-shadow(0 0 16px rgba(56, 189, 248, 0.45));">
                     <div class="logo-cell filled" style="background: linear-gradient(135deg, #38bdf8, #818cf8); border-radius: 4px;"></div>
                     <div class="logo-cell" style="background: rgba(255,255,255,0.05); border-radius: 4px;"></div>
                     <div class="logo-cell" style="background: rgba(255,255,255,0.05); border-radius: 4px;"></div>
                     <div class="logo-cell filled" style="background: linear-gradient(135deg, #38bdf8, #818cf8); border-radius: 4px;"></div>
                   </div>
-                  <h2 class="hero-title" style="margin: 0; font-size: 4rem; font-weight: 800; letter-spacing: -0.5px; line-height: 1.25; background: linear-gradient(135deg, #38bdf8 0%, #818cf8 50%, #c084fc 100%); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; display: inline-block;">rogic.io</h2>
+                  <h2 class="hero-title" style="margin: 0; font-size: 3.6rem; font-weight: 800; letter-spacing: -0.5px; line-height: 1.25; background: linear-gradient(135deg, #38bdf8 0%, #818cf8 50%, #c084fc 100%); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; display: inline-block;">rogic.io</h2>
                 </div>
                 <p class="hero-subtitle" style="margin: 0; font-size: 1.2rem; color: #a1a1aa; line-height: 1.6; max-width: 440px;">
                   The next-generation Nonogram.<br>
