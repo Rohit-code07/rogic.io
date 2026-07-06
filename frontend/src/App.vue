@@ -215,12 +215,12 @@
               
               <!-- Left Side: Hero Text & Slogan -->
               <div class="hero-text-block" style="flex: 1.2; min-width: 320px; display: flex; flex-direction: column; gap: 1rem; align-items: flex-start;">
-                <div style="display: flex; align-items: center; gap: 0.85rem; margin-bottom: 0.25rem;">
-                  <div class="logo-icon" style="flex-shrink: 0; width: 2.25rem; height: 2.25rem; display: grid; grid-template-columns: repeat(2, 1fr); grid-template-rows: repeat(2, 1fr); gap: 3px; animation: spin 8s linear infinite; filter: drop-shadow(0 0 12px rgba(56, 189, 248, 0.45));">
-                    <div class="logo-cell filled" style="background: linear-gradient(135deg, #38bdf8, #818cf8); border-radius: 2px;"></div>
-                    <div class="logo-cell" style="background: rgba(255,255,255,0.05); border-radius: 2px;"></div>
-                    <div class="logo-cell" style="background: rgba(255,255,255,0.05); border-radius: 2px;"></div>
-                    <div class="logo-cell filled" style="background: linear-gradient(135deg, #38bdf8, #818cf8); border-radius: 2px;"></div>
+                <div style="display: flex; align-items: center; gap: 1.25rem; margin-bottom: 0.25rem;">
+                  <div class="logo-icon" style="flex-shrink: 0; width: 3.5rem; height: 3.5rem; display: grid; grid-template-columns: repeat(2, 1fr); grid-template-rows: repeat(2, 1fr); gap: 5px; animation: spin 8s linear infinite; filter: drop-shadow(0 0 16px rgba(56, 189, 248, 0.45));">
+                    <div class="logo-cell filled" style="background: linear-gradient(135deg, #38bdf8, #818cf8); border-radius: 4px;"></div>
+                    <div class="logo-cell" style="background: rgba(255,255,255,0.05); border-radius: 4px;"></div>
+                    <div class="logo-cell" style="background: rgba(255,255,255,0.05); border-radius: 4px;"></div>
+                    <div class="logo-cell filled" style="background: linear-gradient(135deg, #38bdf8, #818cf8); border-radius: 4px;"></div>
                   </div>
                   <h2 class="hero-title" style="margin: 0; font-size: 4rem; font-weight: 800; letter-spacing: -0.5px; line-height: 1.25; background: linear-gradient(135deg, #38bdf8 0%, #818cf8 50%, #c084fc 100%); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; display: inline-block;">rogic.io</h2>
                 </div>
@@ -238,7 +238,7 @@
 
               <!-- Right Side: Interactive 5x5 Mini Demo Canvas (Transparent & Enlarged) -->
               <div class="hero-demo-block" style="flex: 0.8; min-width: 260px; display: flex; align-items: center; justify-content: center;">
-                <div class="demo-transparent-wrapper" style="width: 260px; height: 260px; display: flex; align-items: center; justify-content: center; position: relative;">
+                <div class="demo-transparent-wrapper" style="width: 300px; height: 300px; display: flex; align-items: center; justify-content: center; position: relative;">
                   <NonogramCanvas 
                     v-if="demoBoard"
                     :board="demoBoard" 
