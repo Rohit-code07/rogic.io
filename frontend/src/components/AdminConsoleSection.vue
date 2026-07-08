@@ -2,7 +2,7 @@
   <div class="admin-backoffice-view">
     <!-- Show login screen if not logged in -->
     <div v-if="!logged" class="login-screen-wrapper">
-      <div class="login-card">
+      <div class="login-card admin-login-card">
         <div class="login-header">
           <div class="brand-logo-icon">
             <!-- Key Icon -->
@@ -13,16 +13,16 @@
           <h2 class="brand-title">rogic.io</h2>
           <p class="brand-subtitle">Administrator Back Office Portal</p>
         </div>
-        <form @submit.prevent="handleAdminLogin" class="login-form">
+        <form @submit.prevent="handleAdminLogin" class="login-form admin-login-form">
           <div class="form-group">
             <label class="form-label">Username</label>
-            <input type="text" v-model="adminUsernameInput" class="admin-input" placeholder="Enter username" required />
+            <input type="text" v-model="adminUsernameInput" class="admin-input admin-username-input" placeholder="Enter username" required />
           </div>
           <div class="form-group">
             <label class="form-label">Password</label>
-            <input type="password" v-model="adminPasswordInput" class="admin-input" placeholder="Enter password" required />
+            <input type="password" v-model="adminPasswordInput" class="admin-input admin-password-input" placeholder="Enter password" required />
           </div>
-          <div v-if="loginError" class="login-error-alert" role="alert">
+          <div v-if="loginError" class="login-error-alert admin-login-error" role="alert">
             {{ loginError }}
           </div>
           <button type="submit" class="btn-primary w-100 py-3 mt-2">
@@ -33,7 +33,7 @@
     </div>
 
     <!-- If logged in, show the admin console -->
-    <div v-else class="admin-content-wrapper">
+    <div v-else class="admin-content-wrapper admin-console-content">
       <!-- Top Header Bar -->
       <header class="admin-header">
         <div class="header-brand">
@@ -216,12 +216,12 @@
                 <input 
                   type="text" 
                   v-model="adminSearchQuery" 
-                  class="admin-input toolbar-input" 
+                  class="admin-input toolbar-input admin-search-input" 
                   placeholder="🔍 Search puzzle by name..." 
                 />
               </div>
               <div class="w-144">
-                <select v-model="adminSizeFilter" class="admin-select toolbar-input">
+                <select v-model="adminSizeFilter" class="admin-select toolbar-input admin-size-filter">
                   <option value="All">All Sizes</option>
                   <option value="5">5 x 5</option>
                   <option value="10">10 x 10</option>
@@ -232,7 +232,7 @@
                 </select>
               </div>
               <div class="w-160">
-                <select v-model="adminStatusFilter" class="admin-select toolbar-input">
+                <select v-model="adminStatusFilter" class="admin-select toolbar-input admin-status-filter">
                   <option value="All">All Statuses</option>
                   <option value="Active">Active</option>
                   <option value="Pending">Pending Approval</option>
@@ -246,18 +246,18 @@
               <table class="admin-table">
                 <thead>
                   <tr>
-                    <th scope="col" class="cursor-pointer" @click="toggleAdminSort('id')">
+                    <th scope="col" class="cursor-pointer admin-th-id" @click="toggleAdminSort('id')">
                       ID <span v-if="adminSortKey === 'id'">{{ adminSortOrder === 'asc' ? '▲' : '▼' }}</span>
                     </th>
-                    <th scope="col" class="cursor-pointer" @click="toggleAdminSort('name')">
+                    <th scope="col" class="cursor-pointer admin-th-name" @click="toggleAdminSort('name')">
                       Name <span v-if="adminSortKey === 'name'">{{ adminSortOrder === 'asc' ? '▲' : '▼' }}</span>
                     </th>
-                    <th scope="col" class="cursor-pointer" @click="toggleAdminSort('size')">
+                    <th scope="col" class="cursor-pointer admin-th-size" @click="toggleAdminSort('size')">
                       Size <span v-if="adminSortKey === 'size'">{{ adminSortOrder === 'asc' ? '▲' : '▼' }}</span>
                     </th>
                     <th scope="col">Version</th>
                     <th scope="col">Created At</th>
-                    <th scope="col" class="cursor-pointer" @click="toggleAdminSort('status')">
+                    <th scope="col" class="cursor-pointer admin-th-status" @click="toggleAdminSort('status')">
                       Status <span v-if="adminSortKey === 'status'">{{ adminSortOrder === 'asc' ? '▲' : '▼' }}</span>
                     </th>
                     <th scope="col" class="text-center">Feedback</th>
@@ -265,7 +265,7 @@
                   </tr>
                 </thead>
                 <tbody>
-                  <tr v-for="s in filteredAndSortedAdminStages" :key="s.id">
+                  <tr v-for="s in filteredAndSortedAdminStages" :key="s.id" class="admin-stage-item">
                     <td class="font-mono text-slate-500">{{ s.id }}</td>
                     <td class="font-bold text-white text-sm">{{ s.name }}</td>
                     <td>
@@ -291,20 +291,20 @@
                     </td>
                     <td class="text-right">
                       <div class="btn-group" role="group">
-                        <button @click="openHistoryModal({ stageId: s.id, stageName: s.name })" class="flex-center">
+                        <button @click="openHistoryModal({ stageId: s.id, stageName: s.name })" class="flex-center btn-preview">
                           <svg class="icon-w-3_5 icon-margin-r" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
                             <path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
                           </svg>
                           Preview
                         </button>
-                        <button v-if="!s.approved" @click="handleApproveStage(s.id)" class="text-emerald flex-center border-left">
+                        <button v-if="!s.approved" @click="handleApproveStage(s.id)" class="text-emerald flex-center border-left btn-approve">
                           <svg class="icon-w-3_5 icon-margin-r" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"></path>
                           </svg>
                           Approve
                         </button>
-                        <button @click="handleDeleteStage(s.id)" class="text-rose flex-center border-left">
+                        <button @click="handleDeleteStage(s.id)" class="text-rose flex-center border-left btn-delete">
                           <svg class="icon-w-3_5 icon-margin-r" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
                           </svg>
@@ -483,7 +483,7 @@ const adminPasswordInput = ref('');
 const loginError = ref('');
 
 // Tabs Configuration
-const activeTab = ref<'dashboard' | 'puzzles' | 'users'>('dashboard');
+const activeTab = ref<'dashboard' | 'puzzles' | 'users'>('puzzles');
 
 // Stage List States
 const adminStages = ref<AdminStageInfo[]>([]);
@@ -612,10 +612,17 @@ async function loadAdminStagesList(page: number = 0) {
 async function loadAdminUsersList(page: number = 0) {
   try {
     const res = await fetchAdminUsers(page, 20);
-    adminUsers.value = res.content || [];
-    adminUsersTotalPages.value = res.totalPages || 1;
-    adminUsersCurrentPage.value = res.number || 0;
-    totalUsersCount.value = res.totalElements || res.content?.length || 0;
+    if (res) {
+      adminUsers.value = res.content || [];
+      adminUsersTotalPages.value = res.totalPages || 1;
+      adminUsersCurrentPage.value = res.number || 0;
+      totalUsersCount.value = res.totalElements || res.content?.length || 0;
+    } else {
+      adminUsers.value = [];
+      adminUsersTotalPages.value = 1;
+      adminUsersCurrentPage.value = 0;
+      totalUsersCount.value = 0;
+    }
   } catch (error) {
     console.error('Failed to load admin users:', error);
   }

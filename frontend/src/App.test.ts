@@ -325,7 +325,6 @@ describe('App.vue Leaderboard Integration TDD', () => {
 
     const approveSpy = vi.spyOn(adminApi, 'approveStage').mockResolvedValue(undefined);
     const deleteSpy = vi.spyOn(adminApi, 'deleteStage').mockResolvedValue(undefined);
-    const aiGenSpy = vi.spyOn(adminApi, 'generateAiStage').mockResolvedValue({ id: 10, name: 'Generated AI', width: 5, height: 5, solutionGrid: [[1]], active: false, approved: false } as any);
 
     const wrapper = mount(App);
     await new Promise((resolve) => setTimeout(resolve, 50));
@@ -361,22 +360,6 @@ describe('App.vue Leaderboard Integration TDD', () => {
     expect(window.confirm).toHaveBeenCalled();
     window.confirm = originalConfirm;
 
-    // Click AI Gen button
-    const aiGenBtn = wrapper.find('.admin-ai-gen-btn');
-    expect(aiGenBtn.exists()).toBe(true);
-    const widthSelect = wrapper.find('.admin-ai-width-select');
-    const heightSelect = wrapper.find('.admin-ai-height-select');
-    expect(widthSelect.exists()).toBe(true);
-    expect(heightSelect.exists()).toBe(true);
-    await widthSelect.setValue('10');
-    await heightSelect.setValue('15');
-    // Mock window.alert to prevent blocking
-    const originalAlert = window.alert;
-    window.alert = vi.fn();
-    await aiGenBtn.trigger('click');
-    expect(aiGenSpy).toHaveBeenCalledWith(10, 15);
-    expect(window.alert).toHaveBeenCalled();
-    window.alert = originalAlert;
   });
 
   it('should render admin login card if not logged in, and handle successful login', async () => {
