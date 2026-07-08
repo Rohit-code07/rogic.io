@@ -1134,25 +1134,24 @@ async function loadUserHistory(page: number = 0) {
     console.error('Failed to load user history:', error);
   }
 }
-function getTabFromHash(): 'home' | 'play' | 'mypage' | 'admin' {
-  const hash = window.location.hash;
-  if (hash === '#/play') return 'play';
-  if (hash === '#/mypage') return 'mypage';
-  if (hash === '#/admin') return 'admin';
+function getTabFromPath(): 'home' | 'play' | 'mypage' | 'admin' {
+  const path = window.location.pathname;
+  if (path === '/play') return 'play';
+  if (path === '/mypage') return 'mypage';
+  if (path === '/admin') return 'admin';
   return isTestEnv ? 'play' : 'home';
 }
 
-function updateHashFromTab(tab: 'home' | 'play' | 'mypage' | 'admin') {
+function updatePathFromTab(tab: 'home' | 'play' | 'mypage' | 'admin') {
   if (isTestEnv) return;
-  if (tab === 'home') {
-    history.replaceState(null, '', window.location.pathname + window.location.search);
-  } else {
-    window.location.hash = '/' + tab;
+  const targetPath = tab === 'home' ? '/' : '/' + tab;
+  if (window.location.pathname !== targetPath) {
+    window.history.pushState(null, '', targetPath + window.location.search);
   }
 }
 
-async function handleHashChange() {
-  const targetTab = getTabFromHash();
+async function handlePopState() {
+  const targetTab = getTabFromPath();
   if (targetTab !== currentTab.value) {
     await onTabChange(targetTab);
   }
@@ -1160,7 +1159,7 @@ async function handleHashChange() {
 
 async function onTabChange(tab: 'home' | 'play' | 'mypage' | 'admin') {
   currentTab.value = tab;
-  updateHashFromTab(tab);
+  updatePathFromTab(tab);
   if (tab === 'home') {
     initDemoBoard();
   }
@@ -1357,14 +1356,14 @@ onMounted(async () => {
     if (urlParams.has('code')) {
       currentTab.value = 'play';
     } else {
-      currentTab.value = getTabFromHash();
+      currentTab.value = getTabFromPath();
     }
   }
 
-  updateHashFromTab(currentTab.value);
+  updatePathFromTab(currentTab.value);
 
   if (!isTestEnv) {
-    window.addEventListener('hashchange', handleHashChange);
+    window.addEventListener('popstate', handlePopState);
   }
 
   await initializeUserSession();
@@ -1400,7 +1399,7 @@ onUnmounted(() => {
   document.removeEventListener('touchstart', preventPinchZoom);
   window.removeEventListener('pagehide', saveActiveProgress);
   if (!isTestEnv) {
-    window.removeEventListener('hashchange', handleHashChange);
+    window.removeEventListener('popstate', handlePopState);
     document.removeEventListener('click', handleGlobalClick);
   }
   stopConfetti();
