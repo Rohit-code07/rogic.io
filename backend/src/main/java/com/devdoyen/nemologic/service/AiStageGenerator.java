@@ -17,6 +17,36 @@ public class AiStageGenerator {
     private final NonogramSolver nonogramSolver;
     private final ObjectMapper objectMapper = new ObjectMapper();
 
+    private final java.util.Map<String, java.util.List<ThemeDto>> themeCache = new java.util.concurrent.ConcurrentHashMap<>();
+
+    private static final java.util.Map<Integer, java.util.List<ThemeDto>> STATIC_FALLBACK_THEMES = new java.util.HashMap<>();
+    static {
+        STATIC_FALLBACK_THEMES.put(5, java.util.List.of(
+            new ThemeDto("Apple", "A simple apple shape with a small leaf/stem at the top center."),
+            new ThemeDto("Smile", "A happy smiling face with eyes and a curved mouth."),
+            new ThemeDto("Cup", "A basic cup/mug silhouette with a handle on the right side."),
+            new ThemeDto("Key", "A small key outline with teeth at the bottom."),
+            new ThemeDto("Star", "A classic five-pointed star silhouette."),
+            new ThemeDto("Tree", "A simple pine tree with a trunk at the bottom.")
+        ));
+        STATIC_FALLBACK_THEMES.put(10, java.util.List.of(
+            new ThemeDto("Sailboat", "A sailboat floating on water with sails pointing up."),
+            new ThemeDto("Mushroom", "A cute woodland mushroom with a wide cap and spots."),
+            new ThemeDto("Rocket", "A rocket ship pointing diagonally up into space."),
+            new ThemeDto("Penguin", "A cute little penguin standing facing forward."),
+            new ThemeDto("Teapot", "A steaming teapot outline with handle and spout."),
+            new ThemeDto("Guitar", "A simple guitar silhouette with neck and body.")
+        ));
+        STATIC_FALLBACK_THEMES.put(15, java.util.List.of(
+            new ThemeDto("Eiffel Tower", "A recognizable silhouette of the Eiffel Tower."),
+            new ThemeDto("Gamepad", "A retro controller layout with D-pad and buttons."),
+            new ThemeDto("Owl on Branch", "A cute owl sitting on a branch under the moon."),
+            new ThemeDto("Pizza Slice", "A triangular slice of pepperoni pizza showing toppings."),
+            new ThemeDto("Hot Air Balloon", "A large hot air balloon floating with a basket below."),
+            new ThemeDto("Anchor", "A classic navy anchor with crossbar and hooks.")
+        ));
+    }
+
     public AiStageGenerator(AiClient aiClient, StageRepository stageRepository, NonogramSolver nonogramSolver) {
         this.aiClient = aiClient;
         this.stageRepository = stageRepository;
@@ -38,7 +68,7 @@ public class AiStageGenerator {
         int maxAttempts = 5;
         Exception lastException = null;
 
-        java.util.List<Stage> recentStages = stageRepository.findTop10ByOrderByIdDesc();
+        java.util.List<Stage> recentStages = stageRepository.findTop50ByOrderByIdDesc();
         java.util.List<String> recentThemes = new java.util.ArrayList<>();
         for (Stage s : recentStages) {
             if (s.getName() != null) {
@@ -48,7 +78,8 @@ public class AiStageGenerator {
 
         for (int attempt = 1; attempt <= maxAttempts; attempt++) {
             try {
-                String json = aiClient.generatePuzzleJson(width, height, recentThemes);
+                ThemeDto theme = getOrGenerateTheme(width, height, recentThemes);
+                String json = aiClient.generatePuzzleJsonForTheme(width, height, theme.getName(), theme.getDescription());
                 if (json == null || json.isEmpty()) {
                     throw new IllegalArgumentException("AI response is empty");
                 }
@@ -83,7 +114,17 @@ public class AiStageGenerator {
                             continue;
                         }
 
+                        String rawName = dto.getName();
+                        String cleanName = rawName != null ? rawName.replaceAll("^(?i)(AI\\s+Puzzle|Daily\\s+Puzzle)[:\\s-]*", "").trim() : "Puzzle";
+                        if (cleanName.isEmpty()) {
+                            cleanName = "Puzzle";
+                        }
+
                         if (stageRepository.existsBySolutionGrid(grid)) {
+                            continue;
+                        }
+
+                        if (stageRepository.existsByNameIgnoreCase(cleanName)) {
                             continue;
                         }
 
@@ -100,7 +141,6 @@ public class AiStageGenerator {
                 }
 
                 ValidatedCandidate selected = null;
-                // Stage 1: Logical-only
                 for (ValidatedCandidate vc : validatedList) {
                     if (vc.isLogicalOnly) {
                         selected = vc;
@@ -124,6 +164,7 @@ public class AiStageGenerator {
                 Stage newStage = new Stage(null, cleanName, selectedDto.getWidth(), selectedDto.getHeight(), selectedGrid);
                 newStage.setActive(active);
                 newStage.setApproved(true);
+                newStage.setGeneratorVersion("V2");
                 return stageRepository.save(newStage);
             } catch (Exception e) {
                 lastException = e;
@@ -134,6 +175,49 @@ public class AiStageGenerator {
         throw new IllegalArgumentException("Failed to generate valid stage after " + maxAttempts + " attempts", lastException);
     }
 
+    private ThemeDto getOrGenerateTheme(int width, int height, java.util.List<String> recentThemes) {
+        String cacheKey = width + "x" + height;
+        java.util.List<ThemeDto> cached = themeCache.get(cacheKey);
+        
+        if (cached == null || cached.isEmpty()) {
+            try {
+                String themeJson = aiClient.generateThemeJson(width, height, recentThemes);
+                if (themeJson != null && !themeJson.isEmpty()) {
+                    com.fasterxml.jackson.core.type.TypeReference<java.util.List<ThemeDto>> typeRef = 
+                        new com.fasterxml.jackson.core.type.TypeReference<java.util.List<ThemeDto>>() {};
+                    java.util.List<ThemeDto> generated = objectMapper.readValue(themeJson.trim(), typeRef);
+                    if (generated != null && !generated.isEmpty()) {
+                        java.util.List<ThemeDto> validGenerated = new java.util.ArrayList<>();
+                        for (ThemeDto t : generated) {
+                            if (t.getName() != null && !t.getName().trim().isEmpty()) {
+                                validGenerated.add(t);
+                            }
+                        }
+                        if (!validGenerated.isEmpty()) {
+                            themeCache.put(cacheKey, new java.util.ArrayList<>(validGenerated));
+                        }
+                    }
+                }
+            } catch (Exception e) {
+                System.err.println("[AI] Failed to generate themes from API: " + e.getMessage());
+            }
+            cached = themeCache.get(cacheKey);
+        }
+
+        if (cached != null && !cached.isEmpty()) {
+            return cached.remove(0);
+        }
+
+        java.util.List<ThemeDto> staticList = STATIC_FALLBACK_THEMES.get(width);
+        if (staticList == null || staticList.isEmpty()) {
+            staticList = STATIC_FALLBACK_THEMES.get(10);
+        }
+        int randomIndex = new java.util.Random().nextInt(staticList.size());
+        ThemeDto baseFallback = staticList.get(randomIndex);
+        String randomName = baseFallback.getName() + " " + (100 + new java.util.Random().nextInt(900));
+        return new ThemeDto(randomName, baseFallback.getDescription());
+    }
+
     private void validateGrid(int[][] grid, int expectedWidth, int expectedHeight) {
         if (grid == null) {
             throw new IllegalArgumentException("Grid is null");
@@ -141,6 +225,7 @@ public class AiStageGenerator {
         if (grid.length != expectedHeight) {
             throw new IllegalArgumentException("Grid height mismatch. Expected: " + expectedHeight + ", Actual: " + grid.length);
         }
+        int filledCount = 0;
         for (int r = 0; r < expectedHeight; r++) {
             if (grid[r] == null || grid[r].length != expectedWidth) {
                 throw new IllegalArgumentException("Grid width mismatch at row " + r + ". Expected: " + expectedWidth);
@@ -150,6 +235,15 @@ public class AiStageGenerator {
                 if (val != 0 && val != 1) {
                     throw new IllegalArgumentException("Invalid cell value: " + val + " at (" + r + ", " + c + "). Must be 0 or 1.");
                 }
+                if (val == 1) {
+                    filledCount++;
+                }
+            }
+        }
+        if (expectedWidth >= 5 && expectedHeight >= 5) {
+            double density = (double) filledCount / (expectedWidth * expectedHeight);
+            if (density < 0.20 || density > 0.80) {
+                throw new IllegalArgumentException("Grid density " + density + " is out of valid bounds (0.20 to 0.80)");
             }
         }
     }
@@ -198,5 +292,21 @@ public class AiStageGenerator {
         AiResponseDto dto;
         int[][] grid;
         boolean isLogicalOnly;
+    }
+
+    public static class ThemeDto {
+        private String name;
+        private String description;
+
+        public ThemeDto() {}
+        public ThemeDto(String name, String description) {
+            this.name = name;
+            this.description = description;
+        }
+
+        public String getName() { return name; }
+        public void setName(String name) { this.name = name; }
+        public String getDescription() { return description; }
+        public void setDescription(String description) { this.description = description; }
     }
 }

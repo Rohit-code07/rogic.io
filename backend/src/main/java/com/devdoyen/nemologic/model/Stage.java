@@ -41,6 +41,19 @@ public class Stage {
     @Column(name = "downvotes", nullable = false, columnDefinition = "integer default 0")
     private int downvotes = 0;
 
+    @Column(name = "created_at")
+    private java.time.LocalDateTime createdAt;
+
+    @Column(name = "generator_version", columnDefinition = "varchar default 'V1'")
+    private String generatorVersion = "V1";
+
+    @PrePersist
+    protected void onCreate() {
+        if (createdAt == null) {
+            createdAt = java.time.LocalDateTime.now();
+        }
+    }
+
     public Stage() {
     }
 
@@ -191,5 +204,21 @@ public class Stage {
 
     public int downvotes() {
         return downvotes;
+    }
+
+    public java.time.LocalDateTime getCreatedAt() {
+        return createdAt;
+    }
+
+    public void setCreatedAt(java.time.LocalDateTime createdAt) {
+        this.createdAt = createdAt;
+    }
+
+    public String getGeneratorVersion() {
+        return generatorVersion;
+    }
+
+    public void setGeneratorVersion(String generatorVersion) {
+        this.generatorVersion = generatorVersion;
     }
 }

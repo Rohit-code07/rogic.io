@@ -1,10 +1,13 @@
 import axios from 'axios';
 import type { StageSummary, StageDetails, PageResponse } from './stageApi';
+import type { User } from './userApi';
 
 export interface AdminStageInfo extends StageSummary {
   active: boolean;
   approved: boolean;
   solutionGrid: number[][];
+  createdAt?: string;
+  generatorVersion?: string;
 }
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL
@@ -91,5 +94,16 @@ export async function generateAiStage(width?: number, height?: number): Promise<
   if (width !== undefined) params.width = width;
   if (height !== undefined) params.height = height;
   const response = await axios.post<StageDetails>(`${API_BASE_URL}/ai-generate`, null, { params });
+  return response.data;
+}
+
+export async function fetchAdminUsers(page?: number, size?: number): Promise<PageResponse<User>> {
+  const baseUrl = import.meta.env.VITE_API_BASE_URL
+    ? `${import.meta.env.VITE_API_BASE_URL}/api/admin/users`
+    : (import.meta.env.PROD ? '/api/admin/users' : 'http://localhost:8080/api/admin/users');
+  const params: any = {};
+  if (page !== undefined) params.page = page;
+  if (size !== undefined) params.size = size;
+  const response = await axios.get<PageResponse<User>>(baseUrl, { params });
   return response.data;
 }
