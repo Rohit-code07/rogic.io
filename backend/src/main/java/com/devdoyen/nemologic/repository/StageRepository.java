@@ -12,6 +12,8 @@ public interface StageRepository extends JpaRepository<Stage, Long> {
     org.springframework.data.domain.Page<Stage> findByActiveAndApproved(boolean active, boolean approved, org.springframework.data.domain.Pageable pageable);
     org.springframework.data.domain.Page<Stage> findByActiveAndApprovedAndWidth(boolean active, boolean approved, int width, org.springframework.data.domain.Pageable pageable);
     java.util.List<Stage> findTop10ByOrderByIdDesc();
+    java.util.List<Stage> findTop50ByOrderByIdDesc();
+    boolean existsByNameIgnoreCase(String name);
     boolean existsBySolutionGrid(int[][] solutionGrid);
     long countByWidthAndHeightAndActiveAndApproved(int width, int height, boolean active, boolean approved);
     java.util.List<Stage> findByWidthAndHeightAndActiveAndApprovedOrderByIdAsc(int width, int height, boolean active, boolean approved);
