@@ -61,6 +61,30 @@ public class NemologicRuntimeHints implements RuntimeHintsRegistrar {
             org.springframework.aot.hint.MemberCategory.DECLARED_FIELDS
         );
 
+        // Register TelemetryStatsResponse for reflection (Jackson serialization in native image)
+        hints.reflection().registerType(
+            com.devdoyen.nemologic.dto.TelemetryStatsResponse.class,
+            org.springframework.aot.hint.MemberCategory.INVOKE_PUBLIC_CONSTRUCTORS,
+            org.springframework.aot.hint.MemberCategory.INVOKE_PUBLIC_METHODS,
+            org.springframework.aot.hint.MemberCategory.DECLARED_FIELDS
+        );
+
+        // Register User model for reflection (serialization/deserialization)
+        hints.reflection().registerType(
+            com.devdoyen.nemologic.model.User.class,
+            org.springframework.aot.hint.MemberCategory.INVOKE_PUBLIC_CONSTRUCTORS,
+            org.springframework.aot.hint.MemberCategory.INVOKE_PUBLIC_METHODS,
+            org.springframework.aot.hint.MemberCategory.DECLARED_FIELDS
+        );
+
+        // Register Stage model for reflection (serialization/deserialization)
+        hints.reflection().registerType(
+            com.devdoyen.nemologic.model.Stage.class,
+            org.springframework.aot.hint.MemberCategory.INVOKE_PUBLIC_CONSTRUCTORS,
+            org.springframework.aot.hint.MemberCategory.INVOKE_PUBLIC_METHODS,
+            org.springframework.aot.hint.MemberCategory.DECLARED_FIELDS
+        );
+
         // Register Nimbus JOSE/JWT types for native reflection (required for OAuth2 Resource Server)
         try {
             hints.reflection().registerType(

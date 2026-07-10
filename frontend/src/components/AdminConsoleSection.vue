@@ -456,7 +456,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, watch, onMounted, onUnmounted } from 'vue';
+import { ref, shallowRef, computed, watch, onMounted, onUnmounted } from 'vue';
 import { PuzzleBoard } from '../engine/puzzleBoard';
 import NonogramCanvas from './NonogramCanvas.vue';
 import { fetchStageById } from '../api/stageApi';
@@ -504,7 +504,7 @@ const totalUsersCount = ref(0);
 
 // Preview States
 const isPreviewOpen = ref(false);
-const previewBoard = ref<PuzzleBoard | null>(null);
+const previewBoard = shallowRef<PuzzleBoard | null>(null);
 const previewHistory = ref<any>(null);
 
 // Dashboard Metric Computations
