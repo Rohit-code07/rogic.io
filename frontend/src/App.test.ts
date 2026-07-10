@@ -586,7 +586,7 @@ describe('App.vue Leaderboard Integration TDD', () => {
     // Verify homepage content
     const dashboardText = wrapper.find('.home-dashboard').text();
     expect(dashboardText).toContain('rogic.io');
-    expect(dashboardText).toContain('The next-generation Nonogram');
+    expect(wrapper.find('.conveyor-belt-container').exists()).toBe(true);
 
     // Click CTA play button inside home dashboard
     const ctaBtn = wrapper.find('.cta-play-btn');
