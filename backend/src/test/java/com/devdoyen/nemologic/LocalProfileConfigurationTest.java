@@ -110,6 +110,6 @@ public class LocalProfileConfigurationTest {
         assertEquals("org.postgresql.Driver", driver);
 
         String maxPool = environment.getProperty("spring.datasource.hikari.maximum-pool-size");
-        assertEquals("4", maxPool);
+        assertEquals("15", maxPool);
     }
 }
