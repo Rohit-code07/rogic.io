@@ -1,0 +1,29 @@
+spring:
+  main:
+    lazy-initialization: false
+  datasource:
+    url: jdbc:postgresql://db:5432/nemologic
+    driver-class-name: org.postgresql.Driver
+    username: postgres
+    password: password
+    hikari:
+      maximum-pool-size: 15
+      minimum-idle: 2
+      idle-timeout: 30000
+      pool-name: NemologicProdHikariCP
+  flyway:
+    baseline-on-migrate: true
+  jpa:
+    database-platform: org.hibernate.dialect.PostgreSQLDialect
+    hibernate:
+      ddl-auto: none
+    show-sql: false
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          jwk-set-uri: ${COGNITO_JWK_SET_URI:https://cognito-idp.ap-northeast-2.amazonaws.com/ap-northeast-2_0an1GkWFm/.well-known/jwks.json}
+
+admin:
+  username: ${ADMIN_USERNAME:admin}
+  password: ${ADMIN_PASSWORD:admin123!}

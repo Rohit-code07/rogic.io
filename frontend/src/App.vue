@@ -306,7 +306,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted, computed, watch } from 'vue';
+import { ref, shallowRef, onMounted, onUnmounted, computed, watch } from 'vue';
 import NonogramCanvas from './components/NonogramCanvas.vue';
 import AdminConsoleSection from './components/AdminConsoleSection.vue';
 import MyPageSection from './components/MyPageSection.vue';
@@ -334,10 +334,10 @@ const isAdminLogged = ref(isAdminAuthenticated());
 const stages = ref<StageSummary[]>([]);
 
 const selectedStageId = ref<number | null>(null);
-const board = ref<PuzzleBoard | null>(null);
+const board = shallowRef<PuzzleBoard | null>(null);
 
 // Interactive Demo Puzzle State Models
-const demoBoard = ref<PuzzleBoard | null>(null);
+const demoBoard = shallowRef<PuzzleBoard | null>(null);
 const demoSolved = ref(false);
 const demoSolveAnimationComplete = ref(false);
 const demoRotationSteps = ref(0);
@@ -425,7 +425,7 @@ const isAiStageActive = ref(false);
 const selectedCategory = ref<'normal' | 'ai'>('normal');
 const isMypageTipOpen = ref(false);
 const isReviewMode = ref(false);
-const modalBoard = ref<PuzzleBoard | null>(null);
+const modalBoard = shallowRef<PuzzleBoard | null>(null);
 
 const isStageListOpen = ref(false);
 const isLeaderboardOpen = ref(false);

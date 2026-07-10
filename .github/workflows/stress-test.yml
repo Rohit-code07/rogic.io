@@ -6,7 +6,7 @@ on:
       target_host:
         description: 'Target backend endpoint URL'
         required: true
-        default: 'https://stage.rogic.io'
+        default: 'https://api.stage.rogic.io'
       vus:
         description: 'Number of concurrent virtual users (VUs)'
         required: true

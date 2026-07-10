@@ -205,7 +205,7 @@
     - name: Ensure environment configurations are set
       copy:
         content: |
-          SPRING_PROFILES_ACTIVE=local
+          SPRING_PROFILES_ACTIVE={{ env_name }}
           AI_API_KEY={{ lookup('env', 'AI_API_KEY') }}
           GRAFANA_CLOUD_PROM_URL={{ lookup('env', 'GRAFANA_CLOUD_PROM_URL') }}
           GRAFANA_CLOUD_PROM_USER={{ lookup('env', 'GRAFANA_CLOUD_PROM_USER') }}

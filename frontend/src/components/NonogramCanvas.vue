@@ -747,9 +747,9 @@ watch([scale, offsetX, offsetY, currentAngle], () => {
   }
 });
 
-// Watch for solved state to rotate to target
-watch(() => props.board.isSolved(), (solved) => {
-  if (solved) {
+// Watch for readOnly (which is bound to parent's solved state) to trigger solve animation
+watch(() => props.readOnly, (isReadOnly) => {
+  if (isReadOnly) {
     animateRotationToTarget();
   }
 });
