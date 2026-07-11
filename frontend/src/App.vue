@@ -223,11 +223,23 @@
                   </div>
                   <h2 class="hero-title" style="margin: 0; font-size: 3.6rem; font-weight: 800; letter-spacing: -0.5px; line-height: 1.25; background: linear-gradient(135deg, #38bdf8 0%, #818cf8 50%, #c084fc 100%); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; display: inline-block;">rogic.io</h2>
                 </div>
-                <p class="hero-subtitle" style="margin: 0; font-size: 1.2rem; color: #a1a1aa; line-height: 1.6; max-width: 440px;">
-                  The next-generation Nonogram.<br>
-                  Solve the puzzle, rotate the grid,<br>
-                  and reveal the art.
-                </p>
+                <div class="conveyor-belt-container" style="width: 320px; height: 110px; overflow: hidden; position: relative; margin-top: 1.25rem; mask-image: linear-gradient(to bottom, transparent, white 20%, white 80%, transparent); -webkit-mask-image: linear-gradient(to bottom, transparent, white 20%, white 80%, transparent);">
+                  <div class="conveyor-track" style="display: flex; flex-direction: column; gap: 0.5rem; height: max-content; animation: marquee-vertical 12s linear infinite;">
+                    <div v-for="i in 2" :key="i" style="display: flex; flex-direction: column; gap: 0.5rem;">
+                      <div v-for="(art, idx) in conveyorArts" :key="idx" class="conveyor-card" style="display: flex; align-items: center; gap: 0.5rem; background: rgba(255, 255, 255, 0.02); border: 1px solid rgba(255, 255, 255, 0.05); border-radius: 8px; padding: 0.3rem 0.6rem; box-shadow: 0 4px 12px rgba(0,0,0,0.15); backdrop-filter: blur(10px); height: 38px; box-sizing: border-box; width: 100%;">
+                        <div class="mini-art-grid" style="display: grid; grid-template-columns: repeat(5, 4px); gap: 1px; width: 24px; height: 24px;">
+                          <div v-for="(cell, cIdx) in art.grid.flat()" :key="cIdx" :style="{
+                            width: '4px',
+                            height: '4px',
+                            borderRadius: '0.5px',
+                            background: cell === 1 ? 'linear-gradient(135deg, #38bdf8, #818cf8)' : 'rgba(255, 255, 255, 0.05)'
+                          }"></div>
+                        </div>
+                        <span style="font-size: 0.75rem; color: #a1a1aa; font-weight: 500; font-family: inherit; white-space: nowrap;">{{ art.name }}</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
                 <div class="hero-actions" style="margin-top: 1rem; display: flex; flex-direction: column; gap: 0.75rem; align-items: flex-start; width: auto;">
                   <button class="cta-play-btn" @click="onTabChange('play')" style="margin: 0;">
                     Play Now
@@ -350,6 +362,51 @@ const demoSolutionGrid = [
   [0, 0, 1, 0, 0]
 ];
 
+const heartGrid = [
+  [0, 1, 0, 1, 0],
+  [1, 1, 1, 1, 1],
+  [1, 1, 1, 1, 1],
+  [0, 1, 1, 1, 0],
+  [0, 0, 1, 0, 0]
+];
+const starGrid = [
+  [0, 0, 1, 0, 0],
+  [0, 1, 1, 1, 0],
+  [1, 1, 1, 1, 1],
+  [0, 1, 1, 1, 0],
+  [0, 1, 0, 1, 0]
+];
+const smileGrid = [
+  [0, 0, 0, 0, 0],
+  [0, 1, 0, 1, 0],
+  [0, 0, 0, 0, 0],
+  [1, 0, 0, 0, 1],
+  [0, 1, 1, 1, 0]
+];
+const diamondGrid = [
+  [0, 0, 1, 0, 0],
+  [0, 1, 1, 1, 0],
+  [1, 1, 1, 1, 1],
+  [0, 1, 1, 1, 0],
+  [0, 0, 1, 0, 0]
+];
+const swordGrid = [
+  [0, 0, 1, 0, 0],
+  [0, 0, 1, 0, 0],
+  [0, 1, 1, 1, 0],
+  [0, 0, 1, 0, 0],
+  [0, 0, 1, 0, 0]
+];
+
+const conveyorArts = [
+  { name: 'Sweet Heart', grid: heartGrid },
+  { name: 'Bright Star', grid: starGrid },
+  { name: 'Happy Smile', grid: smileGrid },
+  { name: 'Shiny Gem', grid: diamondGrid },
+  { name: 'Iron Sword', grid: swordGrid }
+];
+
+
 function initDemoBoard() {
   const rotatedSolution = rotateGrid(demoSolutionGrid, 3);
   const boardObj = new PuzzleBoard(rotatedSolution);
@@ -462,6 +519,39 @@ const hasUnclearedPuzzles = computed(() => {
   const hasAi = (aiStages.value || []).some(s => !clearedStageIds.value.has(s.id));
   return hasRegular || hasAi;
 });
+
+const totalPuzzlesCount = computed(() => {
+  const apiCount = (allStagesSummary.value?.length || 0) + (aiStages.value?.length || 0);
+  return apiCount > 0 ? apiCount : 28;
+});
+
+const displayedPuzzleCount = ref(0);
+
+watch(totalPuzzlesCount, (newVal) => {
+  if (newVal <= 0) return;
+  if (typeof window === 'undefined' || typeof requestAnimationFrame === 'undefined' || typeof performance === 'undefined') {
+    displayedPuzzleCount.value = newVal;
+    return;
+  }
+
+  const start = displayedPuzzleCount.value;
+  const end = newVal;
+  const duration = 1200; // 1.2s count up animation
+  const startTime = performance.now();
+
+  function animate(now: number) {
+    const elapsed = now - startTime;
+    const progress = Math.min(elapsed / duration, 1);
+    const easeProgress = progress * (2 - progress); // easeOutQuad
+    displayedPuzzleCount.value = Math.floor(start + (end - start) * easeProgress);
+
+    if (progress < 1) {
+      requestAnimationFrame(animate);
+    }
+  }
+
+  requestAnimationFrame(animate);
+}, { immediate: true });
 
 
 

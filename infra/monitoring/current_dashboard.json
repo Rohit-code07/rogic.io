@@ -2174,13 +2174,13 @@
               "uid": "${DS_PROMETHEUS}"
             },
             "spec": {
-              "__legacyStringValue": "label_values(hikaricp_connections{scrape_job=\"$instance\", application=\"$application\"}, pool)"
+              "__legacyStringValue": "label_values(hikaricp_connections_active{scrape_job=\"$instance\", application=\"$application\"}, pool)"
             }
           },
           "regex": "",
           "regexApplyTo": "value",
           "sort": "alphabeticalAsc",
-          "definition": "",
+          "definition": "label_values(hikaricp_connections_active{scrape_job=\"$instance\", application=\"$application\"}, pool)",
           "options": [],
           "multi": false,
           "includeAll": false,
