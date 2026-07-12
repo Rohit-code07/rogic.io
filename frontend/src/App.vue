@@ -1132,6 +1132,10 @@ async function loadStageDetails(id: number) {
     if (selectedStageId.value !== id && selectedAiStageId.value !== id) {
       return;
     }
+
+    if (!details || !details.solutionGrid || !Array.isArray(details.solutionGrid) || details.solutionGrid.length === 0 || !Array.isArray(details.solutionGrid[0])) {
+      throw new Error('Puzzle solution grid is corrupted or missing.');
+    }
     
     // Check for saved progress
     const key = `rogic_progress_stage_${isAiStageActive.value ? 'ai_' : ''}${id}`;
