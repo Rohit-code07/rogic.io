@@ -479,7 +479,7 @@ function handleDemoSolveAnimationComplete() {
             }
           }, 1500);
         }
-      }, 3500);
+      }, 5000);
     }, 1000);
   }
 }
@@ -487,7 +487,7 @@ function handleDemoSolveAnimationComplete() {
 function startStatsCountUp() {
   displayedPuzzleCount.value = 0;
   const target = totalPuzzlesCount.value;
-  const duration = 1500;
+  const duration = 2000;
   const start = 0;
   const startTime = performance.now();
   
@@ -548,7 +548,7 @@ function triggerDemoAutoSolve() {
     demoBoard.value.setCell(cell.r, cell.c, 1);
     demoRenderTrigger.value++;
     index++;
-  }, 150);
+  }, 250);
 }
 
 function startIntroAnimation() {
@@ -3753,7 +3753,7 @@ body {
 .landing-conveyor-track {
   display: flex;
   width: max-content;
-  animation: marquee-horizontal 15s linear infinite;
+  animation: marquee-horizontal 20s linear infinite;
 }
 
 .landing-conveyor-loop {
