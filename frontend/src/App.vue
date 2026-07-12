@@ -3730,6 +3730,11 @@ body {
     width: 2.8rem;
     height: 2.8rem;
   }
+  .landing-play-btn {
+    width: 220px;
+    height: 50px;
+    font-size: 1.2rem;
+  }
 }
 
 
