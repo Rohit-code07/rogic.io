@@ -208,68 +208,63 @@
             </div>
           </div>
 
-          <div v-else-if="currentTab === 'home'" class="home-dashboard tab-fade-in">
-            <!-- Hero Slogan Card & Interactive 5x5 Demo Puzzle -->
-            <div class="hero-section flex-row-layout" style="display: flex; flex-direction: row; align-items: center; justify-content: center; gap: 2rem; width: 100%; max-width: 800px; margin: 0 auto; padding: 6rem 2rem; box-sizing: border-box; flex-wrap: wrap; text-align: left;">
-              
-              <!-- Left Side: Hero Text & Slogan -->
-              <div class="hero-text-block" style="flex: 1.2; min-width: 320px; display: flex; flex-direction: column; gap: 1rem; align-items: flex-start;">
-                <div style="display: flex; align-items: center; gap: 1.0rem; margin-bottom: 0.25rem;">
-                  <div class="logo-icon" style="flex-shrink: 0; width: 3.1rem; height: 3.1rem; display: grid; grid-template-columns: repeat(2, 1fr); grid-template-rows: repeat(2, 1fr); gap: 4px; animation: spin 8s linear infinite; filter: drop-shadow(0 0 16px rgba(56, 189, 248, 0.45));">
-                    <div class="logo-cell filled" style="background: linear-gradient(135deg, #38bdf8, #818cf8); border-radius: 4px;"></div>
-                    <div class="logo-cell" style="background: rgba(255,255,255,0.05); border-radius: 4px;"></div>
-                    <div class="logo-cell" style="background: rgba(255,255,255,0.05); border-radius: 4px;"></div>
-                    <div class="logo-cell filled" style="background: linear-gradient(135deg, #38bdf8, #818cf8); border-radius: 4px;"></div>
-                  </div>
-                  <h2 class="hero-title" style="margin: 0; font-size: 3.6rem; font-weight: 800; letter-spacing: -0.5px; line-height: 1.25; background: linear-gradient(135deg, #38bdf8 0%, #818cf8 50%, #c084fc 100%); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; display: inline-block;">rogic.io</h2>
-                </div>
-                <div class="conveyor-belt-container" style="width: 320px; height: 110px; overflow: hidden; position: relative; margin-top: 1.25rem; mask-image: linear-gradient(to bottom, transparent, white 20%, white 80%, transparent); -webkit-mask-image: linear-gradient(to bottom, transparent, white 20%, white 80%, transparent);">
-                  <div class="conveyor-track" style="display: flex; flex-direction: column; gap: 0.5rem; height: max-content; animation: marquee-vertical 12s linear infinite;">
-                    <div v-for="i in 2" :key="i" style="display: flex; flex-direction: column; gap: 0.5rem;">
-                      <div v-for="(art, idx) in conveyorArts" :key="idx" class="conveyor-card" style="display: flex; align-items: center; gap: 0.5rem; background: rgba(255, 255, 255, 0.02); border: 1px solid rgba(255, 255, 255, 0.05); border-radius: 8px; padding: 0.3rem 0.6rem; box-shadow: 0 4px 12px rgba(0,0,0,0.15); backdrop-filter: blur(10px); height: 38px; box-sizing: border-box; width: 100%;">
-                        <div class="mini-art-grid" style="display: grid; grid-template-columns: repeat(5, 4px); gap: 1px; width: 24px; height: 24px;">
-                          <div v-for="(cell, cIdx) in art.grid.flat()" :key="cIdx" :style="{
-                            width: '4px',
-                            height: '4px',
-                            borderRadius: '0.5px',
-                            background: cell === 1 ? 'linear-gradient(135deg, #38bdf8, #818cf8)' : 'rgba(255, 255, 255, 0.05)'
-                          }"></div>
-                        </div>
-                        <span style="font-size: 0.75rem; color: #a1a1aa; font-weight: 500; font-family: inherit; white-space: nowrap;">{{ art.name }}</span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-                <div class="hero-actions" style="margin-top: 1rem; display: flex; flex-direction: column; gap: 0.75rem; align-items: flex-start; width: auto;">
-                  <button class="cta-play-btn" @click="onTabChange('play')" style="margin: 0;">
-                    Play Now
-                  </button>
-                </div>
-              </div>
+          <div v-else-if="currentTab === 'home'" class="home-dashboard" :class="[introActive ? introPhase : 'done']">
+            <!-- Clean background grid/mesh overlay -->
+            <div class="landing-bg"></div>
 
-              <!-- Right Side: Interactive 5x5 Mini Demo Canvas (Transparent & Enlarged) -->
-              <div class="hero-demo-block" style="flex: 0.8; min-width: 260px; display: flex; align-items: center; justify-content: center;">
-                <div class="demo-transparent-wrapper" style="width: 300px; height: 300px; display: flex; align-items: center; justify-content: center; position: relative;">
-                  <NonogramCanvas 
-                    v-if="demoBoard"
-                    :board="demoBoard" 
-                    :rotationSteps="demoRotationSteps" 
-                    :readOnly="demoSolved" 
-                    @cell-click="handleDemoCellClick" 
-                    @solve-animation-complete="handleDemoSolveAnimationComplete" 
-                  />
-                </div>
+            <!-- Centered & Top-sliding Header Logo -->
+            <div class="landing-logo-container" :class="[introActive ? introPhase : 'done']">
+              <div class="logo-icon landing-logo-icon" style="animation: spin 12s linear infinite;">
+                <div class="logo-cell filled" style="background: linear-gradient(135deg, #38bdf8, #818cf8); border-radius: 4px;"></div>
+                <div class="logo-cell" style="background: rgba(255,255,255,0.05); border-radius: 4px;"></div>
+                <div class="logo-cell" style="background: rgba(255,255,255,0.05); border-radius: 4px;"></div>
+                <div class="logo-cell filled" style="background: linear-gradient(135deg, #38bdf8, #818cf8); border-radius: 4px;"></div>
               </div>
-
+              <h1 class="landing-logo-title">rogic.io</h1>
             </div>
-            <!-- Footer with Privacy Policy and Terms of Service -->
-            <footer class="home-footer">
+
+            <!-- Step 2: Auto-solving Nonogram Canvas (Visible only during 'solving' phase) -->
+            <transition name="fade-scale">
+              <div v-if="introPhase === 'solving'" class="landing-canvas-wrapper">
+                <NonogramCanvas 
+                  v-if="demoBoard"
+                  :board="demoBoard" 
+                  :rotationSteps="demoRotationSteps" 
+                  :readOnly="demoSolved" 
+                  :renderTrigger="demoRenderTrigger"
+                  @cell-click="handleDemoCellClick" 
+                  @solve-animation-complete="handleDemoSolveAnimationComplete" 
+                />
+                <div class="landing-canvas-hint">Watch the heart form...</div>
+              </div>
+            </transition>
+
+            <!-- Step 3: Big Premium Centered CTA (Visible in 'cta' or 'done' phase) -->
+            <transition name="fade-scale-slow">
+              <div v-if="introPhase === 'cta' || introPhase === 'done'" class="landing-cta-container">
+                <div class="landing-stats">
+                  <span class="stats-number">{{ displayedPuzzleCount }}</span>
+                  <span class="stats-label">puzzles ready to solve</span>
+                </div>
+                <button class="landing-play-btn" @click="onTabChange('play')">
+                  Play Now
+                </button>
+              </div>
+            </transition>
+
+            <!-- Skip Button -->
+            <button v-if="introActive && introPhase !== 'cta' && introPhase !== 'done'" class="intro-skip-btn" @click="skipIntro">Skip Intro</button>
+
+            <!-- Footer links -->
+            <footer class="landing-footer">
               <div class="footer-links">
                 <a href="/privacy.html" target="_blank" rel="noopener noreferrer">Privacy Policy</a>
                 <span class="footer-divider">|</span>
                 <a href="/terms.html" target="_blank" rel="noopener noreferrer">Terms of Service</a>
                 <span class="footer-divider">|</span>
                 <a href="https://github.com/devdoyen/rogic.io" target="_blank" rel="noopener noreferrer">GitHub</a>
+                <span class="footer-divider">|</span>
+                <a href="#" @click.prevent="replayIntro" class="replay-intro-link">Replay Intro</a>
               </div>
               <p class="footer-copyright">&copy; 2026 rogic.io. All rights reserved.</p>
             </footer>
@@ -319,6 +314,13 @@
 
 <script setup lang="ts">
 import { ref, shallowRef, onMounted, onUnmounted, computed, watch } from 'vue';
+
+const isTestEnv = typeof window !== 'undefined' && (
+  (globalThis as any).process?.env?.NODE_ENV === 'test' ||
+  (globalThis as any).vitest !== undefined ||
+  (globalThis as any).__vitest_worker__ !== undefined ||
+  navigator.userAgent.includes('jsdom')
+);
 import NonogramCanvas from './components/NonogramCanvas.vue';
 import AdminConsoleSection from './components/AdminConsoleSection.vue';
 import MyPageSection from './components/MyPageSection.vue';
@@ -353,6 +355,14 @@ const demoBoard = shallowRef<PuzzleBoard | null>(null);
 const demoSolved = ref(false);
 const demoSolveAnimationComplete = ref(false);
 const demoRotationSteps = ref(0);
+const demoRenderTrigger = ref(0);
+
+const introActive = ref(!isTestEnv && !sessionStorage.getItem('rogic_intro_played'));
+const introPhase = ref<'logo' | 'solving' | 'cta' | 'done'>(
+  (isTestEnv || sessionStorage.getItem('rogic_intro_played')) ? 'done' : 'logo'
+);
+let autoSolveTimer: any = null;
+let introTimeoutId: any = null;
 
 const demoSolutionGrid = [
   [0, 1, 0, 1, 0],
@@ -362,49 +372,7 @@ const demoSolutionGrid = [
   [0, 0, 1, 0, 0]
 ];
 
-const heartGrid = [
-  [0, 1, 0, 1, 0],
-  [1, 1, 1, 1, 1],
-  [1, 1, 1, 1, 1],
-  [0, 1, 1, 1, 0],
-  [0, 0, 1, 0, 0]
-];
-const starGrid = [
-  [0, 0, 1, 0, 0],
-  [0, 1, 1, 1, 0],
-  [1, 1, 1, 1, 1],
-  [0, 1, 1, 1, 0],
-  [0, 1, 0, 1, 0]
-];
-const smileGrid = [
-  [0, 0, 0, 0, 0],
-  [0, 1, 0, 1, 0],
-  [0, 0, 0, 0, 0],
-  [1, 0, 0, 0, 1],
-  [0, 1, 1, 1, 0]
-];
-const diamondGrid = [
-  [0, 0, 1, 0, 0],
-  [0, 1, 1, 1, 0],
-  [1, 1, 1, 1, 1],
-  [0, 1, 1, 1, 0],
-  [0, 0, 1, 0, 0]
-];
-const swordGrid = [
-  [0, 0, 1, 0, 0],
-  [0, 0, 1, 0, 0],
-  [0, 1, 1, 1, 0],
-  [0, 0, 1, 0, 0],
-  [0, 0, 1, 0, 0]
-];
 
-const conveyorArts = [
-  { name: 'Sweet Heart', grid: heartGrid },
-  { name: 'Bright Star', grid: starGrid },
-  { name: 'Happy Smile', grid: smileGrid },
-  { name: 'Shiny Gem', grid: diamondGrid },
-  { name: 'Iron Sword', grid: swordGrid }
-];
 
 
 function initDemoBoard() {
@@ -419,6 +387,7 @@ function initDemoBoard() {
   demoSolved.value = false;
   demoSolveAnimationComplete.value = false;
   demoRotationSteps.value = 3;
+  demoRenderTrigger.value++;
 }
 
 function handleDemoCellClick() {
@@ -430,6 +399,132 @@ function handleDemoCellClick() {
 function handleDemoSolveAnimationComplete() {
   demoSolveAnimationComplete.value = true;
   demoRotationSteps.value = 4;
+  if (introActive.value) {
+    setTimeout(() => {
+      introPhase.value = 'cta';
+      startStatsCountUp();
+      
+      setTimeout(() => {
+        if (introPhase.value === 'cta') {
+          introPhase.value = 'done';
+          introActive.value = false;
+          sessionStorage.setItem('rogic_intro_played', 'true');
+        }
+      }, 1500);
+    }, 1000);
+  }
+}
+
+function startStatsCountUp() {
+  displayedPuzzleCount.value = 0;
+  const target = totalPuzzlesCount.value;
+  const duration = 1500;
+  const start = 0;
+  const startTime = performance.now();
+  
+  function animate(now: number) {
+    const elapsed = now - startTime;
+    const progress = Math.min(elapsed / duration, 1);
+    const easeProgress = progress * (2 - progress);
+    displayedPuzzleCount.value = Math.floor(start + (target - start) * easeProgress);
+    
+    if (progress < 1 && introPhase.value === 'cta') {
+      requestAnimationFrame(animate);
+    } else if (introPhase.value === 'done') {
+      displayedPuzzleCount.value = target;
+    }
+  }
+  requestAnimationFrame(animate);
+}
+
+function triggerDemoAutoSolve() {
+  if (!demoBoard.value) return;
+  
+  for (let r = 0; r < demoBoard.value.rowCount; r++) {
+    for (let c = 0; c < demoBoard.value.colCount; c++) {
+      demoBoard.value.setCell(r, c, 0);
+    }
+  }
+  demoSolved.value = false;
+  demoSolveAnimationComplete.value = false;
+  demoRotationSteps.value = 3;
+  demoRenderTrigger.value++;
+
+  const cellsToFill: {r: number, c: number}[] = [];
+  const sol = demoBoard.value.solutionGrid;
+  for (let r = 0; r < demoBoard.value.rowCount; r++) {
+    for (let c = 0; c < demoBoard.value.colCount; c++) {
+      if (sol[r][c] === 1) {
+        cellsToFill.push({ r, c });
+      }
+    }
+  }
+
+  cellsToFill.sort((a, b) => a.r - b.r || a.c - b.c);
+
+  let index = 0;
+  if (autoSolveTimer) clearInterval(autoSolveTimer);
+  
+  autoSolveTimer = setInterval(() => {
+    if (!demoBoard.value) {
+      clearInterval(autoSolveTimer);
+      return;
+    }
+    if (index >= cellsToFill.length) {
+      clearInterval(autoSolveTimer);
+      demoSolved.value = true;
+      return;
+    }
+    const cell = cellsToFill[index];
+    demoBoard.value.setCell(cell.r, cell.c, 1);
+    demoRenderTrigger.value++;
+    index++;
+  }, 150);
+}
+
+function startIntroAnimation() {
+  if (isTestEnv) return;
+  
+  introPhase.value = 'logo';
+  introActive.value = true;
+  
+  if (autoSolveTimer) clearInterval(autoSolveTimer);
+  if (introTimeoutId) clearTimeout(introTimeoutId);
+  
+  introTimeoutId = setTimeout(() => {
+    if (introPhase.value !== 'logo') return;
+    introPhase.value = 'solving';
+    triggerDemoAutoSolve();
+  }, 1800);
+}
+
+function skipIntro() {
+  if (autoSolveTimer) clearInterval(autoSolveTimer);
+  if (introTimeoutId) clearTimeout(introTimeoutId);
+  
+  introPhase.value = 'done';
+  introActive.value = false;
+  sessionStorage.setItem('rogic_intro_played', 'true');
+  
+  if (demoBoard.value) {
+    const sol = demoBoard.value.solutionGrid;
+    for (let r = 0; r < demoBoard.value.rowCount; r++) {
+      for (let c = 0; c < demoBoard.value.colCount; c++) {
+        demoBoard.value.setCell(r, c, sol[r][c]);
+      }
+    }
+    demoSolved.value = true;
+    demoSolveAnimationComplete.value = true;
+    demoRotationSteps.value = 4;
+    demoRenderTrigger.value++;
+  }
+  displayedPuzzleCount.value = totalPuzzlesCount.value;
+}
+
+function replayIntro() {
+  sessionStorage.removeItem('rogic_intro_played');
+  initDemoBoard();
+  startIntroAnimation();
 }
 const solved = ref(false);
 const solveAnimationComplete = ref(false);
@@ -441,12 +536,7 @@ const isSessionLoading = ref(true);
 const loadError = ref<string | null>(null);
 let countdownTimer: any = null;
 
-const isTestEnv = typeof window !== 'undefined' && (
-  (globalThis as any).process?.env?.NODE_ENV === 'test' ||
-  (globalThis as any).vitest !== undefined ||
-  (globalThis as any).__vitest_worker__ !== undefined ||
-  navigator.userAgent.includes('jsdom')
-);
+
 
 
 const rankings = ref<User[]>([]);
@@ -529,6 +619,9 @@ const displayedPuzzleCount = ref(0);
 
 watch(totalPuzzlesCount, (newVal) => {
   if (newVal <= 0) return;
+  if (introActive.value && introPhase.value !== 'cta' && introPhase.value !== 'done') {
+    return;
+  }
   if (typeof window === 'undefined' || typeof requestAnimationFrame === 'undefined' || typeof performance === 'undefined') {
     displayedPuzzleCount.value = newVal;
     return;
@@ -1252,6 +1345,9 @@ async function onTabChange(tab: 'home' | 'play' | 'mypage' | 'admin') {
   updatePathFromTab(tab);
   if (tab === 'home') {
     initDemoBoard();
+    if (introActive.value) {
+      startIntroAnimation();
+    }
   }
   if (tab === 'mypage') {
     await loadUserHistory();
@@ -1451,6 +1547,10 @@ onMounted(async () => {
   }
 
   updatePathFromTab(currentTab.value);
+
+  if (currentTab.value === 'home' && introActive.value) {
+    startIntroAnimation();
+  }
 
   if (!isTestEnv) {
     window.addEventListener('popstate', handlePopState);
@@ -3454,6 +3554,273 @@ body {
 @keyframes subtle-pulse {
   0%, 100% { opacity: 0.3; transform: scale(0.9); }
   50% { opacity: 0.8; transform: scale(1.1); }
+}
+
+/* Premium Single Column Landing Page Styles */
+.home-dashboard {
+  position: relative;
+  width: 100%;
+  height: 100vh;
+  height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  box-sizing: border-box;
+  background-color: #020617; /* Sleek dark mode background */
+}
+
+/* Clean background grid/mesh overlay */
+.landing-bg {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: radial-gradient(circle at center, rgba(56, 189, 248, 0.04) 0%, transparent 70%);
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* Centered & Top-sliding Header Logo */
+.landing-logo-container {
+  position: absolute;
+  left: 50%;
+  display: flex;
+  align-items: center;
+  gap: 1.0rem;
+  z-index: 10;
+  transition: all 1.2s cubic-bezier(0.25, 1, 0.5, 1);
+}
+
+.landing-logo-container.logo {
+  top: 50%;
+  transform: translate(-50%, -50%) scale(1.4);
+}
+
+.landing-logo-container.solving {
+  top: 10%;
+  transform: translate(-50%, 0) scale(1.0);
+}
+
+.landing-logo-container.cta,
+.landing-logo-container.done {
+  top: 15%;
+  transform: translate(-50%, 0) scale(1.0);
+}
+
+.landing-logo-icon {
+  width: 3.1rem;
+  height: 3.1rem;
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  grid-template-rows: repeat(2, 1fr);
+  gap: 4px;
+  filter: drop-shadow(0 0 16px rgba(56, 189, 248, 0.45));
+}
+
+.landing-logo-title {
+  margin: 0;
+  font-size: 3.6rem;
+  font-weight: 800;
+  letter-spacing: -0.5px;
+  background: linear-gradient(135deg, #38bdf8 0%, #818cf8 50%, #c084fc 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+/* Step 2: Auto-solving Nonogram Canvas Wrapper */
+.landing-canvas-wrapper {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -40%);
+  width: 300px;
+  height: 300px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  z-index: 5;
+}
+
+.landing-canvas-hint {
+  margin-top: 1rem;
+  font-size: 0.85rem;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  font-weight: 600;
+  animation: pulse-hint 1.5s infinite ease-in-out;
+}
+
+@keyframes pulse-hint {
+  0%, 100% { opacity: 0.4; }
+  50% { opacity: 0.8; }
+}
+
+/* Step 3: Big Premium Centered CTA */
+.landing-cta-container {
+  position: absolute;
+  top: 55%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  z-index: 5;
+  text-align: center;
+}
+
+.landing-stats {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.25rem;
+  margin-bottom: 2rem;
+}
+
+.landing-stats .stats-number {
+  font-size: 4.5rem;
+  font-weight: 800;
+  background: linear-gradient(135deg, #38bdf8, #818cf8);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  text-shadow: 0 0 30px rgba(56, 189, 248, 0.3);
+  line-height: 1;
+}
+
+.landing-stats .stats-label {
+  font-size: 0.85rem;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.15em;
+  font-weight: 600;
+}
+
+.landing-play-btn {
+  padding: 1rem 3rem;
+  font-size: 1.35rem;
+  font-weight: 700;
+  border-radius: 9999px;
+  border: none;
+  background: linear-gradient(135deg, #38bdf8 0%, #818cf8 100%);
+  color: #ffffff;
+  cursor: pointer;
+  box-shadow: 0 0 15px rgba(56, 189, 248, 0.25), 0 0 30px rgba(56, 189, 248, 0.15);
+  transition: all 0.3s cubic-bezier(0.25, 1, 0.5, 1);
+  font-family: inherit;
+  animation: pulse-glow 2s infinite ease-in-out;
+}
+
+.landing-play-btn:hover {
+  transform: translateY(-2px) scale(1.03);
+  box-shadow: 0 0 25px rgba(56, 189, 248, 0.5), 0 0 40px rgba(56, 189, 248, 0.25);
+  background: linear-gradient(135deg, #40c4ff 0%, #90caf9 100%);
+}
+
+.landing-play-btn:active {
+  transform: translateY(0) scale(0.98);
+}
+
+/* Skip Button */
+.intro-skip-btn {
+  position: fixed;
+  top: 2rem;
+  right: 2rem;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  color: #94a3b8;
+  padding: 0.5rem 1.25rem;
+  border-radius: 9999px;
+  font-family: inherit;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.25s cubic-bezier(0.25, 1, 0.5, 1);
+  z-index: 100;
+  backdrop-filter: blur(8px);
+}
+
+.intro-skip-btn:hover {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.18);
+  color: #f8fafc;
+  transform: translateY(-1px);
+}
+
+/* Subtle Footer styling */
+.landing-footer {
+  position: absolute;
+  bottom: 2rem;
+  left: 50%;
+  transform: translateX(-50%);
+  text-align: center;
+  z-index: 5;
+  width: 100%;
+}
+
+.landing-footer .footer-links {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  margin-bottom: 0.5rem;
+}
+
+.landing-footer .footer-links a {
+  color: #64748b;
+  text-decoration: none;
+  font-size: 0.8rem;
+  font-weight: 500;
+  transition: color 0.2s;
+}
+
+.landing-footer .footer-links a:hover {
+  color: #38bdf8;
+}
+
+.landing-footer .footer-divider {
+  color: #334155;
+  font-size: 0.8rem;
+}
+
+.landing-footer .footer-copyright {
+  margin: 0;
+  font-size: 0.75rem;
+  color: #475569;
+}
+
+/* Transitions */
+.fade-scale-enter-active, .fade-scale-leave-active {
+  transition: opacity 0.8s ease, transform 0.8s cubic-bezier(0.25, 1, 0.5, 1);
+}
+.fade-scale-enter-from, .fade-scale-leave-to {
+  opacity: 0;
+  transform: translate(-50%, -40%) scale(0.9);
+}
+
+.fade-scale-slow-enter-active, .fade-scale-slow-leave-active {
+  transition: opacity 1.2s ease, transform 1.2s cubic-bezier(0.25, 1, 0.5, 1);
+}
+.fade-scale-slow-enter-from, .fade-scale-slow-leave-to {
+  opacity: 0;
+  transform: translate(-50%, -50%) scale(0.95);
+}
+
+@keyframes pulse-glow {
+  0%, 100% {
+    box-shadow: 0 0 15px rgba(56, 189, 248, 0.25), 0 0 30px rgba(56, 189, 248, 0.15);
+    transform: scale(1);
+  }
+  50% {
+    box-shadow: 0 0 25px rgba(56, 189, 248, 0.5), 0 0 45px rgba(56, 189, 248, 0.3);
+    transform: scale(1.02);
+  }
 }
 </style>
 
