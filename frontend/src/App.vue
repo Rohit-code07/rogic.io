@@ -475,6 +475,8 @@ function handleDemoSolveAnimationComplete() {
             if (introPhase.value === 'cta') {
               introPhase.value = 'done';
               introActive.value = false;
+              demoSolveAnimationComplete.value = false;
+              demoSolved.value = false;
               sessionStorage.setItem('rogic_intro_played', 'true');
             }
           }, 1500);
@@ -573,6 +575,8 @@ function skipIntro() {
   
   introPhase.value = 'done';
   introActive.value = false;
+  demoSolveAnimationComplete.value = false;
+  demoSolved.value = false;
   sessionStorage.setItem('rogic_intro_played', 'true');
   
   if (demoBoard.value) {
