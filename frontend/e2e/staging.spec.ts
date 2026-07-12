@@ -7,12 +7,17 @@ test.describe('Staging Environment E2E Smoke Integration Test', () => {
     await page.goto('/');
 
     // Verify main page elements are rendered
-    await expect(page.locator('.hero-title')).toHaveText('rogic.io');
-    await expect(page.locator('.cta-play-btn')).toBeVisible();
+    await expect(page.locator('.landing-logo-title')).toHaveText('rogic.io');
+
+    // Skip the intro to display the Play Now button immediately
+    console.log('Skipping intro...');
+    await page.click('.intro-control-btn');
 
     // 2. Click Play Now to navigate to the Game Play tab
     console.log('Navigating to Game Play tab...');
-    await page.click('.cta-play-btn');
+    await expect(page.locator('.landing-play-btn')).toBeVisible();
+    await page.waitForTimeout(1500); // Wait for the transition to end and layout to settle
+    await page.click('.landing-play-btn', { force: true });
 
     // Wait for the loading screen to disappear
     await expect(page.locator('.loading-state')).not.toBeVisible({ timeout: 15000 });

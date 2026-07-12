@@ -4002,11 +4002,9 @@ body {
 @keyframes pulse-glow {
   0%, 100% {
     box-shadow: 0 0 15px rgba(56, 189, 248, 0.25), 0 0 30px rgba(56, 189, 248, 0.15);
-    transform: scale(1);
   }
   50% {
     box-shadow: 0 0 25px rgba(56, 189, 248, 0.5), 0 0 45px rgba(56, 189, 248, 0.3);
-    transform: scale(1.02);
   }
 }
 @media (max-width: 480px) {
