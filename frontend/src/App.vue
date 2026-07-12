@@ -3916,11 +3916,10 @@ body {
 /* Skip / Replay Control Button */
 .intro-control-btn {
   position: absolute;
-  bottom: 5.5rem;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 42px;
-  height: 42px;
+  top: 2rem;
+  right: 2rem;
+  width: 40px;
+  height: 40px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -3939,7 +3938,7 @@ body {
   background: rgba(255, 255, 255, 0.08);
   border-color: rgba(255, 255, 255, 0.18);
   color: #f8fafc;
-  transform: translateX(-50%) translateY(-2px);
+  transform: translateY(-2px);
 }
 
 .control-btn-icon {
