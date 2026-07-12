@@ -3676,21 +3676,14 @@ body {
   transform: translate(-50%, -50%) scale(1.4);
 }
 
-.landing-logo-container.solving {
-  top: 10%;
-  transform: translate(-50%, 0) scale(1.0);
-}
-
-.landing-logo-container.stats {
+.landing-logo-container.solving,
+.landing-logo-container.stats,
+.landing-logo-container.cta,
+.landing-logo-container.done {
   top: 12%;
   transform: translate(-50%, 0) scale(1.0);
 }
 
-.landing-logo-container.cta,
-.landing-logo-container.done {
-  top: 15%;
-  transform: translate(-50%, 0) scale(1.0);
-}
 
 .landing-logo-icon {
   width: 3.1rem;
