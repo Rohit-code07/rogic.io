@@ -214,7 +214,7 @@ async function openHistoryModal(item: any) {
     const board = new PuzzleBoard(details.solutionGrid);
     for (let r = 0; r < board.rowCount; r++) {
       for (let c = 0; c < board.colCount; c++) {
-        board.setCell(r, c, details.solutionGrid[r][c]);
+        board.currentGrid[r][c] = details.solutionGrid[r][c];
       }
     }
     modalBoard.value = board;

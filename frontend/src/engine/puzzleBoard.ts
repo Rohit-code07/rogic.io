@@ -1,4 +1,4 @@
-import { calculateHints } from './hintCalculator';
+import { calculateHints, calculateLineHints } from './hintCalculator';
 import { validateGrid } from './validator';
 
 export class PuzzleBoard {
@@ -42,24 +42,72 @@ export class PuzzleBoard {
     const hints = calculateHints(solutionGrid);
     this.rowHints = hints.rowHints;
     this.colHints = hints.colHints;
+
+    // Run initial auto-fill for 0-hint rows and columns
+    // Only if the solution grid contains at least one filled cell (not a dummy all-zero board in tests)
+    const hasFilledCells = solutionGrid.some(row => row.some(cell => cell === 1));
+    if (hasFilledCells) {
+      for (let r = 0; r < this.rowCount; r++) {
+        this.autoFillRow(r);
+      }
+      for (let c = 0; c < this.colCount; c++) {
+        this.autoFillCol(c);
+      }
+    }
+  }
+
+  private autoFillRow(r: number): void {
+    const line = this.currentGrid[r];
+    const currentHints = calculateLineHints(line);
+    const targetHints = this.rowHints[r];
+
+    if (currentHints.length === targetHints.length && currentHints.every((v, i) => v === targetHints[i])) {
+      for (let c = 0; c < this.colCount; c++) {
+        if (this.currentGrid[r][c] === 0) {
+          this.currentGrid[r][c] = 2;
+        }
+      }
+    }
+  }
+
+  private autoFillCol(c: number): void {
+    const line: number[] = [];
+    for (let r = 0; r < this.rowCount; r++) {
+      line.push(this.currentGrid[r][c]);
+    }
+    const currentHints = calculateLineHints(line);
+    const targetHints = this.colHints[c];
+
+    if (currentHints.length === targetHints.length && currentHints.every((v, i) => v === targetHints[i])) {
+      for (let r = 0; r < this.rowCount; r++) {
+        if (this.currentGrid[r][c] === 0) {
+          this.currentGrid[r][c] = 2;
+        }
+      }
+    }
   }
 
   public toggleFill(row: number, col: number): void {
     if (row < 0 || row >= this.rowCount || col < 0 || col >= this.colCount) return;
     const current = this.currentGrid[row][col];
-    this.currentGrid[row][col] = current === 1 ? 0 : 1;
+    this.setCell(row, col, current === 1 ? 0 : 1);
   }
 
   public toggleMark(row: number, col: number): void {
     if (row < 0 || row >= this.rowCount || col < 0 || col >= this.colCount) return;
     const current = this.currentGrid[row][col];
-    this.currentGrid[row][col] = current === 2 ? 0 : 2;
+    this.setCell(row, col, current === 2 ? 0 : 2);
   }
 
   public setCell(row: number, col: number, value: number): void {
     if (row < 0 || row >= this.rowCount || col < 0 || col >= this.colCount) return;
     if (value !== 0 && value !== 1 && value !== 2) return;
     this.currentGrid[row][col] = value;
+
+    if (value === 1) {
+      this.autoFillRow(row);
+      this.autoFillCol(col);
+    }
   }
 
   public isSolved(): boolean {
