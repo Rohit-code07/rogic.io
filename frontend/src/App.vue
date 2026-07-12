@@ -3720,19 +3720,6 @@ body {
   .landing-logo-container.logo {
     transform: translate(-50%, -50%) scale(1.2);
   }
-  .landing-logo-container.solving {
-    transform: translate(-50%, 0) scale(1.0);
-    top: 6%;
-  }
-  .landing-logo-container.stats {
-    transform: translate(-50%, 0) scale(1.0);
-    top: 8%;
-  }
-  .landing-logo-container.cta,
-  .landing-logo-container.done {
-    transform: translate(-50%, 0) scale(1.0);
-    top: 10%;
-  }
   .landing-logo-title {
     font-size: 3.0rem;
   }
@@ -3741,6 +3728,7 @@ body {
     height: 2.8rem;
   }
 }
+
 
 
 
