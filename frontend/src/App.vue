@@ -110,12 +110,12 @@
 
             <div v-else-if="hasUnclearedPuzzles || isLoading" class="canvas-wrapper-container" style="width: 100%; display: flex; flex-direction: column; align-items: center; min-height: 0; flex: 1;">
               <!-- Full-width thin Stage Selector bar (showing cleared name only after solved) -->
-              <transition name="fade-scale">
+              <transition name="fade-slide-up">
                 <div class="puzzle-selector-floating-container" v-if="currentActiveStage && !isLoading && solveAnimationComplete">
                   <div class="active-stage-badge readonly-badge">
                     <span class="active-stage-badge-name">{{ currentActiveStage.name }}</span>
                     <!-- Thin Progress bar inside the name display block -->
-                    <transition name="fade-scale">
+                    <transition name="fade">
                       <div v-if="allUnclearedStages.length > 0 && nextPuzzleSeconds > 0" class="badge-progress-bar-container">
                         <div class="badge-progress-bar"></div>
                       </div>
@@ -4001,6 +4001,21 @@ body {
 }
 
 /* Transitions */
+.fade-enter-active, .fade-leave-active {
+  transition: opacity 0.3s ease;
+}
+.fade-enter-from, .fade-leave-to {
+  opacity: 0;
+}
+
+.fade-slide-up-enter-active, .fade-slide-up-leave-active {
+  transition: opacity 0.4s ease, transform 0.4s cubic-bezier(0.25, 1, 0.5, 1);
+}
+.fade-slide-up-enter-from, .fade-slide-up-leave-to {
+  opacity: 0;
+  transform: translateY(-8px) scale(0.98);
+}
+
 .fade-scale-enter-active, .fade-scale-leave-active {
   transition: opacity 0.8s ease, transform 0.8s cubic-bezier(0.25, 1, 0.5, 1);
 }
