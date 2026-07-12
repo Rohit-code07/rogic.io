@@ -235,7 +235,6 @@
                   @cell-click="handleDemoCellClick" 
                   @solve-animation-complete="handleDemoSolveAnimationComplete" 
                 />
-                <div class="landing-canvas-hint">Watch the heart form...</div>
               </div>
             </transition>
 
@@ -3649,20 +3648,6 @@ body {
   z-index: 5;
 }
 
-.landing-canvas-hint {
-  margin-top: 1rem;
-  font-size: 0.85rem;
-  color: #64748b;
-  text-transform: uppercase;
-  letter-spacing: 0.12em;
-  font-weight: 600;
-  animation: pulse-hint 1.5s infinite ease-in-out;
-}
-
-@keyframes pulse-hint {
-  0%, 100% { opacity: 0.4; }
-  50% { opacity: 0.8; }
-}
 
 /* Step 3: Big Premium Centered CTA */
 .landing-cta-container {
