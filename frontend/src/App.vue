@@ -108,18 +108,22 @@
               </div>
             </div>
 
-            <div v-else-if="hasUnclearedPuzzles || isLoading" class="canvas-wrapper-container" style="width: 100%; display: flex; flex-direction: column; align-items: center; min-height: 0; flex: 1;">
-              <!-- Full-width thin Stage Selector bar (showing '?' until solved or loading) -->
-              <div class="puzzle-selector-floating-container" v-if="currentActiveStage">
-                <div class="active-stage-badge readonly-badge">
-                  <span class="active-stage-badge-name">{{ (isLoading || !solveAnimationComplete) ? '?' : currentActiveStage.name }}</span>
-                  <!-- Thin Progress bar inside the name display block -->
-                  <transition name="fade">
-                    <div v-if="!isLoading && solveAnimationComplete && allUnclearedStages.length > 0 && nextPuzzleSeconds > 0" class="badge-progress-bar-container">
-                      <div class="badge-progress-bar"></div>
+            <div v-else-if="hasUnclearedPuzzles || isLoading" class="canvas-wrapper-container" style="width: 100%; display: flex; flex-direction: column; align-items: center; min-height: 0; flex: 1; position: relative;">
+              <!-- Full-width thin Stage Selector bar (showing cleared name only after solved) -->
+              <div class="puzzle-selector-clip-wrapper" style="position: absolute; top: 0; left: 0; width: 100%; height: 40px; overflow: hidden; z-index: 100; pointer-events: none; display: flex; justify-content: center;">
+                <transition name="fade-slide-up">
+                  <div class="puzzle-selector-floating-container" v-if="currentActiveStage && !isLoading && solveAnimationComplete" style="position: relative; left: auto; transform: none; pointer-events: auto; width: auto; top: 0;">
+                    <div class="active-stage-badge readonly-badge">
+                      <span class="active-stage-badge-name">{{ currentActiveStage.name }}</span>
+                      <!-- Thin Progress bar inside the name display block -->
+                      <transition name="fade">
+                        <div v-if="allUnclearedStages.length > 0 && nextPuzzleSeconds > 0" class="badge-progress-bar-container">
+                          <div class="badge-progress-bar"></div>
+                        </div>
+                      </transition>
                     </div>
-                  </transition>
-                </div>
+                  </div>
+                </transition>
               </div>
 
               <div class="canvas-wrapper-container" style="width: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; position: relative; min-height: 0; flex: 1;">
@@ -296,7 +300,11 @@
                 <span class="footer-divider">|</span>
                 <a href="/terms.html" target="_blank" rel="noopener noreferrer">Terms of Service</a>
                 <span class="footer-divider">|</span>
-                <a href="https://github.com/devdoyen/rogic.io" target="_blank" rel="noopener noreferrer">GitHub</a>
+                <a href="https://github.com/devdoyen/rogic.io" target="_blank" rel="noopener noreferrer" aria-label="GitHub" class="footer-github-link">
+                  <svg viewBox="0 0 24 24" class="footer-github-icon">
+                    <path fill="currentColor" d="M12 2A10 10 0 0 0 2 12c0 4.42 2.87 8.17 6.84 9.5.5.08.66-.23.66-.5v-1.69c-2.77.6-3.36-1.34-3.36-1.34-.46-1.16-1.11-1.47-1.11-1.47-.9-.62.07-.6.07-.6 1 .07 1.53 1.03 1.53 1.03.9 1.52 2.34 1.07 2.91.83.09-.65.35-1.09.63-1.34-2.22-.25-4.55-1.11-4.55-4.92 0-1.11.38-2 1.03-2.71-.1-.25-.45-1.29.1-2.64 0 0 .84-.27 2.75 1.02.79-.22 1.65-.33 2.5-.33.85 0 1.71.11 2.5.33 1.91-1.29 2.75-1.02 2.75-1.02.55 1.35.2 2.39.1 2.64.65.71 1.03 1.6 1.03 2.71 0 3.82-2.34 4.66-4.57 4.91.36.31.69.92.69 1.85V21c0 .27.16.59.67.5C19.14 20.16 22 16.42 22 12A10 10 0 0 0 12 2z"/>
+                  </svg>
+                </a>
               </div>
               <p class="footer-copyright">&copy; 2026 rogic.io. All rights reserved.</p>
             </footer>
@@ -2030,13 +2038,14 @@ body {
 
 /* Floating Stage Selector */
 .puzzle-selector-floating-container {
-  position: relative;
-  margin-top: 0;
-  margin-bottom: 0;
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translate(-50%, 0);
   z-index: 100;
   display: flex;
   justify-content: center;
-  width: 100%;
+  width: auto;
 }
 
 .active-stage-badge {
@@ -2045,17 +2054,17 @@ body {
   justify-content: center;
   position: relative;
   gap: 0.6rem;
-  background: rgba(30, 41, 59, 0.35);
+  background: rgba(30, 41, 59, 0.45);
   backdrop-filter: blur(8px);
-  border: 1px solid rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-top: none;
   padding: 0.35rem 1.5rem;
-  border-radius: 8px 8px 0 0;
+  border-radius: 0 0 10px 10px;
   overflow: hidden;
   cursor: pointer;
-  box-shadow: none;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
   transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
   white-space: nowrap;
-  width: 100%;
   box-sizing: border-box;
 }
 
@@ -2689,9 +2698,8 @@ body {
   justify-content: center;
   gap: 1.5rem;
   background-color: #0f172a;
-  border-radius: 0 0 8px 8px;
+  border-radius: 12px;
   border: 1px solid rgba(255, 255, 255, 0.05);
-  border-top: none;
   box-sizing: border-box;
 }
 
@@ -3971,6 +3979,18 @@ body {
   color: #38bdf8;
 }
 
+.landing-footer .footer-links a.footer-github-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.landing-footer .footer-links .footer-github-icon {
+  width: 1.15rem;
+  height: 1.15rem;
+  display: block;
+}
+
 .landing-footer .footer-divider {
   color: #334155;
   font-size: 0.8rem;
@@ -3983,6 +4003,21 @@ body {
 }
 
 /* Transitions */
+.fade-enter-active, .fade-leave-active {
+  transition: opacity 0.3s ease;
+}
+.fade-enter-from, .fade-leave-to {
+  opacity: 0;
+}
+
+.fade-slide-up-enter-active, .fade-slide-up-leave-active {
+  transition: opacity 0.4s ease, transform 0.4s cubic-bezier(0.25, 1, 0.5, 1);
+}
+.fade-slide-up-enter-from, .fade-slide-up-leave-to {
+  opacity: 0;
+  transform: translateY(-40px) scale(0.98);
+}
+
 .fade-scale-enter-active, .fade-scale-leave-active {
   transition: opacity 0.8s ease, transform 0.8s cubic-bezier(0.25, 1, 0.5, 1);
 }

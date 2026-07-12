@@ -27,12 +27,7 @@ test.describe('Staging Environment E2E Smoke Integration Test', () => {
     const canvas = page.getByTestId('nonogram-canvas');
     await expect(canvas).toBeVisible({ timeout: 10000 });
 
-    // Verify floating stage selector exists and displays the current stage name
-    const activeStageBadge = page.locator('.active-stage-badge');
-    await expect(activeStageBadge).toBeVisible();
-    const stageName = await page.locator('.active-stage-badge-name').textContent();
-    console.log(`Active Stage Name: ${stageName}`);
-    expect(stageName?.length).toBeGreaterThan(0);
+
 
     // 3. Verify My Page access is blocked and Login button is visible instead (Guest Policy Validation)
     console.log('Verifying My Page tab button is hidden for guests...');

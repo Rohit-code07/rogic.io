@@ -781,9 +781,8 @@ watch(() => props.renderTrigger, () => {
   justify-content: center;
   align-items: center;
   background-color: #0f172a;
-  border-radius: 0 0 8px 8px;
+  border-radius: 12px;
   border: 1px solid rgba(255, 255, 255, 0.05);
-  border-top: none;
   position: relative;
   cursor: grab;
 }
