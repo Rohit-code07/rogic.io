@@ -3916,7 +3916,7 @@ body {
 /* Skip / Replay Control Button */
 .intro-control-btn {
   position: absolute;
-  bottom: 7.5rem;
+  bottom: 5.5rem;
   left: 50%;
   transform: translateX(-50%);
   width: 42px;
