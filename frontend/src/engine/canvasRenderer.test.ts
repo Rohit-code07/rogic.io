@@ -48,16 +48,14 @@ describe('canvasRenderer - Off-screen Hint Indicators TDD', () => {
     };
     const ctx = mockCanvasContext();
 
-    // With scale=1.0 and pan=0, everything is on-screen
+    // Canvas size is 169x169. Frame size is 400x400.
+    // Canvas center is centered at (200, 200) inside the frame.
     drawNonogramBoard(ctx, board, config, {
       glowIntensity: 0,
       glowBlur: 0,
       cellSize: 20,
-      scale: 1.0,
-      offsetX: 0,
-      offsetY: 0,
-      frameWidth: 400,
-      frameHeight: 400
+      canvasRect: { left: 115.5, top: 115.5, width: 169, height: 169 },
+      frameRect: { left: 0, top: 0, width: 400, height: 400 }
     });
 
     // fillText should be called to draw the hint numbers
@@ -82,20 +80,17 @@ describe('canvasRenderer - Off-screen Hint Indicators TDD', () => {
     };
     const ctx = mockCanvasContext();
 
-    // Move the board far to the right and down (offsetX=300, offsetY=300),
-    // and zoom in (scale=2.0) so the hints (left/above the grid) go way off-screen
+    // Canvas size is 169x169. Frame size is 40x40.
+    // Canvas center is centered at (20, 20) inside the frame.
     drawNonogramBoard(ctx, board, config, {
       glowIntensity: 0,
       glowBlur: 0,
       cellSize: 20,
-      scale: 2.0,
-      offsetX: 300,
-      offsetY: 300,
-      frameWidth: 200,
-      frameHeight: 200
+      canvasRect: { left: -64.5, top: -64.5, width: 169, height: 169 },
+      frameRect: { left: 0, top: 0, width: 40, height: 40 }
     });
 
-    // Since hints are off-screen, fillText should NOT be called for hint numbers,
+    // Since outermost hints are off-screen, fillText should NOT be called for those hint numbers,
     // and arc should be called to draw the dot markers instead.
     expect(ctx.fillText).not.toHaveBeenCalled();
     expect(ctx.arc).toHaveBeenCalled();

@@ -6,11 +6,8 @@ export interface RenderOptions {
   glowIntensity: number;
   glowBlur: number;
   cellSize: number;
-  scale?: number;
-  offsetX?: number;
-  offsetY?: number;
-  frameWidth?: number;
-  frameHeight?: number;
+  canvasRect?: { left: number; top: number; width: number; height: number };
+  frameRect?: { left: number; top: number; width: number; height: number };
 }
 
 function isArrayEqual(a: number[], b: number[]) {
@@ -57,11 +54,23 @@ export function drawNonogramBoard(
   const cellSizeVal = options.cellSize;
   const { width, height, halfW, halfH } = getBoardDimensions(board, cellSizeVal);
 
-  const scaleVal = options.scale !== undefined ? options.scale : 1.0;
-  const offsetXVal = options.offsetX !== undefined ? options.offsetX : 0;
-  const offsetYVal = options.offsetY !== undefined ? options.offsetY : 0;
-  const frameWidthVal = options.frameWidth !== undefined ? options.frameWidth : width;
-  const frameHeightVal = options.frameHeight !== undefined ? options.frameHeight : height;
+  let frameWidthVal = width;
+  let frameHeightVal = height;
+  let canvasCenterXInFrame = width / 2;
+  let canvasCenterYInFrame = height / 2;
+  let scaleX = 1.0;
+  let scaleY = 1.0;
+
+  if (options.canvasRect && options.frameRect) {
+    const cRect = options.canvasRect;
+    const fRect = options.frameRect;
+    frameWidthVal = fRect.width;
+    frameHeightVal = fRect.height;
+    canvasCenterXInFrame = (cRect.left + cRect.width / 2) - fRect.left;
+    canvasCenterYInFrame = (cRect.top + cRect.height / 2) - fRect.top;
+    scaleX = cRect.width / width;
+    scaleY = cRect.height / height;
+  }
 
   // Clear canvas (sleek dark themed layout)
   ctx.fillStyle = '#0f172a';
@@ -177,28 +186,38 @@ export function drawNonogramBoard(
       const hx = -halfW - offset - (hints.length - 1) * spacing;
       const ux = hx * cosA - y * sinA;
       const uy = hx * sinA + y * cosA;
-      const fx = frameWidthVal / 2 + offsetXVal + ux * scaleVal;
-      const fy = frameHeightVal / 2 + offsetYVal + uy * scaleVal;
+      const fx = canvasCenterXInFrame + ux * scaleX;
+      const fy = canvasCenterYInFrame + uy * scaleY;
 
-      const isOffScreen = fx < 0 || fx > frameWidthVal || fy < 0 || fy > frameHeightVal;
+      const isRowVerticallyVisible = fy >= 0 && fy <= frameHeightVal;
 
-      if (isOffScreen) {
-        // Draw elegant indicator dot on the grid edge (6px away from border)
-        ctx.fillStyle = isRowMatching ? 'rgba(71, 85, 105, 0.6)' : 'rgba(56, 189, 248, 0.7)';
-        ctx.beginPath();
-        ctx.arc(-halfW - 6, y, 2.5, 0, Math.PI * 2);
-        ctx.fill();
-      } else {
-        ctx.fillStyle = isRowMatching ? '#475569' : '#94a3b8'; // Fade to slate-600 if completed correctly
-        for (let h = 0; h < hints.length; h++) {
-          const hintVal = hints[hints.length - 1 - h];
-          const hxx = -halfW - offset - h * spacing;
-          
-          ctx.save();
-          ctx.translate(hxx, y);
-          ctx.rotate(-config.angle);
-          ctx.fillText(hintVal.toString(), 0, 0);
-          ctx.restore();
+      if (isRowVerticallyVisible) {
+        const isOffScreen = fx < 0 || fx > frameWidthVal;
+
+        if (isOffScreen) {
+          // Clamp to screen edge (5px margin) and map back to canvas coordinates
+          const targetFx = fx < 0 ? 5 : frameWidthVal - 5;
+          const dx = (targetFx - canvasCenterXInFrame) / scaleX;
+          const dy = (fy - canvasCenterYInFrame) / scaleY;
+          const lx = dx * cosA + dy * sinA;
+          const ly = -dx * sinA + dy * cosA;
+
+          ctx.fillStyle = isRowMatching ? 'rgba(71, 85, 105, 0.7)' : 'rgba(56, 189, 248, 0.8)';
+          ctx.beginPath();
+          ctx.arc(lx, ly, 3, 0, Math.PI * 2);
+          ctx.fill();
+        } else {
+          ctx.fillStyle = isRowMatching ? '#475569' : '#94a3b8'; // Fade to slate-600 if completed correctly
+          for (let h = 0; h < hints.length; h++) {
+            const hintVal = hints[hints.length - 1 - h];
+            const hxx = -halfW - offset - h * spacing;
+            
+            ctx.save();
+            ctx.translate(hxx, y);
+            ctx.rotate(-config.angle);
+            ctx.fillText(hintVal.toString(), 0, 0);
+            ctx.restore();
+          }
         }
       }
     }
@@ -221,28 +240,38 @@ export function drawNonogramBoard(
       const hy = -halfH - offset - (hints.length - 1) * spacing;
       const ux = x * cosA - hy * sinA;
       const uy = x * sinA + hy * cosA;
-      const fx = frameWidthVal / 2 + offsetXVal + ux * scaleVal;
-      const fy = frameHeightVal / 2 + offsetYVal + uy * scaleVal;
+      const fx = canvasCenterXInFrame + ux * scaleX;
+      const fy = canvasCenterYInFrame + uy * scaleY;
 
-      const isOffScreen = fx < 0 || fx > frameWidthVal || fy < 0 || fy > frameHeightVal;
+      const isColHorizontallyVisible = fx >= 0 && fx <= frameWidthVal;
 
-      if (isOffScreen) {
-        // Draw elegant indicator dot on the grid edge (6px away from border)
-        ctx.fillStyle = isColMatching ? 'rgba(71, 85, 105, 0.6)' : 'rgba(56, 189, 248, 0.7)';
-        ctx.beginPath();
-        ctx.arc(x, -halfH - 6, 2.5, 0, Math.PI * 2);
-        ctx.fill();
-      } else {
-        ctx.fillStyle = isColMatching ? '#475569' : '#94a3b8'; // Fade to slate-600 if completed correctly
-        for (let h = 0; h < hints.length; h++) {
-          const hintVal = hints[hints.length - 1 - h];
-          const hyy = -halfH - offset - h * spacing;
-          
-          ctx.save();
-          ctx.translate(x, hyy);
-          ctx.rotate(-config.angle);
-          ctx.fillText(hintVal.toString(), 0, 0);
-          ctx.restore();
+      if (isColHorizontallyVisible) {
+        const isOffScreen = fy < 0 || fy > frameHeightVal;
+
+        if (isOffScreen) {
+          // Clamp to screen edge (5px margin) and map back to canvas coordinates
+          const targetFy = fy < 0 ? 5 : frameHeightVal - 5;
+          const dx = (fx - canvasCenterXInFrame) / scaleX;
+          const dy = (targetFy - canvasCenterYInFrame) / scaleY;
+          const lx = dx * cosA + dy * sinA;
+          const ly = -dx * sinA + dy * cosA;
+
+          ctx.fillStyle = isColMatching ? 'rgba(71, 85, 105, 0.7)' : 'rgba(56, 189, 248, 0.8)';
+          ctx.beginPath();
+          ctx.arc(lx, ly, 3, 0, Math.PI * 2);
+          ctx.fill();
+        } else {
+          ctx.fillStyle = isColMatching ? '#475569' : '#94a3b8'; // Fade to slate-600 if completed correctly
+          for (let h = 0; h < hints.length; h++) {
+            const hintVal = hints[hints.length - 1 - h];
+            const hyy = -halfH - offset - h * spacing;
+            
+            ctx.save();
+            ctx.translate(x, hyy);
+            ctx.rotate(-config.angle);
+            ctx.fillText(hintVal.toString(), 0, 0);
+            ctx.restore();
+          }
         }
       }
     }

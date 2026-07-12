@@ -186,15 +186,31 @@ function drawBoard() {
   config.colCount = props.board.colCount;
   config.cellSize = cellSizeVal;
 
+  const frame = frameRef.value;
+  const canvasRect = canvas && typeof canvas.getBoundingClientRect === 'function' ? canvas.getBoundingClientRect() : null;
+  const frameRect = frame && typeof frame.getBoundingClientRect === 'function' ? frame.getBoundingClientRect() : null;
+
+  const rectOptions: any = {};
+  if (canvasRect && frameRect && canvasRect.width > 0 && frameRect.width > 0) {
+    rectOptions.canvasRect = {
+      left: canvasRect.left,
+      top: canvasRect.top,
+      width: canvasRect.width,
+      height: canvasRect.height
+    };
+    rectOptions.frameRect = {
+      left: frameRect.left,
+      top: frameRect.top,
+      width: frameRect.width,
+      height: frameRect.height
+    };
+  }
+
   drawNonogramBoard(ctx, props.board, config, {
     glowIntensity: glowIntensity.value,
     glowBlur: glowBlur.value,
     cellSize: cellSizeVal,
-    scale: scale.value,
-    offsetX: offsetX.value,
-    offsetY: offsetY.value,
-    frameWidth: frameWidth.value,
-    frameHeight: frameHeight.value
+    ...rectOptions
   });
 }
 
