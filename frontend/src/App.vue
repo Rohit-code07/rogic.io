@@ -1178,6 +1178,7 @@ async function loadStageDetails(id: number) {
               board.value.currentGrid[r][c] = progress.currentGrid[r][c];
             }
           }
+          board.value.applyAutoFill();
           board.value.undoStack = progress.undoStack || [];
           board.value.redoStack = progress.redoStack || [];
           
