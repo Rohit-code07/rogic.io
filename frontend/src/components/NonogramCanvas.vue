@@ -189,7 +189,12 @@ function drawBoard() {
   drawNonogramBoard(ctx, props.board, config, {
     glowIntensity: glowIntensity.value,
     glowBlur: glowBlur.value,
-    cellSize: cellSizeVal
+    cellSize: cellSizeVal,
+    scale: scale.value,
+    offsetX: offsetX.value,
+    offsetY: offsetY.value,
+    frameWidth: frameWidth.value,
+    frameHeight: frameHeight.value
   });
 }
 
@@ -688,6 +693,7 @@ onMounted(() => {
       resizeObserver = new ResizeObserver(() => {
         updateFrameSize();
         cachedCanvasRect = null;
+        drawBoard();
       });
       resizeObserver.observe(frameRef.value);
     }
@@ -740,9 +746,10 @@ watch(() => props.board, (newBoard) => {
   drawBoard();
 }, { deep: false, immediate: true });
 
-// Invalidate cached canvas bounding rect whenever zoom, pan, or rotation changes
-watch([scale, offsetX, offsetY, currentAngle], () => {
+// Redraw canvas and invalidate cached rect whenever zoom, pan, rotation, or frame dimensions change
+watch([scale, offsetX, offsetY, currentAngle, frameWidth, frameHeight], () => {
   cachedCanvasRect = null;
+  drawBoard();
   if (isMouseInsideFrame) {
     updateHoverState(lastMouseX, lastMouseY);
   }

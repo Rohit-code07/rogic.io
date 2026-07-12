@@ -44,8 +44,12 @@ export class PuzzleBoard {
     this.colHints = hints.colHints;
 
     // Run initial auto-fill for 0-hint rows and columns
+    this.applyAutoFill();
+  }
+
+  public applyAutoFill(): void {
     // Only if the solution grid contains at least one filled cell (not a dummy all-zero board in tests)
-    const hasFilledCells = solutionGrid.some(row => row.some(cell => cell === 1));
+    const hasFilledCells = this.solutionGrid.some(row => row.some(cell => cell === 1));
     if (hasFilledCells) {
       for (let r = 0; r < this.rowCount; r++) {
         this.autoFillRow(r);
