@@ -3738,11 +3738,11 @@ body {
 /* Step 2: Auto-solving Nonogram Canvas Wrapper */
 .landing-canvas-wrapper {
   position: absolute;
-  top: 50%;
+  top: 48%;
   left: 50%;
   transform: translate(-50%, -40%);
-  width: 300px;
-  height: 300px;
+  width: 250px;
+  height: 250px;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -3901,9 +3901,10 @@ body {
 
 /* Skip / Replay Control Button */
 .intro-control-btn {
-  position: fixed;
-  top: 2rem;
-  right: 2rem;
+  position: absolute;
+  bottom: 7.5rem;
+  left: 50%;
+  transform: translateX(-50%);
   width: 42px;
   height: 42px;
   display: flex;
@@ -3924,7 +3925,7 @@ body {
   background: rgba(255, 255, 255, 0.08);
   border-color: rgba(255, 255, 255, 0.18);
   color: #f8fafc;
-  transform: translateY(-1px);
+  transform: translateX(-50%) translateY(-2px);
 }
 
 .control-btn-icon {
