@@ -6,8 +6,11 @@ export interface RenderOptions {
   glowIntensity: number;
   glowBlur: number;
   cellSize: number;
-  canvasRect?: { left: number; top: number; width: number; height: number };
-  frameRect?: { left: number; top: number; width: number; height: number };
+  scale?: number;
+  offsetX?: number;
+  offsetY?: number;
+  frameWidth?: number;
+  frameHeight?: number;
 }
 
 function isArrayEqual(a: number[], b: number[]) {
@@ -54,23 +57,16 @@ export function drawNonogramBoard(
   const cellSizeVal = options.cellSize;
   const { width, height, halfW, halfH } = getBoardDimensions(board, cellSizeVal);
 
-  let frameWidthVal = width;
-  let frameHeightVal = height;
-  let canvasCenterXInFrame = width / 2;
-  let canvasCenterYInFrame = height / 2;
-  let scaleX = 1.0;
-  let scaleY = 1.0;
+  const scaleVal = options.scale !== undefined ? options.scale : 1.0;
+  const offsetXVal = options.offsetX !== undefined ? options.offsetX : 0;
+  const offsetYVal = options.offsetY !== undefined ? options.offsetY : 0;
+  const frameWidthVal = options.frameWidth !== undefined ? options.frameWidth : width;
+  const frameHeightVal = options.frameHeight !== undefined ? options.frameHeight : height;
 
-  if (options.canvasRect && options.frameRect) {
-    const cRect = options.canvasRect;
-    const fRect = options.frameRect;
-    frameWidthVal = fRect.width;
-    frameHeightVal = fRect.height;
-    canvasCenterXInFrame = (cRect.left + cRect.width / 2) - fRect.left;
-    canvasCenterYInFrame = (cRect.top + cRect.height / 2) - fRect.top;
-    scaleX = cRect.width / width;
-    scaleY = cRect.height / height;
-  }
+  const canvasCenterXInFrame = frameWidthVal / 2 + offsetXVal;
+  const canvasCenterYInFrame = frameHeightVal / 2 + offsetYVal;
+  const scaleX = scaleVal;
+  const scaleY = scaleVal;
 
   // Clear canvas (sleek dark themed layout)
   ctx.fillStyle = '#0f172a';
