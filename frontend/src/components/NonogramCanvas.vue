@@ -189,7 +189,12 @@ function drawBoard() {
   drawNonogramBoard(ctx, props.board, config, {
     glowIntensity: glowIntensity.value,
     glowBlur: glowBlur.value,
-    cellSize: cellSizeVal
+    cellSize: cellSizeVal,
+    scale: scale.value,
+    offsetX: offsetX.value,
+    offsetY: offsetY.value,
+    frameWidth: frameWidth.value,
+    frameHeight: frameHeight.value
   });
 }
 
