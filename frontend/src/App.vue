@@ -267,7 +267,7 @@
               <div v-if="introPhase === 'cta' || introPhase === 'done'" class="landing-cta-container">
                 <button class="landing-play-btn" @click="onTabChange('play')" aria-label="Play Now">
                   <svg viewBox="0 0 24 24" class="play-icon">
-                    <path fill="currentColor" d="M8 5v14l11-7z"/>
+                    <path fill="currentColor" d="M6 4v16l14-8z"/>
                   </svg>
                 </button>
               </div>
@@ -3884,9 +3884,9 @@ body {
 }
 
 .landing-play-btn .play-icon {
-  width: 32px;
-  height: 32px;
-  margin-left: 4px;
+  width: 44px;
+  height: 44px;
+  margin-left: 6px;
   display: block;
 }
 
