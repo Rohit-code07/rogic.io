@@ -586,7 +586,7 @@ describe('App.vue Leaderboard Integration TDD', () => {
     // Verify homepage content
     const dashboardText = wrapper.find('.home-dashboard').text();
     expect(dashboardText).toContain('rogic.io');
-    expect(wrapper.find('.landing-stats').exists()).toBe(true);
+    expect(wrapper.find('.landing-play-btn').exists()).toBe(true);
 
     // Click CTA play button inside home dashboard
     const ctaBtn = wrapper.find('.landing-play-btn');

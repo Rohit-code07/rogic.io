@@ -238,13 +238,33 @@
               </div>
             </transition>
 
-            <!-- Step 3: Big Premium Centered CTA (Visible in 'cta' or 'done' phase) -->
-            <transition name="fade-scale-slow">
-              <div v-if="introPhase === 'cta' || introPhase === 'done'" class="landing-cta-container">
+            <!-- Step 3: Stats & Conveyor Belt (Visible during 'stats' phase) -->
+            <transition name="fade-scale">
+              <div v-if="introPhase === 'stats'" class="landing-stats-conveyor-wrapper">
                 <div class="landing-stats">
                   <span class="stats-number">{{ displayedPuzzleCount }}</span>
                   <span class="stats-label">puzzles ready to solve</span>
                 </div>
+                
+                <!-- Horizontal conveyor belt -->
+                <div class="landing-conveyor-container">
+                  <div class="landing-conveyor-track">
+                    <div v-for="loop in 3" :key="loop" class="landing-conveyor-loop">
+                      <div v-for="(art, idx) in conveyorArts" :key="idx" class="conveyor-card">
+                        <div class="mini-art-grid">
+                          <div v-for="(cell, cIdx) in art.grid.flat()" :key="cIdx" :class="{ filled: cell === 1 }" class="mini-art-cell"></div>
+                        </div>
+                        <span class="conveyor-card-name">{{ art.name }}</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </transition>
+
+            <!-- Step 4: Big Premium Centered CTA (Visible in 'cta' or 'done' phase) -->
+            <transition name="fade-scale-slow">
+              <div v-if="introPhase === 'cta' || introPhase === 'done'" class="landing-cta-container">
                 <button class="landing-play-btn" @click="onTabChange('play')">
                   Play Now
                 </button>
@@ -357,11 +377,55 @@ const demoRotationSteps = ref(0);
 const demoRenderTrigger = ref(0);
 
 const introActive = ref(!isTestEnv && !sessionStorage.getItem('rogic_intro_played'));
-const introPhase = ref<'logo' | 'solving' | 'cta' | 'done'>(
+const introPhase = ref<'logo' | 'solving' | 'stats' | 'cta' | 'done'>(
   (isTestEnv || sessionStorage.getItem('rogic_intro_played')) ? 'done' : 'logo'
 );
 let autoSolveTimer: any = null;
 let introTimeoutId: any = null;
+
+const heartGrid = [
+  [0, 1, 0, 1, 0],
+  [1, 1, 1, 1, 1],
+  [1, 1, 1, 1, 1],
+  [0, 1, 1, 1, 0],
+  [0, 0, 1, 0, 0]
+];
+const starGrid = [
+  [0, 0, 1, 0, 0],
+  [0, 1, 1, 1, 0],
+  [1, 1, 1, 1, 1],
+  [0, 1, 1, 1, 0],
+  [0, 1, 0, 1, 0]
+];
+const smileGrid = [
+  [0, 0, 0, 0, 0],
+  [0, 1, 0, 1, 0],
+  [0, 0, 0, 0, 0],
+  [1, 0, 0, 0, 1],
+  [0, 1, 1, 1, 0]
+];
+const diamondGrid = [
+  [0, 0, 1, 0, 0],
+  [0, 1, 1, 1, 0],
+  [1, 1, 1, 1, 1],
+  [0, 1, 1, 1, 0],
+  [0, 0, 1, 0, 0]
+];
+const swordGrid = [
+  [0, 0, 1, 0, 0],
+  [0, 0, 1, 0, 0],
+  [0, 1, 1, 1, 0],
+  [0, 0, 1, 0, 0],
+  [0, 0, 1, 0, 0]
+];
+
+const conveyorArts = [
+  { name: 'Sweet Heart', grid: heartGrid },
+  { name: 'Bright Star', grid: starGrid },
+  { name: 'Happy Smile', grid: smileGrid },
+  { name: 'Shiny Gem', grid: diamondGrid },
+  { name: 'Iron Sword', grid: swordGrid }
+];
 
 const demoSolutionGrid = [
   [0, 1, 0, 1, 0],
@@ -400,16 +464,22 @@ function handleDemoSolveAnimationComplete() {
   demoRotationSteps.value = 4;
   if (introActive.value) {
     setTimeout(() => {
-      introPhase.value = 'cta';
+      introPhase.value = 'stats';
       startStatsCountUp();
       
       setTimeout(() => {
-        if (introPhase.value === 'cta') {
-          introPhase.value = 'done';
-          introActive.value = false;
-          sessionStorage.setItem('rogic_intro_played', 'true');
+        if (introPhase.value === 'stats') {
+          introPhase.value = 'cta';
+          
+          setTimeout(() => {
+            if (introPhase.value === 'cta') {
+              introPhase.value = 'done';
+              introActive.value = false;
+              sessionStorage.setItem('rogic_intro_played', 'true');
+            }
+          }, 1500);
         }
-      }, 1500);
+      }, 3500);
     }, 1000);
   }
 }
@@ -427,9 +497,9 @@ function startStatsCountUp() {
     const easeProgress = progress * (2 - progress);
     displayedPuzzleCount.value = Math.floor(start + (target - start) * easeProgress);
     
-    if (progress < 1 && introPhase.value === 'cta') {
+    if (progress < 1 && introPhase.value === 'stats') {
       requestAnimationFrame(animate);
-    } else if (introPhase.value === 'done') {
+    } else if (introPhase.value === 'cta' || introPhase.value === 'done') {
       displayedPuzzleCount.value = target;
     }
   }
@@ -618,7 +688,7 @@ const displayedPuzzleCount = ref(0);
 
 watch(totalPuzzlesCount, (newVal) => {
   if (newVal <= 0) return;
-  if (introActive.value && introPhase.value !== 'cta' && introPhase.value !== 'done') {
+  if (introActive.value && introPhase.value !== 'stats' && introPhase.value !== 'cta' && introPhase.value !== 'done') {
     return;
   }
   if (typeof window === 'undefined' || typeof requestAnimationFrame === 'undefined' || typeof performance === 'undefined') {
@@ -3603,6 +3673,11 @@ body {
   transform: translate(-50%, 0) scale(1.0);
 }
 
+.landing-logo-container.stats {
+  top: 12%;
+  transform: translate(-50%, 0) scale(1.0);
+}
+
 .landing-logo-container.cta,
 .landing-logo-container.done {
   top: 15%;
@@ -3649,7 +3724,90 @@ body {
 }
 
 
-/* Step 3: Big Premium Centered CTA */
+/* Step 3: Stats & Conveyor Belt Phase Styles */
+.landing-stats-conveyor-wrapper {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -45%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  max-width: 600px;
+  z-index: 5;
+  text-align: center;
+  gap: 2rem;
+}
+
+.landing-conveyor-container {
+  width: 100%;
+  height: 50px;
+  overflow: hidden;
+  position: relative;
+  mask-image: linear-gradient(to right, transparent, white 20%, white 80%, transparent);
+  -webkit-mask-image: linear-gradient(to right, transparent, white 20%, white 80%, transparent);
+}
+
+.landing-conveyor-track {
+  display: flex;
+  width: max-content;
+  animation: marquee-horizontal 15s linear infinite;
+}
+
+.landing-conveyor-loop {
+  display: flex;
+  gap: 1rem;
+  padding-right: 1rem;
+}
+
+.conveyor-card {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 8px;
+  padding: 0.3rem 0.8rem;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+  backdrop-filter: blur(10px);
+  height: 38px;
+  box-sizing: border-box;
+}
+
+.mini-art-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 4px);
+  gap: 1px;
+  width: 24px;
+  height: 24px;
+}
+
+.mini-art-cell {
+  width: 4px;
+  height: 4px;
+  border-radius: 0.5px;
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.mini-art-cell.filled {
+  background: linear-gradient(135deg, #38bdf8, #818cf8);
+}
+
+.conveyor-card-name {
+  font-size: 0.75rem;
+  color: #a1a1aa;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
+@keyframes marquee-horizontal {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(-33.333%); }
+}
+
+/* Step 4: Big Premium Centered CTA */
 .landing-cta-container {
   position: absolute;
   top: 55%;
@@ -3668,7 +3826,6 @@ body {
   flex-direction: column;
   align-items: center;
   gap: 0.25rem;
-  margin-bottom: 2rem;
 }
 
 .landing-stats .stats-number {
