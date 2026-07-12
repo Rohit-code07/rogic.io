@@ -271,8 +271,20 @@
               </div>
             </transition>
 
-            <!-- Skip Button -->
-            <button v-if="introActive && introPhase !== 'cta' && introPhase !== 'done'" class="intro-skip-btn" @click="skipIntro">Skip Intro</button>
+            <!-- Skip / Replay Button in top-right -->
+            <button 
+              class="intro-control-btn" 
+              :title="introActive ? 'Skip Intro' : 'Replay Intro'" 
+              @click="introActive ? skipIntro() : replayIntro()"
+            >
+              <svg v-if="introActive" viewBox="0 0 24 24" class="control-btn-icon">
+                <path fill="currentColor" d="M4 18l8.5-6L4 6v12zm9-12v12l8.5-6L13 6z"/>
+              </svg>
+              <svg v-else viewBox="0 0 24 24" class="control-btn-icon">
+                <path fill="currentColor" d="M12 5V1L7 6l5 5V7c3.31 0 6 2.69 6 6s-2.69 6-6 6-6-2.69-6-6H4c0 4.42 3.58 8 8 8s8-3.58 8-8-3.58-8-8-8z"/>
+              </svg>
+            </button>
+
 
             <!-- Footer links -->
             <footer class="landing-footer">
@@ -282,8 +294,6 @@
                 <a href="/terms.html" target="_blank" rel="noopener noreferrer">Terms of Service</a>
                 <span class="footer-divider">|</span>
                 <a href="https://github.com/devdoyen/rogic.io" target="_blank" rel="noopener noreferrer">GitHub</a>
-                <span class="footer-divider">|</span>
-                <a href="#" @click.prevent="replayIntro" class="replay-intro-link">Replay Intro</a>
               </div>
               <p class="footer-copyright">&copy; 2026 rogic.io. All rights reserved.</p>
             </footer>
@@ -3889,31 +3899,40 @@ body {
   transform: translateY(0) scale(0.98);
 }
 
-/* Skip Button */
-.intro-skip-btn {
+/* Skip / Replay Control Button */
+.intro-control-btn {
   position: fixed;
   top: 2rem;
   right: 2rem;
+  width: 42px;
+  height: 42px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   background: rgba(255, 255, 255, 0.03);
   border: 1px solid rgba(255, 255, 255, 0.08);
   color: #94a3b8;
-  padding: 0.5rem 1.25rem;
-  border-radius: 9999px;
-  font-family: inherit;
-  font-size: 0.85rem;
-  font-weight: 600;
+  border-radius: 50%;
   cursor: pointer;
   transition: all 0.25s cubic-bezier(0.25, 1, 0.5, 1);
   z-index: 100;
   backdrop-filter: blur(8px);
+  padding: 0;
 }
 
-.intro-skip-btn:hover {
+.intro-control-btn:hover {
   background: rgba(255, 255, 255, 0.08);
   border-color: rgba(255, 255, 255, 0.18);
   color: #f8fafc;
   transform: translateY(-1px);
 }
+
+.control-btn-icon {
+  width: 20px;
+  height: 20px;
+  display: block;
+}
+
 
 /* Subtle Footer styling */
 .landing-footer {
