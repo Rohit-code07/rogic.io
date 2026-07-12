@@ -108,7 +108,7 @@
               </div>
             </div>
 
-            <div v-else-if="hasUnclearedPuzzles || isLoading" class="canvas-wrapper-container" style="width: 100%; display: flex; flex-direction: column; align-items: center; min-height: 0; flex: 1;">
+            <div v-else-if="hasUnclearedPuzzles || isLoading" class="canvas-wrapper-container" style="width: 100%; display: flex; flex-direction: column; align-items: center; min-height: 0; flex: 1; position: relative;">
               <!-- Full-width thin Stage Selector bar (showing cleared name only after solved) -->
               <transition name="fade-slide-up">
                 <div class="puzzle-selector-floating-container" v-if="currentActiveStage && !isLoading && solveAnimationComplete">
@@ -2036,13 +2036,14 @@ body {
 
 /* Floating Stage Selector */
 .puzzle-selector-floating-container {
-  position: relative;
-  margin-top: 0;
-  margin-bottom: 0;
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translate(-50%, 0);
   z-index: 100;
   display: flex;
   justify-content: center;
-  width: 100%;
+  width: auto;
 }
 
 .active-stage-badge {
@@ -2051,17 +2052,17 @@ body {
   justify-content: center;
   position: relative;
   gap: 0.6rem;
-  background: rgba(30, 41, 59, 0.35);
+  background: rgba(30, 41, 59, 0.45);
   backdrop-filter: blur(8px);
-  border: 1px solid rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-top: none;
   padding: 0.35rem 1.5rem;
-  border-radius: 8px 8px 0 0;
+  border-radius: 0 0 10px 10px;
   overflow: hidden;
   cursor: pointer;
-  box-shadow: none;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
   transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
   white-space: nowrap;
-  width: 100%;
   box-sizing: border-box;
 }
 
@@ -4013,7 +4014,7 @@ body {
 }
 .fade-slide-up-enter-from, .fade-slide-up-leave-to {
   opacity: 0;
-  transform: translateY(-8px) scale(0.98);
+  transform: translate(-50%, -8px) scale(0.98);
 }
 
 .fade-scale-enter-active, .fade-scale-leave-active {
