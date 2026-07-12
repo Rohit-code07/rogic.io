@@ -3718,22 +3718,30 @@ body {
 
 @media (max-width: 480px) {
   .landing-logo-container.logo {
-    transform: translate(-50%, -50%) scale(1.0);
+    transform: translate(-50%, -50%) scale(1.2);
   }
-  .landing-logo-container.solving,
-  .landing-logo-container.stats,
+  .landing-logo-container.solving {
+    transform: translate(-50%, 0) scale(1.0);
+    top: 6%;
+  }
+  .landing-logo-container.stats {
+    transform: translate(-50%, 0) scale(1.0);
+    top: 8%;
+  }
   .landing-logo-container.cta,
   .landing-logo-container.done {
-    transform: translate(-50%, 0) scale(0.8);
+    transform: translate(-50%, 0) scale(1.0);
+    top: 10%;
   }
   .landing-logo-title {
-    font-size: 2.8rem;
+    font-size: 3.0rem;
   }
   .landing-logo-icon {
-    width: 2.4rem;
-    height: 2.4rem;
+    width: 2.8rem;
+    height: 2.8rem;
   }
 }
+
 
 
 /* Step 2: Auto-solving Nonogram Canvas Wrapper */
