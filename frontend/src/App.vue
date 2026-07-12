@@ -3625,6 +3625,9 @@ body {
   font-size: 3.6rem;
   font-weight: 800;
   letter-spacing: -0.5px;
+  line-height: 1.25;
+  padding: 0.1em 0;
+  display: inline-block;
   background: linear-gradient(135deg, #38bdf8 0%, #818cf8 50%, #c084fc 100%);
   -webkit-background-clip: text;
   background-clip: text;
