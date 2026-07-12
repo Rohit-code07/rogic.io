@@ -14,7 +14,7 @@
 
 #### Gameplay Video Demonstration
 <p align="center">
-  <img src="./docs/assets/rogic_gameplay_demo.webp" width="100%" alt="rogic.io Gameplay Demo" />
+  <img src="./docs/assets/rogic_gameplay_intro.webp" width="100%" alt="rogic.io Gameplay Demo" />
 </p>
 
 ---
