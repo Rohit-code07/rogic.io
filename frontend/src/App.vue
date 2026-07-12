@@ -3837,7 +3837,7 @@ body {
 /* Step 4: Big Premium Centered CTA */
 .landing-cta-container {
   position: absolute;
-  top: 55%;
+  top: 48%;
   left: 50%;
   transform: translate(-50%, -50%);
   display: flex;
@@ -3875,7 +3875,11 @@ body {
 }
 
 .landing-play-btn {
-  padding: 1rem 3rem;
+  width: 280px;
+  height: 56px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   font-size: 1.35rem;
   font-weight: 700;
   border-radius: 9999px;
