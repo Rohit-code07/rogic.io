@@ -3682,7 +3682,7 @@ body {
 }
 
 .landing-logo-container.logo {
-  top: 50%;
+  top: 48%;
   transform: translate(-50%, -50%) scale(1.4);
 }
 
