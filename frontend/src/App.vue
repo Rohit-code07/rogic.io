@@ -265,8 +265,10 @@
             <!-- Step 4: Big Premium Centered CTA (Visible in 'cta' or 'done' phase) -->
             <transition name="fade-scale-slow">
               <div v-if="introPhase === 'cta' || introPhase === 'done'" class="landing-cta-container">
-                <button class="landing-play-btn" @click="onTabChange('play')">
-                  Play Now
+                <button class="landing-play-btn" @click="onTabChange('play')" aria-label="Play Now">
+                  <svg viewBox="0 0 24 24" class="play-icon">
+                    <path fill="currentColor" d="M8 5v14l11-7z"/>
+                  </svg>
                 </button>
               </div>
             </transition>
@@ -3865,32 +3867,37 @@ body {
 }
 
 .landing-play-btn {
-  width: 280px;
-  height: 56px;
+  width: 80px;
+  height: 80px;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 1.35rem;
-  font-weight: 700;
-  border-radius: 9999px;
+  border-radius: 24px;
   border: none;
   background: linear-gradient(135deg, #38bdf8 0%, #818cf8 100%);
   color: #ffffff;
   cursor: pointer;
-  box-shadow: 0 0 15px rgba(56, 189, 248, 0.25), 0 0 30px rgba(56, 189, 248, 0.15);
+  box-shadow: 0 0 20px rgba(56, 189, 248, 0.3), 0 0 35px rgba(56, 189, 248, 0.2);
   transition: all 0.3s cubic-bezier(0.25, 1, 0.5, 1);
   font-family: inherit;
   animation: pulse-glow 2s infinite ease-in-out;
 }
 
+.landing-play-btn .play-icon {
+  width: 32px;
+  height: 32px;
+  margin-left: 4px;
+  display: block;
+}
+
 .landing-play-btn:hover {
-  transform: translateY(-2px) scale(1.03);
-  box-shadow: 0 0 25px rgba(56, 189, 248, 0.5), 0 0 40px rgba(56, 189, 248, 0.25);
+  transform: translateY(-2px) scale(1.05);
+  box-shadow: 0 0 30px rgba(56, 189, 248, 0.55), 0 0 50px rgba(56, 189, 248, 0.35);
   background: linear-gradient(135deg, #40c4ff 0%, #90caf9 100%);
 }
 
 .landing-play-btn:active {
-  transform: translateY(0) scale(0.98);
+  transform: translateY(0) scale(0.96);
 }
 
 /* Skip / Replay Control Button */
@@ -4008,11 +4015,6 @@ body {
   .landing-logo-icon {
     width: 2.8rem;
     height: 2.8rem;
-  }
-  .landing-play-btn {
-    width: 220px;
-    height: 50px;
-    font-size: 1.2rem;
   }
 }
 </style>
