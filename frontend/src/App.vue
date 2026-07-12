@@ -110,19 +110,21 @@
 
             <div v-else-if="hasUnclearedPuzzles || isLoading" class="canvas-wrapper-container" style="width: 100%; display: flex; flex-direction: column; align-items: center; min-height: 0; flex: 1; position: relative;">
               <!-- Full-width thin Stage Selector bar (showing cleared name only after solved) -->
-              <transition name="fade-slide-up">
-                <div class="puzzle-selector-floating-container" v-if="currentActiveStage && !isLoading && solveAnimationComplete">
-                  <div class="active-stage-badge readonly-badge">
-                    <span class="active-stage-badge-name">{{ currentActiveStage.name }}</span>
-                    <!-- Thin Progress bar inside the name display block -->
-                    <transition name="fade">
-                      <div v-if="allUnclearedStages.length > 0 && nextPuzzleSeconds > 0" class="badge-progress-bar-container">
-                        <div class="badge-progress-bar"></div>
-                      </div>
-                    </transition>
+              <div class="puzzle-selector-clip-wrapper" style="position: absolute; top: 0; left: 0; width: 100%; height: 40px; overflow: hidden; z-index: 100; pointer-events: none; display: flex; justify-content: center;">
+                <transition name="fade-slide-up">
+                  <div class="puzzle-selector-floating-container" v-if="currentActiveStage && !isLoading && solveAnimationComplete" style="position: relative; left: auto; transform: none; pointer-events: auto; width: auto; top: 0;">
+                    <div class="active-stage-badge readonly-badge">
+                      <span class="active-stage-badge-name">{{ currentActiveStage.name }}</span>
+                      <!-- Thin Progress bar inside the name display block -->
+                      <transition name="fade">
+                        <div v-if="allUnclearedStages.length > 0 && nextPuzzleSeconds > 0" class="badge-progress-bar-container">
+                          <div class="badge-progress-bar"></div>
+                        </div>
+                      </transition>
+                    </div>
                   </div>
-                </div>
-              </transition>
+                </transition>
+              </div>
 
               <div class="canvas-wrapper-container" style="width: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; position: relative; min-height: 0; flex: 1;">
                 <!-- Floating Size Selector (Bottom-Right) -->
@@ -2696,9 +2698,8 @@ body {
   justify-content: center;
   gap: 1.5rem;
   background-color: #0f172a;
-  border-radius: 0 0 8px 8px;
+  border-radius: 12px;
   border: 1px solid rgba(255, 255, 255, 0.05);
-  border-top: none;
   box-sizing: border-box;
 }
 
@@ -4014,7 +4015,7 @@ body {
 }
 .fade-slide-up-enter-from, .fade-slide-up-leave-to {
   opacity: 0;
-  transform: translate(-50%, -8px) scale(0.98);
+  transform: translateY(-40px) scale(0.98);
 }
 
 .fade-scale-enter-active, .fade-scale-leave-active {
