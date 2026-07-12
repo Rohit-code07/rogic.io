@@ -3719,23 +3719,8 @@ body {
   -webkit-text-fill-color: transparent;
 }
 
-@media (max-width: 480px) {
-  .landing-logo-container.logo {
-    transform: translate(-50%, -50%) scale(1.2);
-  }
-  .landing-logo-title {
-    font-size: 3.0rem;
-  }
-  .landing-logo-icon {
-    width: 2.8rem;
-    height: 2.8rem;
-  }
-  .landing-play-btn {
-    width: 220px;
-    height: 50px;
-    font-size: 1.2rem;
-  }
-}
+
+
 
 
 
@@ -4011,6 +3996,23 @@ body {
   50% {
     box-shadow: 0 0 25px rgba(56, 189, 248, 0.5), 0 0 45px rgba(56, 189, 248, 0.3);
     transform: scale(1.02);
+  }
+}
+@media (max-width: 480px) {
+  .landing-logo-container.logo {
+    transform: translate(-50%, -50%) scale(1.2);
+  }
+  .landing-logo-title {
+    font-size: 3.0rem;
+  }
+  .landing-logo-icon {
+    width: 2.8rem;
+    height: 2.8rem;
+  }
+  .landing-play-btn {
+    width: 220px;
+    height: 50px;
+    font-size: 1.2rem;
   }
 }
 </style>
