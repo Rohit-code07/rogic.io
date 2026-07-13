@@ -3,6 +3,7 @@ package com.devdoyen.nemologic.service;
 import com.devdoyen.nemologic.client.AiClient;
 import com.devdoyen.nemologic.model.Stage;
 import com.devdoyen.nemologic.repository.StageRepository;
+import com.devdoyen.nemologic.repository.ThemePoolRepository;
 import com.devdoyen.nemologic.scheduler.DailyPuzzleScheduler;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -14,6 +15,7 @@ public class AiStageGeneratorTest {
 
     private AiClient aiClient;
     private StageRepository stageRepository;
+    private ThemePoolRepository themePoolRepository;
     private AiStageGenerator aiStageGenerator;
     private NonogramSolver nonogramSolver;
 
@@ -21,8 +23,9 @@ public class AiStageGeneratorTest {
     public void setUp() {
         aiClient = mock(AiClient.class);
         stageRepository = mock(StageRepository.class);
+        themePoolRepository = mock(ThemePoolRepository.class);
         nonogramSolver = new NonogramSolver();
-        aiStageGenerator = new AiStageGenerator(aiClient, stageRepository, nonogramSolver);
+        aiStageGenerator = new AiStageGenerator(aiClient, stageRepository, nonogramSolver, themePoolRepository);
 
         when(stageRepository.findTop10ByOrderByIdDesc()).thenReturn(java.util.Collections.emptyList());
         when(stageRepository.findTop50ByOrderByIdDesc()).thenReturn(java.util.Collections.emptyList());
@@ -219,5 +222,44 @@ public class AiStageGeneratorTest {
         Stage stage = aiStageGenerator.generateAndSaveStage(5, 5, true);
         assertNotNull(stage);
         assertTrue(stage.getName().startsWith("Apple") || stage.getName().startsWith("Smile") || stage.getName().startsWith("Cup") || stage.getName().startsWith("Key") || stage.getName().startsWith("Star") || stage.getName().startsWith("Tree"));
+    }
+
+    @Test
+    public void testGenerateAndSaveStageWithDbThemePool() {
+        com.devdoyen.nemologic.model.ThemePool themeInPool = new com.devdoyen.nemologic.model.ThemePool("Db Guitar", "A beautiful acoustic guitar description", 5, 5);
+        themeInPool.setId(42L);
+        themeInPool.setUsed(false);
+
+        when(themePoolRepository.findFirstUnused(eq(5), eq(5), any(org.springframework.data.domain.Pageable.class)))
+            .thenReturn(java.util.Collections.singletonList(themeInPool));
+        when(themePoolRepository.save(any(com.devdoyen.nemologic.model.ThemePool.class)))
+            .thenAnswer(invocation -> invocation.getArgument(0));
+
+        String mockJsonResponse = "{\"name\": \"Db Guitar\", \"width\": 5, \"height\": 5, \"grid\": [[0,1,0,1,0],[1,1,1,1,1],[1,1,1,1,1],[0,1,1,1,0],[0,0,1,0,0]]}";
+        when(aiClient.generatePuzzleJsonForTheme(eq(5), eq(5), eq("Db Guitar"), anyString())).thenReturn(mockJsonResponse);
+        when(stageRepository.save(any(Stage.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        Stage stage = aiStageGenerator.generateAndSaveStage(5, 5, true);
+
+        assertNotNull(stage);
+        assertEquals("Db Guitar", stage.getName());
+        assertTrue(themeInPool.isUsed());
+        verify(themePoolRepository, times(1)).save(themeInPool);
+    }
+
+    @Test
+    public void testGenerateAndSaveStageWithDbThemePoolExhaustedFallback() {
+        when(themePoolRepository.findFirstUnused(eq(5), eq(5), any(org.springframework.data.domain.Pageable.class)))
+            .thenReturn(java.util.Collections.emptyList());
+
+        String mockJsonResponse = "{\"name\": \"Apple 123\", \"width\": 5, \"height\": 5, \"grid\": [[0,1,0,1,0],[1,1,1,1,1],[1,1,1,1,1],[0,1,1,1,0],[0,0,1,0,0]]}";
+        when(aiClient.generatePuzzleJsonForTheme(eq(5), eq(5), anyString(), anyString())).thenReturn(mockJsonResponse);
+        when(stageRepository.save(any(Stage.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        Stage stage = aiStageGenerator.generateAndSaveStage(5, 5, true);
+
+        assertNotNull(stage);
+        assertTrue(stage.getName().startsWith("Apple") || stage.getName().startsWith("Smile") || stage.getName().startsWith("Cup") 
+            || stage.getName().startsWith("Key") || stage.getName().startsWith("Star") || stage.getName().startsWith("Tree"));
     }
 }

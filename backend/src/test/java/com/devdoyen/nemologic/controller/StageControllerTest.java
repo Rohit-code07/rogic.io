@@ -28,8 +28,12 @@ public class StageControllerTest {
     @Autowired
     private com.devdoyen.nemologic.repository.StageRepository stageRepository;
 
+    @Autowired
+    private com.devdoyen.nemologic.repository.ThemePoolRepository themePoolRepository;
+
     @org.junit.jupiter.api.BeforeEach
     public void setUp() {
+        themePoolRepository.deleteAll();
         for (Stage s : stageRepository.findAll()) {
             s.setActive(true);
             s.setApproved(true);
@@ -79,6 +83,8 @@ public class StageControllerTest {
 
     @Test
     public void triggerAiGenerationShouldCreateStageAndReturnOk() throws Exception {
+        themePoolRepository.save(new com.devdoyen.nemologic.model.ThemePool("Mock Ramen Bowl", "A detailed ramen bowl", 5, 5));
+
         mockMvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post("/api/stages/ai-generate"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.name", is("Mock Ramen Bowl")))

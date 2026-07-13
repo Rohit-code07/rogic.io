@@ -27,6 +27,12 @@ public class GeminiAiClient implements AiClient {
     @Value("${ai.model.grid:gemini-3.1-flash-lite}")
     private String gridModelName;
 
+    @Value("classpath:prompts/theme-generation.txt")
+    private org.springframework.core.io.Resource themePromptResource;
+
+    @Value("classpath:prompts/grid-generation.txt")
+    private org.springframework.core.io.Resource gridPromptResource;
+
     private final RestTemplate restTemplate = new RestTemplate();
     private final ObjectMapper objectMapper = new ObjectMapper();
 
@@ -88,14 +94,9 @@ public class GeminiAiClient implements AiClient {
 
     @Override
     public String generateThemeJson(int width, int height, java.util.List<String> recentThemes) {
+        String template = readResource(themePromptResource);
         String prompt = String.format(
-            "Generate a JSON array of exactly 10 different, highly creative, and recognizable pixel art theme concepts suitable for a %dx%d grid. " +
-            "For each concept, provide a 'name' (a concise object/subject name, e.g. \"Espresso Cup\", \"Tiny Sailboat\") and " +
-            "a 'description' (a short instruction explaining the pixel art details, including silhouette shape, key features, and visual patterns to represent on a %dx%d grid). " +
-            "Do NOT generate themes or names similar to the following: %s. " +
-            "Guidelines: pick unique subjects from diverse categories (e.g. food/beverage, everyday tools, plants/nature, vehicles, household items, animals, space, clothing). " +
-            "The response must follow this exact JSON schema: [ { \"name\": \"ThemeName\", \"description\": \"Detailed rendering instruction...\" }, ... ]. " +
-            "Do NOT wrap the response in markdown blocks. Output only raw JSON string.",
+            template,
             width, height, width, height,
             (recentThemes == null || recentThemes.isEmpty()) ? "none" : String.join(", ", recentThemes)
         );
@@ -141,43 +142,10 @@ public class GeminiAiClient implements AiClient {
 
     @Override
     public String generatePuzzleJsonForTheme(int width, int height, String themeName, String themeDescription) {
-        String fewShotExamples = 
-            "Example of a valid 5x5 Nonogram design:\n" +
-            "Theme: Apple\n" +
-            "Description: A tiny apple shape with a stem at the top.\n" +
-            "Grid:\n" +
-            "[[0,0,1,0,0],\n" +
-            " [0,1,1,1,0],\n" +
-            " [1,1,1,1,1],\n" +
-            " [1,1,1,1,1],\n" +
-            " [0,1,1,1,0]]\n\n" +
-            "Example of a valid 10x10 Nonogram design:\n" +
-            "Theme: Sailboat\n" +
-            "Description: A simple sailboat on the sea.\n" +
-            "Grid:\n" +
-            "[[0,0,0,0,1,0,0,0,0,0],\n" +
-            " [0,0,0,1,1,0,0,0,0,0],\n" +
-            " [0,0,1,1,1,0,0,0,0,0],\n" +
-            " [0,1,1,1,1,0,0,0,0,0],\n" +
-            " [1,1,1,1,1,1,0,0,0,0],\n" +
-            " [0,0,0,0,1,0,0,0,0,0],\n" +
-            " [0,1,1,1,1,1,1,1,1,0],\n" +
-            " [0,0,1,1,1,1,1,1,0,0],\n" +
-            " [0,0,0,0,0,0,0,0,0,0],\n" +
-            " [0,0,0,0,0,0,0,0,0,0]]\n\n";
-
         int candidateCount = (width >= 25 || height >= 25) ? 2 : 5;
+        String template = readResource(gridPromptResource);
         String prompt = String.format(
-            fewShotExamples +
-            "Generate a JSON array of exactly %d candidate pixel art grid designs of size %dx%d for the theme '%s' in JSON format. " +
-            "Theme Description: %s\n" +
-            "The response must follow this exact JSON schema:\n" +
-            "[ { \"name\": \"ObjectName\", \"width\": %d, \"height\": %d, \"grid\": [[...], [...]] }, ... ].\n" +
-            "Do NOT prefix names with 'AI Puzzle:' or 'Daily Puzzle:'. Just use the name '%s' (or a minor creative variation like 'Mini %s' / 'Giant %s' depending on size).\n" +
-            "Return only raw JSON string inside, no markdown formatting.\n" +
-            "For each candidate, the 'grid' field MUST be a literal 2D JSON array representing %dx%d cells containing only 0 and 1.\n" +
-            "Ensure the filled cells form a recognizable connected shape representing the theme description. " +
-            "Do NOT use any shorthand code, loops, functions, or placeholder syntax to define the grid. Every number MUST be explicitly outputted.",
+            template,
             candidateCount, width, height, themeName, themeDescription, width, height, themeName, themeName, themeName, width, height
         );
 
@@ -240,6 +208,14 @@ public class GeminiAiClient implements AiClient {
             return rawText.trim();
         } catch (Exception e) {
             throw new RuntimeException("Failed to parse Gemini response: " + response, e);
+        }
+    }
+
+    private String readResource(org.springframework.core.io.Resource resource) {
+        try (java.io.InputStream is = resource.getInputStream()) {
+            return new String(is.readAllBytes(), java.nio.charset.StandardCharsets.UTF_8);
+        } catch (java.io.IOException e) {
+            throw new IllegalStateException("Failed to read prompt resource: " + resource.getFilename(), e);
         }
     }
 }

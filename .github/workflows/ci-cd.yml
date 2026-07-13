@@ -495,7 +495,7 @@ jobs:
           ANSIBLE_HOST_KEY_CHECKING: 'False'
           ANSIBLE_TIMEOUT: '60'
           ANSIBLE_BECOME_TIMEOUT: '60'
-          AI_API_KEY: ${{ secrets.AI_API_KEY }}
+          AI_API_KEY: ${{ secrets.STAGE_AI_API_KEY }}
           ALERT_EMAIL: ${{ secrets.ALERT_EMAIL }}
           COGNITO_JWK_SET_URI: ${{ secrets.COGNITO_JWK_SET_URI }}
           GRAFANA_CLOUD_PROM_URL: ${{ secrets.GRAFANA_CLOUD_PROM_URL }}
