@@ -15,9 +15,8 @@ public class AiStageGenerator {
     private final AiClient aiClient;
     private final StageRepository stageRepository;
     private final NonogramSolver nonogramSolver;
+    private final com.devdoyen.nemologic.repository.ThemePoolRepository themePoolRepository;
     private final ObjectMapper objectMapper = new ObjectMapper();
-
-    private final java.util.Map<String, java.util.List<ThemeDto>> themeCache = new java.util.concurrent.ConcurrentHashMap<>();
 
     private static final java.util.Map<Integer, java.util.List<ThemeDto>> STATIC_FALLBACK_THEMES = new java.util.HashMap<>();
     static {
@@ -47,10 +46,11 @@ public class AiStageGenerator {
         ));
     }
 
-    public AiStageGenerator(AiClient aiClient, StageRepository stageRepository, NonogramSolver nonogramSolver) {
+    public AiStageGenerator(AiClient aiClient, StageRepository stageRepository, NonogramSolver nonogramSolver, com.devdoyen.nemologic.repository.ThemePoolRepository themePoolRepository) {
         this.aiClient = aiClient;
         this.stageRepository = stageRepository;
         this.nonogramSolver = nonogramSolver;
+        this.themePoolRepository = themePoolRepository;
     }
 
     @Transactional
@@ -176,38 +176,22 @@ public class AiStageGenerator {
     }
 
     private ThemeDto getOrGenerateTheme(int width, int height, java.util.List<String> recentThemes) {
-        String cacheKey = width + "x" + height;
-        java.util.List<ThemeDto> cached = themeCache.get(cacheKey);
-        
-        if (cached == null || cached.isEmpty()) {
-            try {
-                String themeJson = aiClient.generateThemeJson(width, height, recentThemes);
-                if (themeJson != null && !themeJson.isEmpty()) {
-                    com.fasterxml.jackson.core.type.TypeReference<java.util.List<ThemeDto>> typeRef = 
-                        new com.fasterxml.jackson.core.type.TypeReference<java.util.List<ThemeDto>>() {};
-                    java.util.List<ThemeDto> generated = objectMapper.readValue(themeJson.trim(), typeRef);
-                    if (generated != null && !generated.isEmpty()) {
-                        java.util.List<ThemeDto> validGenerated = new java.util.ArrayList<>();
-                        for (ThemeDto t : generated) {
-                            if (t.getName() != null && !t.getName().trim().isEmpty()) {
-                                validGenerated.add(t);
-                            }
-                        }
-                        if (!validGenerated.isEmpty()) {
-                            themeCache.put(cacheKey, new java.util.ArrayList<>(validGenerated));
-                        }
-                    }
-                }
-            } catch (Exception e) {
-                System.err.println("[AI] Failed to generate themes from API: " + e.getMessage());
+        try {
+            org.springframework.data.domain.PageRequest pageRequest = org.springframework.data.domain.PageRequest.of(0, 1);
+            java.util.List<com.devdoyen.nemologic.model.ThemePool> unusedThemes = 
+                themePoolRepository.findFirstUnused(width, height, pageRequest);
+
+            if (unusedThemes != null && !unusedThemes.isEmpty()) {
+                com.devdoyen.nemologic.model.ThemePool theme = unusedThemes.get(0);
+                theme.setUsed(true);
+                themePoolRepository.save(theme);
+                return new ThemeDto(theme.getName(), theme.getDescription());
             }
-            cached = themeCache.get(cacheKey);
+        } catch (Exception e) {
+            System.err.println("[AI] Failed to fetch theme from DB: " + e.getMessage());
         }
 
-        if (cached != null && !cached.isEmpty()) {
-            return cached.remove(0);
-        }
-
+        System.err.println("[AI] DB Theme Pool is exhausted for size " + width + "x" + height + ". Falling back to static themes.");
         java.util.List<ThemeDto> staticList = STATIC_FALLBACK_THEMES.get(width);
         if (staticList == null || staticList.isEmpty()) {
             staticList = STATIC_FALLBACK_THEMES.get(10);
