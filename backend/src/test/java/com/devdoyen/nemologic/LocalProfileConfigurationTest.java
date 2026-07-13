@@ -38,6 +38,9 @@ public class LocalProfileConfigurationTest {
     @Autowired
     private Environment environment;
 
+    @Autowired(required = false)
+    private com.devdoyen.nemologic.client.AiClient aiClient;
+
     @TestConfiguration
     static class TestConfig {
         @Bean
@@ -111,5 +114,33 @@ public class LocalProfileConfigurationTest {
 
         String maxPool = environment.getProperty("spring.datasource.hikari.maximum-pool-size");
         assertEquals("4", maxPool);
+
+        // Verify that AiClient is loaded and prompts can be resolved
+        org.junit.jupiter.api.Assertions.assertNotNull(aiClient);
+        org.junit.jupiter.api.Assertions.assertTrue(aiClient instanceof com.devdoyen.nemologic.client.GeminiAiClient);
+        
+        com.devdoyen.nemologic.client.GeminiAiClient geminiClient = (com.devdoyen.nemologic.client.GeminiAiClient) aiClient;
+        try {
+            java.lang.reflect.Method readResourceMethod = com.devdoyen.nemologic.client.GeminiAiClient.class.getDeclaredMethod("readResource", org.springframework.core.io.Resource.class);
+            readResourceMethod.setAccessible(true);
+            
+            java.lang.reflect.Field themePromptResourceField = com.devdoyen.nemologic.client.GeminiAiClient.class.getDeclaredField("themePromptResource");
+            themePromptResourceField.setAccessible(true);
+            org.springframework.core.io.Resource themeRes = (org.springframework.core.io.Resource) themePromptResourceField.get(geminiClient);
+            
+            String themePrompt = (String) readResourceMethod.invoke(geminiClient, themeRes);
+            org.junit.jupiter.api.Assertions.assertNotNull(themePrompt);
+            org.junit.jupiter.api.Assertions.assertTrue(themePrompt.contains("JSON"));
+            
+            java.lang.reflect.Field gridPromptResourceField = com.devdoyen.nemologic.client.GeminiAiClient.class.getDeclaredField("gridPromptResource");
+            gridPromptResourceField.setAccessible(true);
+            org.springframework.core.io.Resource gridRes = (org.springframework.core.io.Resource) gridPromptResourceField.get(geminiClient);
+            
+            String gridPrompt = (String) readResourceMethod.invoke(geminiClient, gridRes);
+            org.junit.jupiter.api.Assertions.assertNotNull(gridPrompt);
+            org.junit.jupiter.api.Assertions.assertTrue(gridPrompt.contains("JSON"));
+        } catch (Exception e) {
+            org.junit.jupiter.api.Assertions.fail("Failed to verify prompt resources: " + e.getMessage(), e);
+        }
     }
 }

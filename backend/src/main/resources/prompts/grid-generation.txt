@@ -1,0 +1,32 @@
+Example of a valid 5x5 Nonogram design:
+Theme: Apple
+Description: A tiny apple shape with a stem at the top.
+Grid:
+[[0,0,1,0,0],
+ [0,1,1,1,0],
+ [1,1,1,1,1],
+ [1,1,1,1,1],
+ [0,1,1,1,0]]
+
+Example of a valid 10x10 Nonogram design:
+Theme: Sailboat
+Description: A simple sailboat on the sea.
+Grid:
+[[0,0,0,0,1,0,0,0,0,0],
+ [0,0,0,1,1,0,0,0,0,0],
+ [0,0,1,1,1,0,0,0,0,0],
+ [0,1,1,1,1,0,0,0,0,0],
+ [1,1,1,1,1,1,0,0,0,0],
+ [0,0,0,0,1,0,0,0,0,0],
+ [0,1,1,1,1,1,1,1,1,0],
+ [0,0,1,1,1,1,1,1,0,0],
+ [0,0,0,0,0,0,0,0,0,0],
+ [0,0,0,0,0,0,0,0,0,0]]
+
+Generate a JSON array of exactly %d candidate pixel art grid designs of size %dx%d for the theme '%s' in JSON format. Theme Description: %s
+The response must follow this exact JSON schema:
+[ { "name": "ObjectName", "width": %d, "height": %d, "grid": [[...], [...]] }, ... ].
+Do NOT prefix names with 'AI Puzzle:' or 'Daily Puzzle:'. Just use the name '%s' (or a minor creative variation like 'Mini %s' / 'Giant %s' depending on size).
+Return only raw JSON string inside, no markdown formatting.
+For each candidate, the 'grid' field MUST be a literal 2D JSON array representing %dx%d cells containing only 0 and 1.
+Ensure the filled cells form a recognizable connected shape representing the theme description. Do NOT use any shorthand code, loops, functions, or placeholder syntax to define the grid. Every number MUST be explicitly outputted.
