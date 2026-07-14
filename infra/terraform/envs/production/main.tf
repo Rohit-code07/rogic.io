@@ -234,6 +234,9 @@ resource "aws_instance" "nemologic_server" {
 
   lifecycle {
     prevent_destroy = true
+    ignore_changes = [
+      ami,
+    ]
   }
 
   tags = {
@@ -485,7 +488,8 @@ resource "aws_iam_role" "github_actions_production" {
           StringLike = {
             "token.actions.githubusercontent.com:sub" = [
               "repo:devdoyen/rogic.io:ref:refs/*",
-              "repo:devdoyen/rogic.io:environment:production"
+              "repo:devdoyen/rogic.io:environment:production",
+              "repo:devdoyen/rogic.io:pull_request"
             ]
           }
         }
