@@ -164,7 +164,7 @@ public class AiStageGenerator {
                 Stage newStage = new Stage(null, cleanName, selectedDto.getWidth(), selectedDto.getHeight(), selectedGrid);
                 newStage.setActive(active);
                 newStage.setApproved(true);
-                newStage.setGeneratorVersion("V2");
+                newStage.setGeneratorVersion("V3");
                 return stageRepository.save(newStage);
             } catch (Exception e) {
                 lastException = e;
