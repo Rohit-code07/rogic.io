@@ -272,7 +272,7 @@
                       <span class="size-badge">{{ s.width }} x {{ s.height }}</span>
                     </td>
                     <td>
-                      <span class="version-badge" :class="{ 'v2-badge': s.generatorVersion === 'V2' }">
+                      <span class="version-badge" :class="{ 'v2-badge': s.generatorVersion === 'V2', 'v3-badge': s.generatorVersion === 'V3' }">
                         {{ s.generatorVersion || 'V1' }}
                       </span>
                     </td>
@@ -633,10 +633,21 @@ async function loadAllAdminData() {
   await loadAdminUsersList();
 }
 
-function formatDate(dateString?: string) {
-  if (!dateString) return '-';
+function formatDate(dateValue?: any) {
+  if (!dateValue) return '-';
   try {
-    const date = new Date(dateString);
+    let date: Date;
+    if (Array.isArray(dateValue)) {
+      const [year, month, day, hour = 0, minute = 0, second = 0] = dateValue;
+      date = new Date(year, month - 1, day, hour, minute, second);
+    } else {
+      date = new Date(dateValue);
+    }
+
+    if (isNaN(date.getTime())) {
+      return String(dateValue);
+    }
+
     return date.toLocaleDateString('ko-KR', {
       year: 'numeric',
       month: '2-digit',
@@ -645,7 +656,7 @@ function formatDate(dateString?: string) {
       minute: '2-digit'
     });
   } catch (e) {
-    return dateString;
+    return String(dateValue);
   }
 }
 
@@ -1460,6 +1471,8 @@ onUnmounted(() => {
   background-color: #020617;
   color: #cbd5e1;
   border: 1px solid #1e293b;
+  display: inline-block;
+  white-space: nowrap;
 }
 
 .version-badge {
@@ -1476,6 +1489,12 @@ onUnmounted(() => {
   background-color: rgba(79, 70, 229, 0.1);
   color: #818cf8;
   border-color: rgba(79, 70, 229, 0.25);
+}
+
+.version-badge.v3-badge {
+  background-color: rgba(16, 185, 129, 0.1);
+  color: #34d399;
+  border-color: rgba(16, 185, 129, 0.25);
 }
 
 .status-badge {
