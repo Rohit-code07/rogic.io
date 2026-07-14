@@ -46,7 +46,7 @@ public class AiStageGeneratorTest {
         assertEquals("Puzzle", stage.getName());
         assertEquals(5, stage.getWidth());
         assertEquals(5, stage.getHeight());
-        assertEquals("V2", stage.getGeneratorVersion());
+        assertEquals("V3", stage.getGeneratorVersion());
         assertNotNull(stage.getSolutionGrid());
         assertEquals(1, stage.getSolutionGrid()[0][1]);
     }
