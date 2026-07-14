@@ -37,10 +37,13 @@
 
 ## 4. 해결 방안
 * **수정 내용**<br>
-  [main.tf](../../infra/terraform/envs/staging/main.tf#L237-L243) 파일의 `lifecycle` 블록에 `ignore_changes = [ami]`를 추가하여, AMI가 업데이트되더라도 기존 단일 인스턴스를 파괴하고 재생성하지 않도록 예외 처리했습니다.
-  보안 패치 등은 인스턴스를 재생성하지 않고 OS 내부의 패키지 관리자(`apt`) 또는 Ansible 플레이북을 활용해 점진적으로 업데이트하도록 우회했습니다.
+  Staging 및 Production 환경의 `main.tf` 파일의 `lifecycle` 블록에 `ignore_changes = [ami]`를 추가하여, AMI가 업데이트되더라도 기존 단일 인스턴스를 파괴하고 재생성하지 않도록 예외 처리했습니다.
+  원격에 락이 걸려 중단되던 Staging 환경에 대해서는 로컬에서 `terraform force-unlock` 명령어를 통해 명시적으로 락을 해제하여 배포 정상 작동을 보장했습니다.
+  추가적으로, 미래에 동일한 배포 차단 문제를 사전에 모니터링하기 위해 [ci-cd.yml](../../.github/workflows/ci-cd.yml#L136-L191) 파일 내 `infra-plan-staging` 및 `infra-plan-production` 작업(Dry-Run)의 실행 조건에 `pull_request` 이벤트를 포함하여 PR 단계에서 Terraform 예외를 사전 감지하도록 보강했습니다.
 
 ## 5. 재발 방지 대책
 * **조치 계획**<br>
-  단일 EC2 인스턴스로 운용되는 환경(Staging 등)에서는 Terraform의 `aws_instance` 리소스에 AMI 변경으로 인한 강제 재생성이 일어날 수 있는 속성에 항상 `ignore_changes` 설정을 부여하여 안정성을 확보합니다.
+  단일 EC2 인스턴스로 운용되는 환경(Staging, Production 등)에서는 Terraform의 `aws_instance` 리소스에 AMI 변경으로 인한 강제 재생성이 일어날 수 있는 속성에 항상 `ignore_changes` 설정을 부여하여 안정성을 확보합니다.
   보안 취약점 패치 및 시스템 커널 업데이트는 Ansible Playbook의 OS 업데이트 모듈을 활용하여 무중단 혹은 유지보수 시간에 점진적으로 배포할 수 있는 내부 자동화 프로세스를 구축합니다.
+  * **CI/CD PR 검증 강화**<br>
+    리소스 삭제 방지(`prevent_destroy`)와 리소스 강제 재생성이 충돌하는 문제를 배포(Merge) 전에 탐지하기 위해, PR 생성 및 업데이트 시점에 항상 `terraform plan` (Dry-Run) 검증 단계가 강제로 통과되도록 파이프라인의 안전망을 구축하여 운영합니다.
