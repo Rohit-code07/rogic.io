@@ -236,6 +236,9 @@ resource "aws_instance" "nemologic_staging_server" {
 
   lifecycle {
     prevent_destroy = true
+    ignore_changes  = [
+      ami,
+    ]
   }
 
   tags = {
