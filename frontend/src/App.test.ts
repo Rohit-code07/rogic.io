@@ -20,6 +20,7 @@ describe('App.vue Leaderboard Integration TDD', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     localStorage.clear();
+    (window as any).dataLayer = [];
     localStorage.setItem('nemologic_id_token', 'mockHeader.eyzleHAiOjk5OTk5OTk5OTl9.mockSignature');
     vi.mocked(stageApi.fetchNextReleaseDelaySeconds).mockResolvedValue(3600);
     vi.mocked(userApi.fetchMeFromServer).mockResolvedValue({
@@ -740,6 +741,44 @@ describe('App.vue Leaderboard Integration TDD', () => {
     await wrapper.vm.$nextTick();
 
     expect(vm.board.currentGrid[0][0]).toBe(1);
+  });
+
+  it('should push stage_start and stage_clear events to dataLayer during puzzle play flow', async () => {
+    const mockStages = [{ id: 7, name: 'Mini Stage', width: 1, height: 1 }];
+    const mockStageDetails = { id: 7, name: 'Mini Stage', width: 1, height: 1, solutionGrid: [[1]] };
+    const mockRankings = [{ id: 3, username: 'Player3', xp: 1000, level: 5 }];
+
+    vi.spyOn(stageApi, 'fetchStages').mockResolvedValue(mockStages);
+    vi.spyOn(stageApi, 'fetchStageById').mockResolvedValue(mockStageDetails);
+    vi.spyOn(userApi, 'fetchRanking').mockResolvedValue(mockRankings);
+    vi.spyOn(userApi, 'clearStage').mockResolvedValue({ id: 1, username: 'Player1', xp: 250, level: 2 });
+
+    const wrapper = mount(App);
+    await new Promise((resolve) => setTimeout(resolve, 50));
+
+    const vm = wrapper.vm as any;
+
+    // Explicitly load details
+    vm.selectedStageId = 7;
+    await vm.loadStageDetails(7);
+    await wrapper.vm.$nextTick();
+
+    // Verify stage_start was pushed
+    const startEvent = (window as any).dataLayer.find((e: any) => e.event === 'stage_start');
+    expect(startEvent).toBeDefined();
+    expect(startEvent.stageId).toBe(7);
+    expect(startEvent.stageName).toBe('Mini Stage');
+
+    // Force solve the board
+    vm.board.toggleFill(0, 0);
+    await vm.handleCellClick();
+    await wrapper.vm.$nextTick();
+
+    // Verify stage_clear was pushed
+    const clearEvent = (window as any).dataLayer.find((e: any) => e.event === 'stage_clear');
+    expect(clearEvent).toBeDefined();
+    expect(clearEvent.stageId).toBe(7);
+    expect(clearEvent.stageName).toBe('Mini Stage');
   });
 });
 

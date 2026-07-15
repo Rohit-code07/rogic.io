@@ -1205,6 +1205,15 @@ async function loadStageDetails(id: number) {
     };
     hasVoted.value = false;
     isLoading.value = false;
+    if (typeof (window as any).dataLayer !== 'undefined') {
+      (window as any).dataLayer.push({
+        event: 'stage_start',
+        stageId: id,
+        stageName: details.name,
+        stageSize: `${details.width}x${details.height}`,
+        isAiStage: isAiStageActive.value
+      });
+    }
   } catch (error) {
     if (selectedStageId.value !== id && selectedAiStageId.value !== id) {
       return;
@@ -1313,6 +1322,17 @@ async function handleSolveAnimationComplete() {
       difficulty = 'HARD';
     }
     const elapsedTime = Math.floor((Date.now() - startTime.value) / 1000);
+
+    if (typeof (window as any).dataLayer !== 'undefined') {
+      (window as any).dataLayer.push({
+        event: 'stage_clear',
+        stageId: selectedStageId.value !== null ? selectedStageId.value : (selectedAiStageId.value !== null ? selectedAiStageId.value : undefined),
+        stageName: currentActiveStage.value?.name,
+        difficulty: difficulty,
+        elapsedTime: elapsedTime,
+        isAiStage: isAiStageActive.value
+      });
+    }
 
     if (currentUser.value) {
       const userId = currentUser.value.id;
@@ -1473,6 +1493,17 @@ function handleGoogleLogout() {
 async function handleVote(isLike: boolean) {
   const stageId = selectedStageId.value !== null ? selectedStageId.value : (selectedAiStageId.value !== null ? selectedAiStageId.value : null);
   if (stageId === null) return;
+
+  if (typeof (window as any).dataLayer !== 'undefined') {
+    (window as any).dataLayer.push({
+      event: 'stage_vote',
+      stageId: stageId,
+      stageName: currentActiveStage.value?.name,
+      voteType: isLike ? 'like' : 'dislike',
+      isAiStage: isAiStageActive.value
+    });
+  }
+
   try {
     let updated;
     if (isLike) {
