@@ -12,6 +12,8 @@ public class NemologicRuntimeHints implements RuntimeHintsRegistrar {
         hints.resources().registerPattern("puzzles/stages.json");
         // Register database migration scripts for Flyway
         hints.resources().registerPattern("db/migration/*.sql");
+        // Register prompts for AI client
+        hints.resources().registerPattern("prompts/*.txt");
 
         // Register StageDto for reflection (needed for Jackson deserialization in native image)
         hints.reflection().registerType(
