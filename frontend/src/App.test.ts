@@ -741,6 +741,23 @@ describe('App.vue Leaderboard Integration TDD', () => {
 
     expect(vm.board.currentGrid[0][0]).toBe(1);
   });
+
+  it('should reset demoSolveAnimationComplete and demoSolved when navigating away from Home page', async () => {
+    const wrapper = mount(App);
+    const vm = wrapper.vm as any;
+
+    // Trigger skip intro which normally leaves demoSolveAnimationComplete as true
+    vm.skipIntro();
+    expect(vm.demoSolveAnimationComplete).toBe(true);
+    expect(vm.demoSolved).toBe(true);
+
+    // Navigate to play tab
+    await vm.onTabChange('play');
+
+    // Both should be reset to false to prevent duplicate confetti triggers
+    expect(vm.demoSolveAnimationComplete).toBe(false);
+    expect(vm.demoSolved).toBe(false);
+  });
 });
 
 
