@@ -47,4 +47,16 @@ class NemologicRuntimeHintsTest {
 
         assertThat(RuntimeHintsPredicates.reflection().onType(Stage.class)).accepts(hints);
     }
+
+    @Test
+    void shouldRegisterResources() {
+        RuntimeHints hints = new RuntimeHints();
+        NemologicRuntimeHints registrar = new NemologicRuntimeHints();
+        registrar.registerHints(hints, getClass().getClassLoader());
+
+        assertThat(RuntimeHintsPredicates.resource().forResource("puzzles/stages.json")).accepts(hints);
+        assertThat(RuntimeHintsPredicates.resource().forResource("db/migration/V1__init.sql")).accepts(hints);
+        assertThat(RuntimeHintsPredicates.resource().forResource("prompts/theme-generation.txt")).accepts(hints);
+        assertThat(RuntimeHintsPredicates.resource().forResource("prompts/grid-generation.txt")).accepts(hints);
+    }
 }

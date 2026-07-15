@@ -1467,6 +1467,10 @@ async function onTabChange(tab: 'home' | 'play' | 'mypage' | 'admin') {
     if (introActive.value) {
       startIntroAnimation();
     }
+  } else {
+    demoSolveAnimationComplete.value = false;
+    demoSolved.value = false;
+    stopConfetti();
   }
   if (tab === 'mypage') {
     await loadUserHistory();
