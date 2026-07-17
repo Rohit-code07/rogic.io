@@ -11,7 +11,7 @@
       [0, 0, 1, 0, 0]
     ],
     "active": false,
-    "approved": false
+    "approved": true
   },
   {
     "name": "Plus Sign",
@@ -25,7 +25,7 @@
       [0, 0, 1, 0, 0]
     ],
     "active": false,
-    "approved": false
+    "approved": true
   },
   {
     "name": "Crystalline Spark",
@@ -39,7 +39,7 @@
       [0, 1, 0, 1, 0]
     ],
     "active": false,
-    "approved": false
+    "approved": true
   },
   {
     "name": "Hourglass",
@@ -53,7 +53,7 @@
       [1, 1, 1, 1, 1]
     ],
     "active": false,
-    "approved": false
+    "approved": true
   },
   {
     "name": "Ascending Star",
@@ -77,6 +77,6 @@
       [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]
     ],
     "active": false,
-    "approved": false
+    "approved": true
   }
 ]
