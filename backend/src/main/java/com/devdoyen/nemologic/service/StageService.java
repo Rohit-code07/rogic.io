@@ -151,4 +151,14 @@ public class StageService {
         stage.setAverageElapsedTime(newAvg);
         stageRepository.save(stage);
     }
+
+    @Transactional
+    public void deactivateLowestFeedbackStage() {
+        List<Stage> candidates = stageRepository.findLowestFeedbackStages();
+        if (!candidates.isEmpty()) {
+            Stage target = candidates.get(0);
+            target.setActive(false);
+            stageRepository.save(target);
+        }
+    }
 }

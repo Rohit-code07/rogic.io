@@ -110,4 +110,20 @@ public class StageServiceTest {
         assertTrue(s1.isActive());
         verify(stageRepository, times(1)).save(s1);
     }
+
+    @Test
+    public void testDeactivateLowestFeedbackStage() {
+        Stage s1 = new Stage(1L, "Low Feedback Stage", 5, 5, new int[5][5]);
+        s1.setActive(true);
+        s1.setUpvotes(2);
+        s1.setDownvotes(5); // net: -3
+
+        when(stageRepository.findLowestFeedbackStages()).thenReturn(java.util.List.of(s1));
+        when(stageRepository.save(any(Stage.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        stageService.deactivateLowestFeedbackStage();
+
+        assertFalse(s1.isActive());
+        verify(stageRepository, times(1)).save(s1);
+    }
 }
