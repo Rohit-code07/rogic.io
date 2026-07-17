@@ -235,7 +235,6 @@
                 <select v-model="adminStatusFilter" class="admin-select toolbar-input admin-status-filter">
                   <option value="All">All Statuses</option>
                   <option value="Active">Active</option>
-                  <option value="Pending">Pending Approval</option>
                   <option value="Inactive">Inactive</option>
                 </select>
               </div>
@@ -261,7 +260,7 @@
                       Status <span v-if="adminSortKey === 'status'">{{ adminSortOrder === 'asc' ? '▲' : '▼' }}</span>
                     </th>
                     <th scope="col" class="text-center">Feedback</th>
-                    <th scope="col" class="text-center">Play Stats</th>
+                    <th scope="col" class="text-center whitespace-nowrap">Play Stats</th>
                     <th scope="col" class="text-right">Actions</th>
                   </tr>
                 </thead>
@@ -279,8 +278,7 @@
                     </td>
                     <td class="text-slate-400">{{ formatDate(s.createdAt) }}</td>
                     <td>
-                      <span v-if="s.approved && s.active" class="status-badge bg-emerald-light text-emerald border-emerald-border">Active</span>
-                      <span v-else-if="!s.approved" class="status-badge bg-amber-light text-amber border-amber-border">Pending Approval</span>
+                      <span v-if="s.active" class="status-badge bg-emerald-light text-emerald border-emerald-border">Active</span>
                       <span v-else class="status-badge bg-rose-light text-rose border-rose-border">Inactive</span>
                     </td>
                     <td class="text-center">
@@ -290,7 +288,7 @@
                         </span>
                       </div>
                     </td>
-                    <td class="text-center font-mono text-slate-300">
+                    <td class="text-center font-mono text-slate-300 whitespace-nowrap">
                       {{ s.totalClears || 0 }} / {{ s.totalAttempts || 0 }}
                     </td>
                     <td class="text-right">
@@ -302,19 +300,13 @@
                           </svg>
                           Preview
                         </button>
-                        <button v-if="!s.approved" @click="handleApproveStage(s.id)" class="text-emerald flex-center border-left btn-approve">
-                          <svg class="icon-w-3_5 icon-margin-r" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"></path>
-                          </svg>
-                          Approve
-                        </button>
-                        <button v-if="s.active || !s.approved" @click="handleDeleteStage(s.id)" class="text-amber flex-center border-left btn-delete">
+                        <button v-if="s.active" @click="handleDeleteStage(s.id)" class="text-amber flex-center border-left btn-delete">
                           <svg class="icon-w-3_5 icon-margin-r" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M10 9v6m4-6v6m7-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
                           </svg>
                           Deactivate
                         </button>
-                        <button v-if="!s.active && s.approved" @click="handleRestoreStage(s.id)" class="text-indigo flex-center border-left">
+                        <button v-if="!s.active" @click="handleRestoreStage(s.id)" class="text-indigo flex-center border-left">
                           <svg class="icon-w-3_5 icon-margin-r" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 1121.21 7.89M9 11l3-3 3 3"></path>
                           </svg>
@@ -467,7 +459,6 @@ import { fetchStageById } from '../api/stageApi';
 import { 
   fetchAdminStages, 
   fetchAdminUsers,
-  approveStage, 
   deleteStage, 
   restoreStage, 
   loginAdmin, 
@@ -550,11 +541,9 @@ const filteredAndSortedAdminStages = computed(() => {
   // 3. Filter by status
   if (adminStatusFilter.value !== 'All') {
     if (adminStatusFilter.value === 'Active') {
-      list = list.filter(s => s.approved && s.active);
-    } else if (adminStatusFilter.value === 'Pending') {
-      list = list.filter(s => !s.approved);
+      list = list.filter(s => s.active);
     } else if (adminStatusFilter.value === 'Inactive') {
-      list = list.filter(s => s.approved && !s.active);
+      list = list.filter(s => !s.active);
     }
   }
 
@@ -573,8 +562,8 @@ const filteredAndSortedAdminStages = computed(() => {
       valA = a.width * a.height;
       valB = b.width * b.height;
     } else if (adminSortKey.value === 'status') {
-      valA = a.approved && a.active ? 3 : (!a.approved ? 2 : 1);
-      valB = b.approved && b.active ? 3 : (!b.approved ? 2 : 1);
+      valA = a.active ? 2 : 1;
+      valB = b.active ? 2 : 1;
     }
 
     if (valA < valB) return adminSortOrder.value === 'asc' ? -1 : 1;
@@ -681,15 +670,6 @@ function getFeedbackClass(s: AdminStageInfo) {
   return 'score-neutral';
 }
 
-async function handleApproveStage(id: number) {
-  try {
-    await approveStage(id);
-    await loadAdminStagesList();
-    emit('stage-updated');
-  } catch (error) {
-    console.error('Failed to approve stage:', error);
-  }
-}
 
 async function handleDeleteStage(id: number) {
   if (!confirm('Are you sure you want to deactivate this stage?')) return;
