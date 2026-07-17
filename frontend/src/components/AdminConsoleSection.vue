@@ -261,6 +261,7 @@
                       Status <span v-if="adminSortKey === 'status'">{{ adminSortOrder === 'asc' ? '▲' : '▼' }}</span>
                     </th>
                     <th scope="col" class="text-center">Feedback</th>
+                    <th scope="col" class="text-center">Play Stats</th>
                     <th scope="col" class="text-right">Actions</th>
                   </tr>
                 </thead>
@@ -289,6 +290,9 @@
                         </span>
                       </div>
                     </td>
+                    <td class="text-center font-mono text-slate-300">
+                      {{ s.totalClears || 0 }} / {{ s.totalAttempts || 0 }}
+                    </td>
                     <td class="text-right">
                       <div class="btn-group" role="group">
                         <button @click="openHistoryModal({ stageId: s.id, stageName: s.name })" class="flex-center btn-preview">
@@ -304,11 +308,11 @@
                           </svg>
                           Approve
                         </button>
-                        <button @click="handleDeleteStage(s.id)" class="text-rose flex-center border-left btn-delete">
+                        <button v-if="s.active || !s.approved" @click="handleDeleteStage(s.id)" class="text-amber flex-center border-left btn-delete">
                           <svg class="icon-w-3_5 icon-margin-r" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M10 9v6m4-6v6m7-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
                           </svg>
-                          Delete
+                          Deactivate
                         </button>
                         <button v-if="!s.active && s.approved" @click="handleRestoreStage(s.id)" class="text-indigo flex-center border-left">
                           <svg class="icon-w-3_5 icon-margin-r" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
@@ -320,7 +324,7 @@
                     </td>
                   </tr>
                   <tr v-if="adminStages.length === 0">
-                    <td colspan="8" class="text-center py-10 text-slate-500">
+                    <td colspan="9" class="text-center py-10 text-slate-500">
                       No stages found in database.
                     </td>
                   </tr>
@@ -688,13 +692,13 @@ async function handleApproveStage(id: number) {
 }
 
 async function handleDeleteStage(id: number) {
-  if (!confirm('Are you sure you want to delete this stage?')) return;
+  if (!confirm('Are you sure you want to deactivate this stage?')) return;
   try {
     await deleteStage(id);
     await loadAdminStagesList();
     emit('stage-updated');
   } catch (error) {
-    console.error('Failed to delete stage:', error);
+    console.error('Failed to deactivate stage:', error);
   }
 }
 

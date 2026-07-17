@@ -32,8 +32,8 @@ describe('App.vue Leaderboard Integration TDD', () => {
       profileImageUrl: 'https://example.com/pic.png'
     });
     vi.mocked(adminApi.fetchAdminStages).mockResolvedValue([
-      { id: 1, name: 'Seeded Stage 1', width: 5, height: 5, active: true, approved: true, solutionGrid: [[1]] },
-      { id: 9, name: 'AI Pending Stage', width: 5, height: 5, active: false, approved: false, solutionGrid: [[1]] }
+      { id: 1, name: 'Seeded Stage 1', width: 5, height: 5, active: true, approved: true, solutionGrid: [[1]], totalClears: 12, totalAttempts: 45 },
+      { id: 9, name: 'AI Pending Stage', width: 5, height: 5, active: false, approved: false, solutionGrid: [[1]], totalClears: 0, totalAttempts: 0 }
     ]);
     vi.mocked(stageApi.verifyStageSolve).mockResolvedValue({ token: 'mock-verify-token' });
   });
@@ -342,7 +342,9 @@ describe('App.vue Leaderboard Integration TDD', () => {
     const stageItems = wrapper.findAll('.admin-stage-item');
     expect(stageItems.length).toBe(2);
     expect(stageItems[0].text()).toContain('Seeded Stage 1');
+    expect(stageItems[0].text()).toContain('12 / 45');
     expect(stageItems[1].text()).toContain('AI Pending Stage');
+    expect(stageItems[1].text()).toContain('0 / 0');
 
     // Click Approve on the pending stage (second item)
     const approveBtn = stageItems[1].find('.btn-approve');
