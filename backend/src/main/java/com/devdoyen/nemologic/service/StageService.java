@@ -58,7 +58,8 @@ public class StageService {
     public void deleteStageSoft(Long id) {
         Stage stage = stageRepository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Stage not found: " + id));
-        stageRepository.delete(stage);
+        stage.setActive(false);
+        stageRepository.save(stage);
     }
 
     @Transactional
@@ -149,5 +150,15 @@ public class StageService {
         stage.setTotalClears(currentClears + 1);
         stage.setAverageElapsedTime(newAvg);
         stageRepository.save(stage);
+    }
+
+    @Transactional
+    public void deactivateLowestFeedbackStage() {
+        List<Stage> candidates = stageRepository.findLowestFeedbackStages();
+        if (!candidates.isEmpty()) {
+            Stage target = candidates.get(0);
+            target.setActive(false);
+            stageRepository.save(target);
+        }
     }
 }

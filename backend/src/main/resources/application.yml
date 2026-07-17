@@ -18,3 +18,5 @@ admin:
 app:
   daily-puzzle:
     cron: "0 0 0 * * ?"
+  daily-cleanup:
+    cron: "0 0 0 * * ?"

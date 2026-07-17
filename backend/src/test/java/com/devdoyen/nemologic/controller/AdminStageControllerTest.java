@@ -119,7 +119,9 @@ public class AdminStageControllerTest {
                         .header("Authorization", "Bearer " + adminToken))
                 .andExpect(status().isOk());
 
-        assertFalse(stageRepository.findById(saved.getId()).isPresent());
+        java.util.Optional<Stage> updatedOpt = stageRepository.findById(saved.getId());
+        assertTrue(updatedOpt.isPresent());
+        assertFalse(updatedOpt.get().isActive());
     }
 
     @Test

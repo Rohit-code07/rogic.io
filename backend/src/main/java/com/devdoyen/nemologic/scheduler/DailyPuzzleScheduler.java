@@ -56,4 +56,14 @@ public class DailyPuzzleScheduler {
     public void releaseDailyPuzzle() {
         stageService.releaseDailyPuzzles();
     }
+
+    @Scheduled(cron = "${app.daily-cleanup.cron}")
+    public void cleanupLowestFeedbackPuzzle() {
+        log.info("[Scheduler] Starting puzzle cleanup based on lowest negative feedback...");
+        try {
+            stageService.deactivateLowestFeedbackStage();
+        } catch (Exception e) {
+            log.error("[Scheduler] Failed to cleanup lowest feedback stage: {}", e.getMessage(), e);
+        }
+    }
 }

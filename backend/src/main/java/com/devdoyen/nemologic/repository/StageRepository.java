@@ -23,4 +23,7 @@ public interface StageRepository extends JpaRepository<Stage, Long> {
 
     @org.springframework.data.jpa.repository.Query("SELECT SUM(s.totalClears) FROM Stage s")
     Long sumTotalClears();
+
+    @org.springframework.data.jpa.repository.Query("SELECT s FROM Stage s WHERE s.active = true AND (s.upvotes - s.downvotes) < 0 ORDER BY (s.upvotes - s.downvotes) ASC, s.id ASC")
+    java.util.List<Stage> findLowestFeedbackStages();
 }
