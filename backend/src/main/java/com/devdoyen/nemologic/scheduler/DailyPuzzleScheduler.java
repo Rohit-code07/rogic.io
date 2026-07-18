@@ -4,6 +4,7 @@ import com.devdoyen.nemologic.service.AiStageGenerator;
 import com.devdoyen.nemologic.service.StageService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
@@ -14,6 +15,9 @@ public class DailyPuzzleScheduler {
 
     private final AiStageGenerator aiStageGenerator;
     private final StageService stageService;
+
+    @Value("${app.scheduler.generate-sleep-ms:15000}")
+    private long sleepIntervalMs;
 
     public DailyPuzzleScheduler(AiStageGenerator aiStageGenerator, StageService stageService) {
         this.aiStageGenerator = aiStageGenerator;
@@ -33,7 +37,7 @@ public class DailyPuzzleScheduler {
                     for (int i = 0; i < needed; i++) {
                         aiStageGenerator.generateAndSaveStage(size, size, false);
                         try {
-                            Thread.sleep(5000); // 5 seconds delay to prevent Gemini API rate limiting (15 RPM)
+                            Thread.sleep(sleepIntervalMs); // delay to prevent Gemini API rate limiting (5 RPM)
                         } catch (InterruptedException ie) {
                             Thread.currentThread().interrupt();
                         }
@@ -45,7 +49,7 @@ public class DailyPuzzleScheduler {
                 log.error("[Scheduler] Failed to verify/refill daily puzzle of size {}x{}: {}", size, size, e.getMessage(), e);
             }
             try {
-                Thread.sleep(5000); // 5 seconds delay between sizes
+                Thread.sleep(sleepIntervalMs); // delay between sizes
             } catch (InterruptedException ie) {
                 Thread.currentThread().interrupt();
             }
