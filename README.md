@@ -1,7 +1,14 @@
 # 0. rogic.io
 
+**rogic.io** is an intelligent web-based puzzle game that automatically generates and serves daily logic puzzles using Vue 3, Spring Boot, and AI (Gemini). The project is built with a strong emphasis on performance optimization, robust infrastructure architecture, and engineering best practices.
+
+![License](https://img.shields.io/badge/license-MIT-blue.svg)
+![Vue](https://img.shields.io/badge/vue-3.x-4FC08D.svg)
+![Spring Boot](https://img.shields.io/badge/spring_boot-3.x-6DB33F.svg)
+![GraalVM](https://img.shields.io/badge/GraalVM-Native_Image-FF813F.svg)
+
 ## 0.1. Engineering Constraints & Principles
-#### Design Philosophy
+#### Architecture Principles
 <p align="center">
   <img src="./docs/assets/engineering_principles.png" width="100%" alt="rogic.io Engineering Principles & Constraints" />
 </p>
@@ -16,6 +23,10 @@
 <p align="center">
   <img src="./docs/assets/rogic_gameplay_intro.webp" width="100%" alt="rogic.io Gameplay Demo" />
 </p>
+
+## 0.3. Contributing
+We welcome contributions from the community! Whether it's a bug fix, new feature, or documentation update, your help is highly appreciated.
+Please read our [Contributing Guidelines](./CONTRIBUTING.md) to get started with your local development environment, testing, and pull request workflow. By participating in this project, you agree to abide by our [Code of Conduct](./CODE_OF_CONDUCT.md).
 
 ---
 
@@ -159,7 +170,7 @@ Grafana Cloud Synthetic Monitoring (multi-region health checks across Singapore,
 CloudWatch Logs Metric Filter alarms immediately push real-time alerts through AWS SNS to email channels
 
 #### SLO Dashboard
-Grafana API-integrated Dashboard (visualizes Availability SLA, Incidents, MTTR, MTBF KPIs. Public link: [Grafana Live Public Dashboard](https://grandwalrus3189.grafana.net/public-dashboards/ec9e06b0d1ea4540b97af6b56abb1380). Detailed PromQL specifications are documented in [docs/appendices.md](file:///c:/Users/82107/dev/project/nemologic/docs/appendices.md#2-promql-query-formulations-slo-metrics))
+Grafana API-integrated Dashboard (visualizes Availability SLA, Incidents, MTTR, MTBF KPIs. Public link: [Grafana Live Public Dashboard](https://grandwalrus3189.grafana.net/public-dashboards/ec9e06b0d1ea4540b97af6b56abb1380). Detailed PromQL specifications are documented in [docs/appendices.md](./docs/appendices.md#2-promql-query-formulations-slo-metrics))
 
 ---
 
@@ -224,7 +235,7 @@ S3 Lifecycle rules automatically delete backups older than 30 days
 Connections established via Systems Manager Session Manager (Inbound port 22 SSH completely disabled on the host)
 
 #### Ansible SSM Tunnel
-SSH ProxyCommand encapsulated via `aws ssm start-session` mapped with local PEM file verification (detailed setups in [docs/appendices.md](file:///c:/Users/82107/dev/project/nemologic/docs/appendices.md#13-aws-ssm-session-manager-setup))
+SSH ProxyCommand encapsulated via `aws ssm start-session` mapped with local PEM file verification (detailed setups in [docs/appendices.md](./docs/appendices.md#13-aws-ssm-session-manager-setup))
 
 ### 2.1.2. Pipeline Authentication
 #### OIDC Keyless Auth
@@ -561,6 +572,8 @@ This repository maintains active rules defining security, style, and programming
 | **Data Transfer** | USD 0.15 |
 | **Relational Database & S3** | USD 0.04 |
 | **Total** | **USD 11.45** |
+
+> **Note**: The costs above represent the minimum baseline required to run 1 Production environment. **If the Staging server is running 24/7**, EC2 (t3a.nano) instance usage, Public IPv4 allocation, and EBS storage costs will double, **increasing the estimated monthly cost to approximately $24**. To optimize costs, we recommend stopping the Staging server when it is not in use.
 
 ## 5.2. SLO Targets vs Actual Performance
 #### Measurement Period: 2026.06.25 ~ 2026.07.02
