@@ -24,7 +24,7 @@ public class GeminiAiClient implements AiClient {
     @Value("${ai.model.theme:gemini-3.5-flash}")
     private String themeModelName;
 
-    @Value("${ai.model.grid:gemini-3.0-flash}")
+    @Value("${ai.model.grid:gemini-3-flash}")
     private String gridModelName;
 
     @Value("classpath:prompts/theme-generation.txt")
@@ -124,7 +124,7 @@ public class GeminiAiClient implements AiClient {
             }
         }
 
-        // Fallback to grid model (gemini-3.0-flash)
+        // Fallback to grid model (gemini-3-flash)
         System.out.println("[AI] Calling fallback model " + gridModelName + " for theme generation...");
         for (int attempt = 1; attempt <= maxAttempts; attempt++) {
             try {

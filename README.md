@@ -514,7 +514,7 @@ DB restore processes (`db-restore.yml`) are executed via SSM command pipelines, 
 
 ## 4.1. LLM Generation Pipeline
 #### Generation Engine
-Automated daily stage generation utilizing a hybrid pipeline (`gemini-3.0-flash` for grids, `gemini-3.5-flash` for themes), scheduled nightly at 04:17 KST.
+Automated daily stage generation utilizing a hybrid pipeline (`gemini-3-flash` for grids, `gemini-3.5-flash` for themes), scheduled nightly at 04:17 KST.
 
 #### Rate Limit Defense
 Configured with a 15-second interval sleep and 3-stage exponential backoff logic to respect 5 RPM limits.
