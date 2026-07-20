@@ -69,11 +69,15 @@ resource "aws_cognito_user_pool_client" "client" {
 
   callback_urls = [
     "http://localhost:5173/",
+    "http://localhost/",
+    "rogic://auth",
     "https://stage.rogic.io/"
   ]
 
   logout_urls = [
     "http://localhost:5173/",
+    "http://localhost/",
+    "rogic://auth",
     "https://stage.rogic.io/"
   ]
 

@@ -1,8 +1,12 @@
 import axios from 'axios';
 
+import { Capacitor } from '@capacitor/core';
+
 const COGNITO_DOMAIN = import.meta.env.VITE_COGNITO_DOMAIN || 'https://nemologic-stage-auth.auth.ap-northeast-2.amazoncognito.com';
 const CLIENT_ID = import.meta.env.VITE_COGNITO_CLIENT_ID || '';
-const APP_URL = import.meta.env.VITE_APP_URL || (typeof window !== 'undefined' ? window.location.origin : 'http://localhost:5173');
+const APP_URL = Capacitor.isNativePlatform() 
+  ? 'rogic://auth' 
+  : import.meta.env.VITE_APP_URL || (typeof window !== 'undefined' ? window.location.origin : 'http://localhost:5173');
 
 const TOKEN_KEY = 'nemologic_id_token';
 const REFRESH_KEY = 'nemologic_refresh_token';
@@ -48,10 +52,10 @@ async function generateCodeChallenge(v: string): Promise<string> {
 
 export async function loginWithGoogle(): Promise<void> {
   const verifier = generateCodeVerifier();
-  sessionStorage.setItem(VERIFIER_KEY, verifier);
+  localStorage.setItem(VERIFIER_KEY, verifier);
 
   const challenge = await generateCodeChallenge(verifier);
-  const redirectUri = `${APP_URL}/`;
+  const redirectUri = Capacitor.isNativePlatform() ? APP_URL : `${APP_URL}/`;
   
   const hostedUiUrl = `${COGNITO_DOMAIN}/oauth2/authorize?identity_provider=Google&redirect_uri=${encodeURIComponent(redirectUri)}&response_type=code&client_id=${CLIENT_ID}&code_challenge=${challenge}&code_challenge_method=S256`;
   
@@ -59,12 +63,13 @@ export async function loginWithGoogle(): Promise<void> {
 }
 
 export async function handleCallback(code: string): Promise<string> {
-  const verifier = sessionStorage.getItem(VERIFIER_KEY);
+  const verifier = localStorage.getItem(VERIFIER_KEY);
   if (!verifier) {
     throw new Error('PKCE code verifier not found in session');
   }
+  localStorage.removeItem(VERIFIER_KEY);
 
-  const redirectUri = `${APP_URL}/`;
+  const redirectUri = Capacitor.isNativePlatform() ? APP_URL : `${APP_URL}/`;
   const params = new URLSearchParams();
   params.append('grant_type', 'authorization_code');
   params.append('client_id', CLIENT_ID);
