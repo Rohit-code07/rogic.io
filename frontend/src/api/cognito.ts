@@ -94,7 +94,6 @@ export async function handleCallback(code: string): Promise<string> {
   if (refreshToken) {
     localStorage.setItem(REFRESH_KEY, refreshToken);
   }
-  sessionStorage.removeItem(VERIFIER_KEY);
   return idToken;
 }
 

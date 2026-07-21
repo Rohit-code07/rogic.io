@@ -23,7 +23,7 @@ describe('cognito.ts Session Retention Tests (TDD)', () => {
 
   describe('handleCallback', () => {
     it('should exchange code and store both id_token and refresh_token', async () => {
-      sessionStorage.setItem('nemologic_code_verifier', 'verifier_xyz');
+      localStorage.setItem('nemologic_code_verifier', 'verifier_xyz');
       const mockResponse = {
         data: {
           id_token: 'new_id_token_xyz',
@@ -37,11 +37,11 @@ describe('cognito.ts Session Retention Tests (TDD)', () => {
       expect(token).toBe('new_id_token_xyz');
       expect(localStorage.getItem(ID_KEY)).toBe('new_id_token_xyz');
       expect(localStorage.getItem(REFRESH_KEY)).toBe('new_refresh_token_xyz');
-      expect(sessionStorage.getItem('nemologic_code_verifier')).toBeNull();
+      expect(localStorage.getItem('nemologic_code_verifier')).toBeNull();
     });
 
     it('should throw error if id_token is missing in response', async () => {
-      sessionStorage.setItem('nemologic_code_verifier', 'verifier_xyz');
+      localStorage.setItem('nemologic_code_verifier', 'verifier_xyz');
       vi.mocked(axios.post).mockResolvedValue({ data: {} });
 
       await expect(handleCallback('auth_code_123')).rejects.toThrow('No id_token returned');
