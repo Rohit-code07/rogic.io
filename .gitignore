@@ -38,6 +38,7 @@ lerna-debug.log*
 .gradle/
 backend/.gradle/
 backend/build/
+backend/bin/
 build/
 out/
 

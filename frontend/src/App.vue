@@ -354,6 +354,8 @@
 
 <script setup lang="ts">
 import { ref, shallowRef, onMounted, onUnmounted, computed, watch } from 'vue';
+import { App as CapacitorApp } from '@capacitor/app';
+import { Capacitor } from '@capacitor/core';
 
 const isTestEnv = typeof window !== 'undefined' && (
   (globalThis as any).process?.env?.NODE_ENV === 'test' ||
@@ -1656,6 +1658,28 @@ function preventPinchZoom(e: TouchEvent) {
 
 
 onMounted(async () => {
+  if (Capacitor.isNativePlatform()) {
+    CapacitorApp.addListener('appUrlOpen', async (event: any) => {
+      try {
+        const url = new URL(event.url);
+        if (url.protocol === 'rogic:' && url.host === 'auth') {
+          const code = url.searchParams.get('code');
+          if (code) {
+            isLoading.value = true;
+            const { handleCallback: cognitoHandleCallback } = await import('./api/cognito');
+            await cognitoHandleCallback(code);
+            await initializeUserSession();
+            await onTabChange('play');
+          }
+        }
+      } catch (err) {
+        console.error('Failed to handle deep link:', err);
+      } finally {
+        isLoading.value = false;
+      }
+    });
+  }
+
   initDemoBoard();
   // Check if admin param is in URL or hash
   const urlParams = new URLSearchParams(window.location.search);

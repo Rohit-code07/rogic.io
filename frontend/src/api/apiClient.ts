@@ -1,7 +1,9 @@
 import axios from 'axios';
 import { getOrRefreshToken } from './cognito';
+import { Capacitor } from '@capacitor/core';
 
-const apiClient = axios.create();
+const baseURL = import.meta.env.VITE_API_URL || (Capacitor.isNativePlatform() ? 'https://api.rogic.io' : '');
+const apiClient = axios.create({ baseURL });
 
 apiClient.interceptors.request.use(
   async (config) => {

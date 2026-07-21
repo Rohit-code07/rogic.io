@@ -24,7 +24,7 @@ public class GeminiAiClient implements AiClient {
     @Value("${ai.model.theme:gemini-3.5-flash}")
     private String themeModelName;
 
-    @Value("${ai.model.grid:gemini-3-flash}")
+    @Value("${ai.model.grid:gemini-3.1-flash-lite}")
     private String gridModelName;
 
     @Value("classpath:prompts/theme-generation.txt")
