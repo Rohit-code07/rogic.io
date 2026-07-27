@@ -302,6 +302,37 @@ resource "aws_sns_topic_subscription" "email_subscription" {
   endpoint  = var.alert_email
 }
 
+# CloudWatch Log Metric Filter for General Server Errors
+resource "aws_cloudwatch_log_metric_filter" "server_error_filter" {
+  name           = "ServerErrorFilter"
+  pattern        = "?ERROR ?\"\\\" 500 \" ?\"Internal Server Error\""
+  log_group_name = aws_cloudwatch_log_group.nemologic_staging_log_group.name
+
+  metric_transformation {
+    name      = "ServerErrorCount"
+    namespace = "Nemologic/System"
+    value     = "1"
+  }
+}
+
+# CloudWatch Metric Alarm for General Server Errors
+resource "aws_cloudwatch_metric_alarm" "server_error_alarm" {
+  alarm_name          = "nemologic-staging-server-error-alarm"
+  comparison_operator = "GreaterThanOrEqualToThreshold"
+  evaluation_periods  = 1
+  metric_name         = "ServerErrorCount"
+  namespace           = "Nemologic/System"
+  period              = 300
+  statistic           = "Sum"
+  threshold           = 1
+  alarm_description   = "This alarm triggers when general server errors (ERROR level logs or HTTP 500 status codes) are detected in the logs."
+  alarm_actions       = [aws_sns_topic.nemologic_staging_alerts.arn]
+
+  tags = {
+    Name = "nemologic-staging-server-error-alarm"
+  }
+}
+
 # CloudWatch Metric Alarm for Staging EC2 Status Check Failed
 resource "aws_cloudwatch_metric_alarm" "staging_ec2_status_check_alarm" {
   alarm_name          = "nemologic-staging-ec2-status-check-alarm"

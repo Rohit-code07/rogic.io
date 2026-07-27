@@ -330,7 +330,7 @@ resource "aws_sns_topic_subscription" "email_subscription" {
 # CloudWatch Log Metric Filter for General Server Errors
 resource "aws_cloudwatch_log_metric_filter" "server_error_filter" {
   name           = "ServerErrorFilter"
-  pattern        = "?ERROR ?\" 500 \" ?\"Internal Server Error\""
+  pattern        = "?ERROR ?\"\\\" 500 \" ?\"Internal Server Error\""
   log_group_name = aws_cloudwatch_log_group.nemologic_log_group.name
 
   metric_transformation {
