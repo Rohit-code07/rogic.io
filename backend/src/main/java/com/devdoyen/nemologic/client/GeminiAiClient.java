@@ -158,7 +158,7 @@ public class GeminiAiClient implements AiClient {
                 return callGeminiApi(prompt, gridModelName);
             } catch (Exception e) {
                 lastException = e;
-                log.warn("[AI] generatePuzzleJsonForTheme with {}attempt{}failed: {}" , gridModelName  , attempt ,e.getMessage());
+        log.warn("[AI] generatePuzzleJsonForTheme with {} attempt {} failed: {}", gridModelName, attempt, e.getMessage());
                 if (attempt < maxAttempts) {
                     try { Thread.sleep(2000); } catch (InterruptedException ie) { Thread.currentThread().interrupt(); }
                 }
