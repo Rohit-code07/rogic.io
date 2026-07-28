@@ -75,7 +75,7 @@ public class DataSeeder implements CommandLineRunner {
                     }
                 }
             } catch (Exception e) {
-                log.warn("[Seeder] Failed to seed resource{} : {} " , resource.getFilename() , e.getMessage());
+        log.warn("[Seeder] Failed to seed resource {}: {}", resource.getFilename(), e.getMessage());
             }
         } else {
            log.warn("[Seeder] Resource puzzles/stages.json does not exist");
