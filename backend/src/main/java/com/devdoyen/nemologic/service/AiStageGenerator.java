@@ -170,7 +170,8 @@ public class AiStageGenerator {
                 return stageRepository.save(newStage);
             } catch (Exception e) {
                 lastException = e;
-                log.warn("[AI] Attempt {} failed: {}", attempt, e.getMessage());            }
+        log.warn("[AI] Attempt {} failed: {}", attempt, e.getMessage());
+    }
         }
 
         throw new IllegalArgumentException("Failed to generate valid stage after " + maxAttempts + " attempts", lastException);
